@@ -1,0 +1,32 @@
+const colors = Object.freeze({
+
+    transparent: "transparent",
+    black: "#000000",
+    white: "#FFFFFF",
+    gray: "#808080",
+    lightGray: "#D3D3D3",
+    darkGray: "#A9A9A9",
+    red: "#FF0000",
+    green: "#00FF00",
+    blue: "#0000FF",
+    primary: "#236DB5",
+    c_F47E20: "#F47E20",
+    c_EE4026: "#EE4026",
+    greenWithRgba: "rgba(0, 255, 124, 1)",
+    c_666666: "#666666",
+    primaryrgb: "rgba(35, 109, 181, 0.85)",
+    c_0162C0: "#0162C0",
+    c_505050: "#505050",
+    c_F59523: "#F59523",
+    c_F3F3F3: "#F3F3F3",
+    c_CFD1D3: "#CFD1D3",
+    c_DDDDDD: "#DDDDDD",
+    c_F6F6F6: "#F6F6F6",
+    c_2B2B2B: "#2B2B2B",
+    c_111111: "#111111",
+    c_007DFC: "#007DFC",
+    c_079D48: "#079D48",
+    c_B40000: "#B40000",
+});
+
+export default colors;
