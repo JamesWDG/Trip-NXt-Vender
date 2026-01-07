@@ -13,6 +13,7 @@ import fonts from '../../config/fonts';
 
 interface ProfileInputFieldProps extends TextInputProps {
   icon?: LucideIcon;
+  iconColor?: string;
   // editable?: boolean;
   error?: string;
   containerStyle?: ViewStyle;
@@ -21,6 +22,7 @@ interface ProfileInputFieldProps extends TextInputProps {
 const ProfileInputField: React.FC<ProfileInputFieldProps> = ({
   icon: Icon,
   error,
+  iconColor,
   // editable = true,
   containerStyle,
   style,
@@ -36,7 +38,7 @@ const ProfileInputField: React.FC<ProfileInputFieldProps> = ({
     >
       {Icon && (
         <View style={styles.iconContainer} pointerEvents="none">
-          <Icon size={20} color={colors.c_666666} />
+          <Icon size={20} color={iconColor || colors.c_666666} />
         </View>
       )}
       <TextInput

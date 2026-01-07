@@ -14,7 +14,7 @@ const Splash: FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { token } = useSelector((state: RootState) => state.auth);
   const { activeStack } = useSelector((state: RootState) => state.navigation);
-  console.log(activeStack);
+  // console.log(activeStack);
   const animation = useRef(new Animated.Value(10)).current;
   useEffect(() => {
     Animated.timing(animation, {
@@ -30,42 +30,42 @@ const Splash: FC = () => {
     borderRadius: '50%',
   };
 
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     navigation.navigate('GetStarted');
-  //   }, 3000);
-  // }, []);
-
   useEffect(() => {
     setTimeout(() => {
-      if (token) {
-        if (activeStack) {
-          if (navigationRef.isReady()) {
-            navigationRef.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'app',
-                  state: {
-                    routes: [
-                      {
-                        name: activeStack,
-                      },
-                    ],
-                    index: 0,
-                  },
-                },
-              ],
-            });
-          }
-        } else {
-          navigation.navigate('GetStarted');
-        }
-      } else {
-        navigation.navigate('Login');
-      }
+      navigation.navigate('GetStarted');
     }, 3000);
-  }, [token, activeStack, navigation]);
+  }, []);
+
+  // useEffect(() => {
+  //   setTimeout(() => {
+  //     if (token) {
+  //       if (activeStack) {
+  //         if (navigationRef.isReady()) {
+  //           navigationRef.reset({
+  //             index: 0,
+  //             routes: [
+  //               {
+  //                 name: 'app',
+  //                 state: {
+  //                   routes: [
+  //                     {
+  //                       name: activeStack,
+  //                     },
+  //                   ],
+  //                   index: 0,
+  //                 },
+  //               },
+  //             ],
+  //           });
+  //         }
+  //       } else {
+  //         navigation.navigate('GetStarted');
+  //       }
+  //     } else {
+  //       navigation.navigate('Login');
+  //     }
+  //   }, 3000);
+  // }, [token, activeStack, navigation]);
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.object, animatedStyle]}>

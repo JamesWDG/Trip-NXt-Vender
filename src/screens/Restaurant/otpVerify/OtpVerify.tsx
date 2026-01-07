@@ -35,7 +35,7 @@ const OtpVerify = ({ route }: { route: any }) => {
   const [resendOtp] = useResendOTPMutation();
 
   const { type, email, screenToNavigate } = route?.params || {};
-  console.log(screenToNavigate);
+  // console.log(screenToNavigate);
 
   useEffect(() => {
     // Auto-focus first input on mount
@@ -116,6 +116,7 @@ const OtpVerify = ({ route }: { route: any }) => {
       let data = {
         email: email?.toLowerCase(),
         otp: otpString,
+        type: type,
       };
       const res = await otpVerification(data).unwrap();
       console.log('res', res);

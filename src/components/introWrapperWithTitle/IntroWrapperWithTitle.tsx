@@ -30,6 +30,7 @@ const IntroWrapperWithTitle = ({ title, resizeMode = 'cover' }: Params) => {
             source={images.location}
             style={styles.locationImage}
             imageStyle={styles.bgImageStyles}
+            resizeMode="contain"
           >
             <Text style={styles.locationText}>{title}</Text>
           </ImageBackground>
