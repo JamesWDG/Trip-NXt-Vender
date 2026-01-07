@@ -64,6 +64,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 10,
+    pointerEvents: 'box-none',
   },
   bgImageStyles: {
     opacity: 0.09,

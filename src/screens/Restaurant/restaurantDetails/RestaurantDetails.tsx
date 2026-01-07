@@ -107,7 +107,11 @@ const RestaurantDetails = () => {
   };
 
   return (
-    <WrapperContainer title="Business Information" navigation={navigation}>
+    <WrapperContainer
+      hideBack={true}
+      title="Business Information"
+      navigation={navigation}
+    >
       <>
         <ScrollView
           style={styles.container}

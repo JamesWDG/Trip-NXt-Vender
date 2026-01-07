@@ -13,28 +13,41 @@ import fonts from '../../config/fonts';
 
 interface ProfileInputFieldProps extends TextInputProps {
   icon?: LucideIcon;
+  // editable?: boolean;
+  error?: string;
   containerStyle?: ViewStyle;
 }
 
 const ProfileInputField: React.FC<ProfileInputFieldProps> = ({
   icon: Icon,
+  error,
+  // editable = true,
   containerStyle,
   style,
   ...props
 }) => {
   return (
-    <View style={[styles.container, containerStyle]}>
+    <View
+      style={[
+        styles.container,
+        error && { borderColor: colors.red, borderWidth: 1 },
+        containerStyle,
+      ]}
+    >
       {Icon && (
-        <View style={styles.iconContainer}>
+        <View style={styles.iconContainer} pointerEvents="none">
           <Icon size={20} color={colors.c_666666} />
         </View>
       )}
       <TextInput
-        style={[styles.input, style]}
+        style={[styles.input, style, ,]}
         placeholderTextColor={colors.c_666666}
         {...props}
       />
     </View>
+    // <View>
+    //   {error && <Text style={styles.errorText}>{error}</Text>}
+    // </View>
   );
 };
 

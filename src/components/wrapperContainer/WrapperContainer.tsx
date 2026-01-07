@@ -10,6 +10,8 @@ const WrapperContainer = ({
   children,
   navigation,
   goBack = true,
+  showRight = true,
+  hideBack = false,
   onBackPress = () => {},
   onMenuPress = () => {},
 }: {
@@ -17,6 +19,8 @@ const WrapperContainer = ({
   children: React.ReactNode;
   navigation?: NavigationProp<any>;
   goBack?: boolean;
+  showRight?: boolean;
+  hideBack?: boolean;
   onBackPress?: () => void;
   onMenuPress?: () => void;
 }) => {
@@ -24,6 +28,8 @@ const WrapperContainer = ({
     <View style={styles.container}>
       <PrimaryHeader
         title={title}
+        showRight={showRight}
+        hideBack={hideBack}
         onBackPress={() => navigation?.goBack()}
         goBack={goBack}
         onMenuPress={onMenuPress}

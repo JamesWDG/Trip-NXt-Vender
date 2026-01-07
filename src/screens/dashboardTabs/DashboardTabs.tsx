@@ -14,12 +14,11 @@ import SwipeButton from 'rn-swipe-button';
 import { IOption, options } from '../../contants/options';
 import { height, width } from '../../config/constants';
 import fonts from '../../config/fonts';
-import TabButtons from '../../components/tabButtons/TabButtons';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 import GeneralStyles from '../../utils/GeneralStyles';
 import { useAppDispatch } from '../../store/hooks';
-import { setActiveStack } from '../../store/navigationSlice';
+import { setActiveStack } from '../../redux/slices/navigationSlice';
 const DashboardTabs: FC = () => {
   const navigation = useNavigation<NavigationPropType>();
   const dispatch = useAppDispatch();
@@ -79,113 +78,119 @@ const DashboardTabs: FC = () => {
                         return { ...ele, selected: ele?.selected };
                       }),
                     );
-
+                    (navigation as any).navigate('Signup', {
+                      flowDetails: {
+                        user_type: item.type,
+                        screenName: item.screenName,
+                        stack: item.stack,
+                      },
+                    });
                     // Store navigation stack in Redux and navigate
-                    if (index === 0) {
-                      dispatch(
-                        setActiveStack({
-                          stack: 'CabStack',
-                        }),
-                      );
-                      navigation.reset({
-                        index: 0,
-                        routes: [
-                          {
-                            name: 'app',
-                            state: {
-                              routes: [
-                                {
-                                  name: 'CabStack',
-                                  params: {
-                                    screen: 'DriverRegistration',
-                                  },
-                                },
-                              ],
-                              index: 0,
-                            },
-                          },
-                        ],
-                      });
-                      // Book a Ride - reset to RestaurantStack (Ride functionality)
-                    } else if (index === 1) {
-                      // Order Food - reset to RestaurantStack with RestaurantHome screen
-                      dispatch(
-                        setActiveStack({
-                          stack: 'RestaurantStack',
-                        }),
-                      );
-                      navigation.reset({
-                        index: 0,
-                        routes: [
-                          {
-                            name: 'app',
-                            state: {
-                              routes: [
-                                {
-                                  name: 'RestaurantStack',
-                                  state: {
-                                    routes: [
-                                      {
-                                        name: 'RestaurantDetails',
-                                      },
-                                    ],
-                                    index: 0,
-                                  },
-                                },
-                              ],
-                              index: 0,
-                            },
-                          },
-                        ],
-                      });
-                    } else if (index === 2) {
-                      // Book Your Place - reset to AccomodationStack
-                      // dispatch(
-                      //   setActiveStack({
-                      //     stack: 'Accomodation',
-                      //   }),
-                      // );
-                      // navigation.reset({
-                      //   index: 0,
-                      //   routes: [
-                      //     {
-                      //       name: 'app',
-                      //       state: {
-                      //         routes: [
-                      //           {
-                      //             name: 'Accomodation',
-                      //           },
-                      //         ],
-                      //         index: 0,
-                      //       },
-                      //     },
-                      //   ],
-                      // });
-                      dispatch(
-                        setActiveStack({
-                          stack: 'Accomodation',
-                        }),
-                      );
-                      navigation.reset({
-                        index: 0,
-                        routes: [
-                          {
-                            name: 'app',
-                            state: {
-                              routes: [
-                                {
-                                  name: 'Accomodation',
-                                  params: {
-                                    screen: 'Home',
-                                  },
-                                },
-                              ],
-                              index: 0,
-                            },
-                          },
-                        ],
-                      });
-                    }
+                    // if (index === 0) {
+                    //   dispatch(
+                    //     setActiveStack({
+                    //       stack: 'CabStack',
+                    //     }),
+                    //   );
+                    //   navigation.reset({
+                    //     index: 0,
+                    //     routes: [
+                    //       {
+                    //         name: 'app',
+                    //         state: {
+                    //           routes: [
+                    //             {
+                    //               name: 'CabStack',
+                    //               params: {
+                    //                 screen: 'DriverRegistration',
+                    //               },
+                    //             },
+                    //           ],
+                    //           index: 0,
+                    //         },
+                    //       },
+                    //     ],
+                    //   });
+                    //   // Book a Ride - reset to RestaurantStack (Ride functionality)
+                    // } else if (index === 1) {
+                    //   // Order Food - reset to RestaurantStack with RestaurantHome screen
+                    //   dispatch(
+                    //     setActiveStack({
+                    //       stack: 'RestaurantStack',
+                    //     }),
+                    //   );
+                    //   navigation.reset({
+                    //     index: 0,
+                    //     routes: [
+                    //       {
+                    //         name: 'app',
+                    //         state: {
+                    //           routes: [
+                    //             {
+                    //               name: 'RestaurantStack',
+                    //               state: {
+                    //                 routes: [
+                    //                   {
+                    //                     name: 'RestaurantDetails',
+                    //                   },
+                    //                 ],
+                    //                 index: 0,
+                    //               },
+                    //             },
+                    //           ],
+                    //           index: 0,
+                    //         },
+                    //       },
+                    //     ],
+                    //   });
+                    // } else if (index === 2) {
+                    //   // Book Your Place - reset to AccomodationStack
+                    //   // dispatch(
+                    //   //   setActiveStack({
+                    //   //     stack: 'Accomodation',
+                    //   //   }),
+                    //   // );
+                    //   // navigation.reset({
+                    //   //   index: 0,
+                    //   //   routes: [
+                    //   //     {
+                    //   //       name: 'app',
+                    //   //       state: {
+                    //   //         routes: [
+                    //   //           {
+                    //   //             name: 'Accomodation',
+                    //   //           },
+                    //   //         ],
+                    //   //         index: 0,
+                    //   //       },
+                    //   //     },
+                    //   //   ],
+                    //   // });
+                    //   dispatch(
+                    //     setActiveStack({
+                    //       stack: 'Accomodation',
+                    //     }),
+                    //   );
+                    //   navigation.reset({
+                    //     index: 0,
+                    //     routes: [
+                    //       {
+                    //         name: 'app',
+                    //         state: {
+                    //           routes: [
+                    //             {
+                    //               name: 'Accomodation',
+                    //               params: {
+                    //                 screen: 'Home',
+                    //               },
+                    //             },
+                    //           ],
+                    //           index: 0,
+                    //         },
+                    //       },
+                    //     ],
+                    //   });
+                    // }
                   }}
                   onSwipeFail={() => {
                     console.log('onSwipeFail');

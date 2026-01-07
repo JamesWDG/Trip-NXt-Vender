@@ -31,6 +31,7 @@ const RideStack: FC = () => {
       }}
     >
       {/* Subscription & Plans */}
+      <Stack.Screen name="MyVehicle" component={MyVehicle} />
       <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
       <Stack.Screen name="ManagePlans" component={ManagePlans} />
 
@@ -58,7 +59,6 @@ const RideStack: FC = () => {
       <Stack.Screen name="TotalEarnings" component={TotalEarnings} />
 
       {/* Vehicle Management */}
-      <Stack.Screen name="MyVehicle" component={MyVehicle} />
     </Stack.Navigator>
   );
 };

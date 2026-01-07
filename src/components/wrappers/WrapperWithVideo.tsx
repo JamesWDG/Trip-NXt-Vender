@@ -15,7 +15,7 @@ const WrapperWithVideo = ({
   otherStyles?: ViewStyle | ViewStyle[];
 }) => {
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
       <View style={styles.overlay} />
       <Video
         source={{

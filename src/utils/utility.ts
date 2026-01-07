@@ -17,3 +17,4 @@ export const formatDate = (dateString: string): string => {
     return `${monthNames[date.getMonth()]
         } ${date.getDate()}, ${date.getFullYear()}`;
 };
+

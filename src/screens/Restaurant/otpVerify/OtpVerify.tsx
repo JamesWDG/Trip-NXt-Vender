@@ -9,16 +9,33 @@ import {
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import colors from '../../../config/colors';
+import {
+  useOtpVerificationMutation,
+  useResendOTPMutation,
+} from '../../../redux/services/authService';
+import { ShowToast } from '../../../config/constants';
+import WrapperWithVideo from '../../../components/wrappers/WrapperWithVideo';
+import IntroWrapperWithTitle from '../../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import fonts from '../../../config/fonts';
+import colors from '../../../config/colors';
+import labels from '../../../config/labels';
+import GradientButton from '../../../components/gradientButton/GradientButton';
 
-const OtpVerify = () => {
+//   import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
+//   import colors from '../../../config/colors';
+//   import fonts from '../../../config/fonts';
+
+const OtpVerify = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [timer, setTimer] = useState(45);
+  const [otp, setOtp] = useState(['', '', '', '']);
+  const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef<(TextInput | null)[]>([]);
+  const [otpVerification, { isLoading }] = useOtpVerificationMutation();
+  const [resendOtp] = useResendOTPMutation();
+
+  const { type, email, screenToNavigate } = route?.params || {};
+  console.log(screenToNavigate);
 
   useEffect(() => {
     // Auto-focus first input on mount
@@ -87,49 +104,111 @@ const OtpVerify = () => {
     }
   };
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const otpString = otp.join('');
 
-    if (otpString.length !== 6) {
-      Alert.alert('Error', 'Please enter the complete 6-digit OTP code');
+    if (otpString.length !== 4) {
+      Alert.alert('Error', 'Please enter the complete 4-digit OTP code');
       return;
     }
 
-    // TODO: Implement actual OTP verification API call
-    console.log('Verifying OTP:', otpString);
+    try {
+      let data = {
+        email: email?.toLowerCase(),
+        otp: otpString,
+      };
+      const res = await otpVerification(data).unwrap();
+      console.log('res', res);
+      ShowToast('success', res.message);
+      if (res.success) {
+        if (type === 'reset') {
+          (navigation as any).navigate('ResetPassword', { type, email });
+        } else {
+          navigation.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'app',
+                state: {
+                  routes: [
+                    {
+                      name: screenToNavigate?.selectedStack,
+                      ...(screenToNavigate?.selectedStack === 'RestaurantStack'
+                        ? {
+                            state: {
+                              routes: [{ name: screenToNavigate?.screenName }],
+                              index: 0,
+                            },
+                          }
+                        : {}),
+                      ...(screenToNavigate?.selectedStack === 'CabStack'
+                        ? { params: { screen: screenToNavigate?.screenName } }
+                        : {}),
+                    },
+                  ],
+                  index: 0,
+                },
+              },
+            ],
+          });
+        }
+      }
+      // console.log('Verifying OTP:', otpString);
 
-    // Simulate verification
-    // Replace this with actual API call
-    Alert.alert('Success', 'OTP verified successfully!', [
-      {
-        text: 'OK',
-        onPress: () => {
-          // Navigate to next screen after successful verification
-          // navigation.navigate('NextScreen');
-        },
-      },
-    ]);
+      // Alert.alert('Success', 'OTP verified successfully!', [
+      //   {
+      //     text: 'OK',
+      //     onPress: () => {
+
+      //     },
+      //   },
+      // ]);
+    } catch (error) {
+      console.log('error while verifying the otp', error);
+      ShowToast(
+        'error',
+        (error as { data: { message: string } }).data.message ||
+          'Something went wrong',
+      );
+    }
   };
 
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (!canResend) return;
-
-    // TODO: Implement resend OTP API call
-    console.log('Resending OTP...');
-
-    // Reset timer and OTP fields
-    setTimer(45);
-    setCanResend(false);
-    setOtp(['', '', '', '', '', '']);
-    inputRefs.current[0]?.focus();
-
-    Alert.alert('Success', 'OTP has been resent to your phone and email');
+    try {
+      let data = {
+        email: email?.toLowerCase(),
+      };
+      const res = await resendOtp(data).unwrap();
+      console.log('resend otp response ===>', res);
+      ShowToast('success', res.message);
+      setTimer(60);
+      setCanResend(false);
+      setOtp(['', '', '', '']);
+      inputRefs.current[0]?.focus();
+    } catch (error) {
+      ShowToast(
+        'error',
+        (error as { data: { message: string } }).data.message ||
+          'Something went wrong',
+      );
+      console.log('error while resending the otp', error);
+    }
+    // console.log('Resending OTP...');
   };
 
   const isOtpComplete = otp.every(digit => digit !== '');
 
   return (
-    <WrapperContainer title="Verify Your Account" navigation={navigation}>
+    <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
+      <View style={styles.introWrapperContainer} pointerEvents="none">
+        <IntroWrapperWithTitle title={labels.verify} resizeMode="stretch" />
+      </View>
+      {/* // <WrapperContainer
+    //   showRight={false}
+    //   title="Verify Your Account"
+    //   navigation={navigation}
+    // > */}
       <>
         <ScrollView
           style={styles.container}
@@ -138,12 +217,12 @@ const OtpVerify = () => {
           keyboardShouldPersistTaps="handled"
         >
           {/* Title */}
-          <Text style={styles.title}>Verify Your Account</Text>
+          {/* <Text style={styles.title}>Verify Your Account</Text> */}
 
           {/* Instructions */}
           <View style={styles.instructionsContainer}>
             <Text style={styles.instructionsText}>
-              Enter the 6-digit code sent to your phone and email.
+              Enter the 4-digit code sent to your email.
             </Text>
           </View>
 
@@ -188,7 +267,7 @@ const OtpVerify = () => {
           </View>
 
           {/* Verify Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={[
               styles.verifyButton,
               !isOtpComplete && styles.verifyButtonDisabled,
@@ -198,10 +277,22 @@ const OtpVerify = () => {
             activeOpacity={0.8}
           >
             <Text style={styles.verifyButtonText}>Verify</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <GradientButton
+            title={labels.otpButton}
+            loader={isLoading}
+            onPress={handleVerify}
+            otherStyles={
+              !isOtpComplete ? styles.verifyButtonDisabled : undefined
+            }
+            fontFamily={fonts.bold}
+            disabled={!isOtpComplete}
+            fontSize={18}
+          />
         </ScrollView>
       </>
-    </WrapperContainer>
+      {/* // </WrapperContainer> */}
+    </WrapperWithVideo>
   );
 };
 
@@ -212,9 +303,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: 40,
+    // paddingHorizontal: 20,
+    flex: 1,
+    marginTop: 30,
+    justifyContent: 'center',
+    // paddingTop: '50%',
+    // paddingBottom: 40,
     alignItems: 'center',
   },
   title: {
@@ -231,7 +325,7 @@ const styles = StyleSheet.create({
   instructionsText: {
     fontSize: 14,
     fontFamily: fonts.normal,
-    color: colors.c_666666,
+    color: colors.white,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -240,7 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 30,
     width: '100%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 40,
   },
   otpInput: {
     width: 50,
@@ -265,17 +359,17 @@ const styles = StyleSheet.create({
   resendText: {
     fontSize: 14,
     fontFamily: fonts.normal,
-    color: colors.c_666666,
+    color: colors.white,
     marginBottom: 8,
   },
   resendButton: {
     fontSize: 14,
     fontFamily: fonts.medium,
-    color: colors.c_B40000,
+    color: colors.white,
     textDecorationLine: 'underline',
   },
   resendButtonDisabled: {
-    color: colors.c_B40000,
+    color: colors.white,
     opacity: 0.6,
   },
   verifyButton: {
@@ -302,5 +396,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  introWrapper: {
+    position: 'absolute',
+    // top: -140,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    flex: 1,
+  },
+  introWrapperContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 10,
   },
 });

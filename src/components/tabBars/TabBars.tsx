@@ -15,8 +15,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import { TabStackArray } from '../../contants/tabsStack';
-import { useAppSelector } from '../../store';
-import { selectActiveStack } from '../../store/navigationSlice';
+import { useAppSelector } from '../../store/hooks';
+import { selectActiveStack } from '../../redux/slices/navigationSlice';
 
 const TabBars = (props: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
@@ -25,8 +25,10 @@ const TabBars = (props: BottomTabBarProps) => {
 
   // Get current route and nested route name
   const currentRoute = props.state.routes[props.state.index];
+  // console.log('currentRoute', currentRoute);
   const tabName = currentRoute?.name;
   const nestedRouteName = getFocusedRouteNameFromRoute(currentRoute);
+  // console.log('currentRoute', currentRoute);
 
   console.log('nestedRouteName', nestedRouteName, tabName);
   // Dynamically get all navigation names from TabStackArray
@@ -64,6 +66,7 @@ const TabBars = (props: BottomTabBarProps) => {
     tab => tab.navigation === nestedRouteName || tab.navigation === tabName,
   );
 
+  // console.log('shouldShow ===>', shouldShow);
   // Hide tab bar if none of the conditions are met
   if (!shouldShow) {
     return null;

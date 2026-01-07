@@ -9,8 +9,12 @@ import {
   View,
   Alert,
 } from 'react-native';
-import React, { useState, useMemo } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import React, { useState, useMemo, useEffect } from 'react';
+import {
+  NavigationProp,
+  useIsFocused,
+  useNavigation,
+} from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Mail, Phone, Lock, Camera } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -21,59 +25,74 @@ import fonts from '../../config/fonts';
 import images from '../../config/images';
 import ProfileInputField from '../../components/profileInputField/ProfileInputField';
 import GradientButton from '../../components/gradientButton/GradientButton';
-import { width } from '../../config/constants';
+import { ShowToast, width } from '../../config/constants';
 import WrapperWithVideo from '../../components/wrappers/WrapperWithVideo';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
+import { RootState } from '../../redux/store';
+import { useAppSelector } from '../../store/hooks';
+import { useLazyGetUserQuery } from '../../redux/services/authService';
+import Loader from '../../components/AppLoader/Loader';
 
 const Profile = () => {
   const navigation = useNavigation<NavigationProp<any>>();
   const { top, bottom } = useSafeAreaInsets();
-  const [name, setName] = useState('Augustine Okpala');
-  const [email, setEmail] = useState('loremipsum@gmail.com');
-  const [phone, setPhone] = useState('123 456 7890');
-  const [password, setPassword] = useState('**********');
-  const [confirmPassword, setConfirmPassword] = useState('**********');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // const [name, setName] = useState('Augustine Okpala');
+  // const [email, setEmail] = useState('loremipsum@gmail.com');
+  // const [phone, setPhone] = useState('123 456 7890');
+  // const [password, setPassword] = useState('**********');
+  // const [confirmPassword, setConfirmPassword] = useState('**********');
+  // const [profileImage, setProfileImage] = useState<string | null>(null);
+  const { activeStack } = useAppSelector(
+    (state: RootState) => state.navigation,
+  );
+  const [getUser, { data: userData, isLoading }] = useLazyGetUserQuery();
+  const isFocused = useIsFocused();
 
-  const headerStyles = useMemo(() => makeHeaderStyles(top), [top]);
+  // console.log('activeStack', error);
+
+  useEffect(() => {
+    if (isFocused) {
+      fetchUserDetails();
+    }
+  }, [isFocused]);
+
+  const fetchUserDetails = async () => {
+    try {
+      const res = await getUser(undefined).unwrap();
+      console.log('user detail response ===>', res);
+    } catch (error) {
+      ShowToast(
+        'error',
+        (error as { data: { message: string } }).data.message ||
+          'Something went wrong',
+      );
+    }
+  };
+
+  // const headerStyles = useMemo(() => makeHeaderStyles(top), [top]);
 
   const handleUpdate = () => {
-    // Validate passwords match if changed
-    if (password !== '**********' && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    // Handle update logic
-    console.log('Update profile', {
-      name,
-      email,
-      phone,
-      password: password !== '**********' ? password : 'unchanged',
-      profileImage,
-    });
-
-    Alert.alert('Success', 'Profile updated successfully!');
+    (navigation as any).navigate('EditProfile', { userData: userData?.data });
   };
 
-  const handleEditPhoto = () => {
-    ImagePicker.openPicker({
-      mediaType: 'photo',
-      cropping: true,
-      cropperCircleOverlay: true,
-      width: 500,
-      height: 500,
-      includeBase64: false,
-    })
-      .then(image => {
-        setProfileImage(image.path);
-      })
-      .catch(error => {
-        if (error.code !== 'E_PICKER_CANCELLED') {
-          console.log('ImagePicker Error: ', error);
-        }
-      });
-  };
+  // const handleEditPhoto = () => {
+  //   ImagePicker.openPicker({
+  //     mediaType: 'photo',
+  //     cropping: true,
+  //     cropperCircleOverlay: true,
+  //     width: 500,
+  //     height: 500,
+  //     includeBase64: false,
+  //   })
+  //     .then(image => {
+  //       setProfileImage(image.path);
+  //     })
+  //     .catch(error => {
+  //       if (error.code !== 'E_PICKER_CANCELLED') {
+  //         console.log('ImagePicker Error: ', error);
+  //       }
+  //     });
+  // };
 
   // Wave path for smooth transition
   const WavePath = () => (
@@ -94,87 +113,107 @@ const Profile = () => {
 
   return (
     <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
-      <IntroWrapperWithTitle title={'Profile'} resizeMode="stretch" />
+      {isLoading ? (
+        <Loader size="large" flex={1} justifyContent="center" />
+      ) : (
+        <>
+          <IntroWrapperWithTitle title={'Profile'} resizeMode="stretch" />
 
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        {/* Profile Picture */}
-        <View style={styles.profilePictureContainer}>
-          <Image
-            source={
-              profileImage
-                ? { uri: profileImage }
-                : images.user_circle || images.placeholder
-            }
-            style={styles.profilePicture}
-          />
-          <TouchableOpacity
-            style={styles.editPhotoButton}
-            onPress={handleEditPhoto}
-            activeOpacity={0.8}
+          <KeyboardAvoidingView
+            style={styles.container}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
-            <Camera size={16} color={colors.black} />
-          </TouchableOpacity>
-        </View>
+            {/* Profile Picture */}
+            <View style={styles.profilePictureContainer}>
+              <Image
+                source={
+                  userData?.data?.profilePicture
+                    ? { uri: userData?.data?.profilePicture }
+                    : images.dummyImage
+                }
+                style={styles.profilePicture}
+              />
+              {/* <TouchableOpacity
+      style={styles.editPhotoButton}
+      onPress={handleEditPhoto}
+      activeOpacity={0.8}
+    >
+      <Camera size={16} color={colors.black} />
+    </TouchableOpacity> */}
+            </View>
 
-        {/* Blue Content Section */}
-        <ScrollView
-          style={styles.contentContainer}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingBottom: bottom + 100 },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.inputsContainer}>
-            <ProfileInputField
-              icon={User}
-              value={name}
-              placeholder="Name"
-              onChangeText={setName}
-            />
-            <ProfileInputField
-              icon={Mail}
-              value={email}
-              placeholder="Email"
-              keyboardType="email-address"
-              onChangeText={setEmail}
-            />
-            <ProfileInputField
-              icon={Phone}
-              value={phone}
-              placeholder="Phone Number"
-              keyboardType="phone-pad"
-              onChangeText={setPhone}
-            />
-            <ProfileInputField
-              icon={Lock}
-              value={password}
-              placeholder="Password"
-              secureTextEntry={true}
-              onChangeText={setPassword}
-            />
-            <ProfileInputField
-              icon={Lock}
-              value={confirmPassword}
-              placeholder="Confirm Password"
-              secureTextEntry={true}
-              onChangeText={setConfirmPassword}
-            />
-          </View>
-          {/* Update Button */}
+            {/* Blue Content Section */}
+            <ScrollView
+              style={styles.contentContainer}
+              contentContainerStyle={[
+                styles.scrollContent,
+                { paddingBottom: bottom + 100 },
+              ]}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.inputsContainer}>
+                <ProfileInputField
+                  icon={User}
+                  value={userData?.data?.name || ''}
+                  editable={false}
+                  placeholder="Name"
+                  // onChangeText={setName}
+                />
+                <ProfileInputField
+                  icon={Mail}
+                  value={userData?.data?.email || ''}
+                  editable={false}
+                  // placeholder="Email"
+                  // keyboardType="email-address"
+                  // onChangeText={setEmail}
+                />
+                <ProfileInputField
+                  icon={Phone}
+                  value={userData?.data?.phoneNumber || ''}
+                  editable={false}
+                  // placeholder="Phone Number"
+                  // keyboardType="phone-pad"
+                  // onChangeText={setPhone}
+                />
+                {/* <ProfileInputField
+        icon={Lock}
+        value={password}
+        placeholder="Password"
+        editable={false}
+        secureTextEntry={true}
+        onChangeText={setPassword}
+      />
+      <ProfileInputField
+        icon={Lock}
+        value={confirmPassword}
+        placeholder="Confirm Password"
 
+        secureTextEntry={true}
+        onChangeText={setConfirmPassword}
+      /> */}
+              </View>
+              {/* Update Button */}
+
+              <GradientButton
+                title="Edit Profile"
+                onPress={handleUpdate}
+                fontSize={16}
+                fontFamily={fonts.bold}
+                otherStyles={styles.updateButton}
+              />
+              {/* {activeStack === 'RestaurantStack' &&
           <GradientButton
-            title="Update"
-            onPress={handleUpdate}
-            fontSize={16}
-            fontFamily={fonts.bold}
-            otherStyles={styles.updateButton}
-          />
-        </ScrollView>
-      </KeyboardAvoidingView>
+          title="E"
+          onPress={handleUpdate}
+          fontSize={16}
+          fontFamily={fonts.bold}
+          otherStyles={styles.updateButton}
+        />  
+  }   */}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </>
+      )}
     </WrapperWithVideo>
   );
 };

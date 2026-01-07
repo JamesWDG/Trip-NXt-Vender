@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { FC } from 'react';
+import React, { useState } from 'react';
 import WrapperWithVideo from '../../components/wrappers/WrapperWithVideo';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import labels from '../../config/labels';
@@ -14,21 +14,111 @@ import GradientButton from '../../components/gradientButton/GradientButton';
 import fonts from '../../config/fonts';
 import ButtonWithIcon from '../../components/buttonWithIcon/ButtonWithIcon';
 import colors from '../../config/colors';
-import { width } from '../../config/constants';
-import TabButtons from '../../components/tabButtons/TabButtons';
-import { useNavigation } from '@react-navigation/native';
-import { NavigationPropType } from '../../navigation/authStack/AuthStack';
+import { ShowToast, width } from '../../config/constants';
+import { validateSignupFields } from '../../utils/validations';
+import { useSignupMutation } from '../../redux/services/authService';
+import { useAppDispatch } from '../../store/hooks';
+import { setActiveStack } from '../../redux/slices/navigationSlice';
 
-const Signup: FC = () => {
-  const navigation = useNavigation<NavigationPropType>();
+interface stateTypes {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  cPassword: string;
+  errors: {
+    name: string;
+    email: string;
+    phone: string;
+    password: string;
+    cPassword: string;
+  };
+}
+
+const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
+  const [state, setState] = useState<stateTypes>({
+    name: '',
+    email: '',
+    phone: '12025550147',
+    password: '',
+    cPassword: '',
+    errors: {
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      cPassword: '',
+    },
+  });
+  const [signup, { isLoading }] = useSignupMutation();
+  const { flowDetails } = route?.params;
+  const dispatch = useAppDispatch();
+
+  console.log('user type', flowDetails);
+
   const onLoginPress = () => {
-    navigation.navigate('DashboardTabs');
+    navigation.navigate('app');
   };
-  const onSignupPress = () => {
-    navigation.navigate('DashboardTabs');
+  const onSignupPress = async () => {
+    const errors = validateSignupFields(state);
+    // console.log(errors);
+    setState(prev => ({
+      ...prev,
+      errors: {
+        ...prev.errors,
+        ...errors,
+      },
+    }));
+    if (errors.email || errors.phone || errors.password || errors.cPassword) {
+      return;
+    }
+    try {
+      let data = {
+        name: state.name,
+        email: state.email?.toLowerCase(),
+        password: state.password,
+        phoneNumber: state.phone,
+        role: [flowDetails?.user_type],
+      };
+      const res = await signup(data).unwrap();
+      console.log('res', res);
+      ShowToast('success', res.message);
+      if (res.success) {
+        dispatch(setActiveStack({ stack: flowDetails?.stack }));
+        navigation.navigate('OtpVerify', {
+          email: state.email,
+          screenToNavigate: {
+            selectedStack: flowDetails?.stack,
+            screenName: flowDetails?.screenName,
+          },
+        });
+      }
+    } catch (error) {
+      ShowToast(
+        'error',
+        (error as { data: { message: string } }).data.message ||
+          'Something went wrong',
+      );
+      console.log('error', error);
+    }
   };
+
+  const onChangeText = (
+    text: string,
+    key: 'name' | 'email' | 'phone' | 'password' | 'cPassword',
+  ) => {
+    setState(prev => ({
+      ...prev,
+      [key]: text,
+      errors: {
+        ...prev.errors,
+        [key]: '',
+      },
+    }));
+  };
+
   return (
-    <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
+    <WrapperWithVideo otherStyles={styles.introWrapper}>
       <View style={styles.introWrapperContainer} pointerEvents="none">
         <IntroWrapperWithTitle title={labels.signup} resizeMode="stretch" />
       </View>
@@ -45,18 +135,47 @@ const Signup: FC = () => {
           bounces={false}
         >
           <View style={styles.inputContainer}>
-            <Input placeholder={labels.typeYourEmail} title={labels.email} />
+            <Input
+              onChangeText={text => onChangeText(text, 'name')}
+              placeholder={labels.typeYourName}
+              title={labels.name}
+              value={state.name}
+              errorBorder={!!state.errors.name}
+              errorText={state.errors.name}
+            />
+            <Input
+              keyboardType="email-address"
+              onChangeText={text => onChangeText(text, 'email')}
+              placeholder={labels.typeYourEmail}
+              title={labels.email}
+              value={state.email}
+              errorBorder={!!state.errors.email}
+              errorText={state.errors.email}
+            />
             <Input
               placeholder={labels.phoneNumber}
+              value={state.phone}
+              keyboardType="numeric"
+              onChangeText={text => onChangeText(text, 'phone')}
               title={labels.phoneNumber}
+              errorBorder={!!state.errors.phone}
+              errorText={state.errors.phone}
             />
             <Input
               placeholder={labels.typeYourPassword}
+              value={state.password}
+              onChangeText={text => onChangeText(text, 'password')}
               title={labels.password}
+              errorBorder={!!state.errors.password}
+              errorText={state.errors.password}
             />
             <Input
               placeholder={labels.confirmPassword}
+              value={state.cPassword}
+              onChangeText={text => onChangeText(text, 'cPassword')}
               title={labels.confirmPassword}
+              errorBorder={!!state.errors.cPassword}
+              errorText={state.errors.cPassword}
             />
           </View>
 
@@ -64,6 +183,7 @@ const Signup: FC = () => {
             <GradientButton
               title={labels.signup}
               onPress={onSignupPress}
+              loader={isLoading}
               fontFamily={fonts.bold}
               fontSize={18}
             />
@@ -115,7 +235,7 @@ const styles = StyleSheet.create({
     // width: width * 1,
   },
   scrollViewContentContainer: {
-    paddingTop: 20,
+    paddingTop: 30,
     paddingBottom: 150,
     zIndex: 100000,
   },

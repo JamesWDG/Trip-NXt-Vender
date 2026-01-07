@@ -57,6 +57,7 @@ const images = Object.freeze({
     cancel_booking: require('../assets/images/cancel_booking.png'),
     empty_car: require('../assets/images/empty_car.png'),
     license: require('../assets/images/license.png'),
+    dummyImage: require('../assets/images/userProfile.png')
 });
 
 export default images;

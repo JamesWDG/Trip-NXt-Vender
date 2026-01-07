@@ -14,7 +14,7 @@ const GetStarted = () => {
   const { bottom } = useSafeAreaInsets();
   const style = styles(bottom);
   const onGetStartedPress = () => {
-    navigation.navigate('Signin');
+    navigation.navigate('Login');
   };
   return (
     <View style={style.container}>

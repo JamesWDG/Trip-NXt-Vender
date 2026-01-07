@@ -7,6 +7,9 @@ import GetStarted from '../../screens/getStarted/GetStarted';
 import Signup from '../../screens/signup/Signup';
 import DashboardTabs from '../../screens/dashboardTabs/DashboardTabs';
 import OtpVerify from '../../screens/Restaurant/otpVerify/OtpVerify';
+import Login from '../../screens/login/Login';
+import ForgotPassword from '../../screens/ForgotPassword/ForgotPassword';
+import ResetPassword from '../../screens/Password/ResetPassword';
 
 export type NavigationPropType = NativeStackNavigationProp<any>;
 
@@ -22,10 +25,12 @@ const AuthStack: FC = () => {
     >
       <Stack.Screen name="Splash" component={Splash} />
       <Stack.Screen name="GetStarted" component={GetStarted} />
-      <Stack.Screen name="Signin" component={Signin} />
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="DashboardTabs" component={DashboardTabs} />
       <Stack.Screen name="Signup" component={Signup} />
       <Stack.Screen name="OtpVerify" component={OtpVerify} />
-      <Stack.Screen name="DashboardTabs" component={DashboardTabs} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+      <Stack.Screen name="ResetPassword" component={ResetPassword} />
     </Stack.Navigator>
   );
 };

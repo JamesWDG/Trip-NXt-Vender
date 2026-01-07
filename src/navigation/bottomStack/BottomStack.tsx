@@ -13,6 +13,7 @@ import ContactUs from '../../screens/Accomodation/contactUs/ContactUs';
 import ProfileStack from '../profileStack/ProfileStack';
 import Notification from '../../screens/notification/Notification';
 import RideStack from '../rideStack/RideStack';
+
 // import AppStack from '../appStack/AppStack';
 // import AccomodationStack from '../accomodationStack/AccomodationStack';
 // import CarStack from '../carStack/CarStack';
@@ -34,6 +35,10 @@ const ProfileScreen = () => (
 );
 
 const BottomStack: FC = () => {
+  // const { activeStack } = useAppSelector(selectActiveStack);
+
+  // console.log('activeStack', activeStack);
+
   return (
     <Tab.Navigator
       tabBar={props => <TabBars {...props} />}

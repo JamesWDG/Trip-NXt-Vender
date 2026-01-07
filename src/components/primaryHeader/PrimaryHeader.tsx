@@ -11,6 +11,7 @@ const PrimaryHeader = ({
   onBackPress = () => {},
   onMenuPress = () => {},
   showRight = true,
+  hideBack = false,
   color = colors.white,
   goBack = true,
 }: {
@@ -19,6 +20,7 @@ const PrimaryHeader = ({
   onBackPress?: () => void;
   onMenuPress?: () => void;
   showRight?: boolean;
+  hideBack?: boolean;
   color?: string;
   goBack?: boolean;
 }) => {
@@ -27,9 +29,14 @@ const PrimaryHeader = ({
   return (
     <View style={styles.container}>
       {goBack ? (
-        <TouchableOpacity style={style.backButtonStyles} onPress={onBackPress}>
-          <ChevronLeftIcon color={colors.white} />
-        </TouchableOpacity>
+        hideBack ? null : (
+          <TouchableOpacity
+            style={style.backButtonStyles}
+            onPress={onBackPress}
+          >
+            <ChevronLeftIcon color={colors.white} />
+          </TouchableOpacity>
+        )
       ) : (
         <TouchableOpacity style={style.menuButtonStyles} onPress={onMenuPress}>
           <Image source={images.hamburger} style={style.hamburgerImage} />

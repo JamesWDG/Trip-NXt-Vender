@@ -1,14 +1,9 @@
-import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ViewStyle,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
 import React from 'react';
 import LinearGradient from 'react-native-linear-gradient';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
+import Loader from '../AppLoader/Loader';
 interface Params {
   title: string;
   onPress?: () => void;
@@ -17,6 +12,7 @@ interface Params {
   fontSize?: number;
   fontFamily?: string;
   otherStyles?: ViewStyle | ViewStyle[];
+  loader?: boolean;
 }
 const GradientButton = ({
   title,
@@ -26,6 +22,7 @@ const GradientButton = ({
   fontSize = 14,
   fontFamily = fonts.normal,
   otherStyles = {},
+  loader = false,
 }: Params) => {
   const textStyles = textStyle(color, fontSize, fontFamily);
   return (
@@ -38,7 +35,7 @@ const GradientButton = ({
         colors={['#F47E20', '#EE4026']}
         style={[styles.gradient, otherStyles]}
       >
-        <Text style={textStyles.text}>{title}</Text>
+        {loader ? <Loader /> : <Text style={textStyles.text}>{title}</Text>}
       </LinearGradient>
     </TouchableOpacity>
   );

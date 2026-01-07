@@ -1,6 +1,7 @@
 import React, { FC } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Profile from '../../screens/profile/Profile';
+import EditProfile from '../../screens/profile/EditProfile';
 
 const Stack = createNativeStackNavigator();
 
@@ -13,6 +14,7 @@ const ProfileStack: FC = () => {
       }}
     >
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
     </Stack.Navigator>
   );
 };
