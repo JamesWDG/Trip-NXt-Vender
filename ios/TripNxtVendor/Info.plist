@@ -34,7 +34,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string>We need your location so you can select your restaurant location on the map.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>We need access to your photo library to upload hotel images for your listings.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
