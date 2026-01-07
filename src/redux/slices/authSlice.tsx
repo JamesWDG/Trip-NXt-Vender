@@ -24,10 +24,10 @@ const authSlice = createSlice({
     name: 'auth',
     initialState,
     reducers: {
-        // logout: state => {
-        //   state.user = null;
-        //   state.token = null;
-        // },
+        setLogout: state => {
+            state.user = null;
+            state.token = null;
+          },
         setRememberMe: (state, action) => {
             state.rememberMe = action.payload;
         },
@@ -50,10 +50,10 @@ const authSlice = createSlice({
         builder.addMatcher(
             authApi.endpoints.otpVerification.matchFulfilled,
             (state, action) => {
-                if (action.payload?.data) {
-                    state.token = action.payload.data?.accessToken;
+                if (action.payload?.data && action.payload?.data?.type !== 'reset') {
+                  state.token = action.payload.data?.accessToken;
                 }
-            },
+              },
         );
         builder.addMatcher(
             authApi.endpoints.login.matchFulfilled,
@@ -71,10 +71,19 @@ const authSlice = createSlice({
                 }
             },
         );
+        builder.addMatcher(
+            authApi.endpoints.logout.matchFulfilled,
+            (state, action) => {
+              if (action.payload?.data) {
+                state.token = null;
+                state.user = null;
+              }
+            },
+          );
     },
 });
 
-export const { setRememberMe, saveCredentials, clearCredentials } =
+export const { setRememberMe, saveCredentials, clearCredentials , setLogout } =
     authSlice.actions;
 
 export default authSlice.reducer;
