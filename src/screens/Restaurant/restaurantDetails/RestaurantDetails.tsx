@@ -39,6 +39,8 @@ const RestaurantDetails = () => {
     logoImage: '',
     coverImage: '',
   });
+
+  console.log(state.address);
   // const [restaurantName, setRestaurantName] = useState('');
   // const [ownerName, setOwnerName] = useState('');
   // const [phoneNumber, setPhoneNumber] = useState('');
@@ -106,10 +108,14 @@ const RestaurantDetails = () => {
   };
 
   const handleMapPinPicker = () => {
-    // Handle map pin picker action
-    navigation.navigate('Map');
-    console.log('Map Pin Picker pressed');
-    // TODO: Navigate to map picker screen or open map modal
+    navigation.navigate('Map', {
+      onLocationSelect: (location: SearchHistoryItem) => {
+        setState(prevState => ({
+          ...prevState,
+          address: location,
+        }));
+      },
+    });
   };
 
   const handleNext = () => {
@@ -120,11 +126,12 @@ const RestaurantDetails = () => {
     // }
 
     // Save restaurant details and navigate to next step
-    return console.log('Restaurant details:', {
-      state,
-    });
+    // return console.log('Restaurant details:', {
+    //   state,
+    // });
     navigation.navigate('RestaurantStack', {
       screen: 'ScheduleAndBank',
+      params: { state },
     });
   };
 
@@ -204,12 +211,26 @@ const RestaurantDetails = () => {
 
             {/* Address */}
             <DestinationSearch
+              inputValue={state.address?.destination || ''}
               onItemPress={(item: SearchHistoryItem) => {
                 setState(prevState => ({ ...prevState, address: item }));
               }}
-              onSearchChange={(text: string) =>
-                console.log('locationText', text)
-              }
+              onSearchChange={(text: string) => {
+                // user typing manually
+                setState(prev => ({
+                  ...prev,
+                  address: {
+                    id: 'manual',
+                    destination: text,
+                    address: text,
+                    city: '',
+                    state: '',
+                    country: '',
+                    latitude: 0,
+                    longitude: 0,
+                  },
+                }));
+              }}
               placeholder="Enter Address"
             />
             {/* <View style={styles.inputWrapper}>

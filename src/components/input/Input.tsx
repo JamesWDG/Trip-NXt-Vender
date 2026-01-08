@@ -39,7 +39,12 @@ const Input: FC<Params> = ({
   return (
     <View>
       <Text style={styles.title}>{title}</Text>
-      <View style={styles.input}>
+      <View
+        style={[
+          styles.input,
+          errorBorder && { borderWidth: 1.5, borderColor: colors.red },
+        ]}
+      >
         <TextInput
           placeholder={placeholder}
           value={value}
@@ -50,7 +55,6 @@ const Input: FC<Params> = ({
           style={[
             styles.inputStyle,
             // styles.input,
-            errorBorder && { borderWidth: 1.5, borderColor: colors.red },
             otherStyles,
           ]}
         />
