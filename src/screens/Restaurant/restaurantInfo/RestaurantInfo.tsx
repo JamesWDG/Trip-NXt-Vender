@@ -6,30 +6,69 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Edit, UtensilsCrossed, Star } from 'lucide-react-native';
+import {
+  Edit,
+  UtensilsCrossed,
+  Star,
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+} from 'lucide-react-native';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import images from '../../../config/images';
+import { useLazyGetAuthUserRestaurantQuery } from '../../../redux/services/restaurantService';
 
 const RestaurantInfo = () => {
   const navigation = useNavigation<NavigationProp<any>>();
 
-  // Sample restaurant data - in real app, this would come from API/state
-  const [restaurantInfo] = useState({
-    name: 'The Gourmet Kitchen',
-    ownerName: 'John Doe',
-    phone: '+1 234 567 8900',
-    email: 'contact@gourmetkitchen.com',
-    address: '123 Main Street, New York, NY 10001',
-    description:
-      'A fine dining restaurant serving authentic cuisine with a modern twist.',
-    rating: 4.5,
-    totalReviews: 128,
-  });
+  const [getRestaurant, { data: restaurantData, isLoading }] = useLazyGetAuthUserRestaurantQuery();
+
+  useEffect(() => {
+    fetchRestaurant();
+  }, []);
+
+  const fetchRestaurant = async () => {
+    try {
+      const res = await getRestaurant({}).unwrap();
+      console.log('restaurant data ===>', res);
+    } catch (error) {
+      console.log('error ===>', error);
+    }
+  };
+
+  // Extract restaurant data from API response
+  const restaurant = restaurantData?.data?.restaurant;
+  const location = restaurant?.location?.[0];
+  
+  // Format address from location object
+  const formatAddress = () => {
+    if (!location) return '';
+    const parts = [
+      location.address,
+      location.city,
+      location.state,
+      location.country,
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
+  const restaurantInfo = {
+    name: restaurant?.name || '',
+    ownerName: restaurant?.owner?.name || '',
+    phone: restaurant?.phoneNumber || '',
+    email: restaurant?.owner?.email || '',
+    address: formatAddress(),
+    description: restaurant?.description || '',
+    rating: 4.5, // Not in API response, keeping default
+    totalReviews: 128, // Not in API response, keeping default
+    logo: restaurant?.logo,
+  };
 
   const handleEdit = () => {
     navigation.navigate('RestaurantDetails');
@@ -43,6 +82,8 @@ const RestaurantInfo = () => {
     navigation.navigate('Reviews');
   };
 
+  console.log(restaurantInfo, 'restaurantInforestaurantInforestaurantInfo');
+
   return (
     <WrapperContainer title="Restaurant Information" navigation={navigation}>
       <ScrollView
@@ -50,62 +91,85 @@ const RestaurantInfo = () => {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with Edit Button */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Restaurant Information</Text>
-          <TouchableOpacity
-            style={styles.editButton}
-            onPress={handleEdit}
-            activeOpacity={0.7}
-          >
-            <Edit size={18} color={colors.c_0162C0} />
-            <Text style={styles.editButtonText}>Edit</Text>
-          </TouchableOpacity>
+       
+
+        {/* Restaurant Image/Logo */}
+        <View style={styles.imageContainer}>
+          <Image
+            source={
+              restaurantInfo.logo
+                ? { uri: restaurantInfo.logo }
+                : { uri: restaurantInfo.logo }
+            }
+            style={styles.restaurantImage}
+            resizeMode="cover"
+          />
         </View>
 
-        {/* Restaurant Info Card */}
-        <View style={styles.infoCard}>
-          {/* Restaurant Image/Logo */}
-          <View style={styles.imageContainer}>
-            <Image
-              source={images.placeholder}
-              style={styles.restaurantImage}
-              resizeMode="cover"
-            />
-          </View>
+        {/* Restaurant Name */}
+        <Text style={styles.restaurantName}>{restaurantInfo.name}</Text>
 
-          {/* Restaurant Name */}
-          <Text style={styles.restaurantName}>{restaurantInfo.name}</Text>
+        {/* Rating */}
+        <View style={styles.ratingContainer}>
+          <Star size={16} color={colors.c_F47E20} fill={colors.c_F47E20} />
+          <Text style={styles.ratingText}>
+            {restaurantInfo.rating} ({restaurantInfo.totalReviews} reviews)
+          </Text>
+        </View>
 
-          {/* Rating */}
-          <View style={styles.ratingContainer}>
-            <Star size={16} color={colors.c_F47E20} fill={colors.c_F47E20} />
-            <Text style={styles.ratingText}>
-              {restaurantInfo.rating} ({restaurantInfo.totalReviews} reviews)
-            </Text>
-          </View>
-
-          {/* Info Details */}
-          <View style={styles.detailsContainer}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Owner Name:</Text>
+        {/* Info Details */}
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <View style={styles.iconContainer}>
+              <User size={18} color={colors.c_0162C0} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Owner Name</Text>
               <Text style={styles.detailValue}>{restaurantInfo.ownerName}</Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Phone:</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.iconContainer}>
+              <Phone size={18} color={colors.c_0162C0} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Phone</Text>
               <Text style={styles.detailValue}>{restaurantInfo.phone}</Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Email:</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.iconContainer}>
+              <Mail size={18} color={colors.c_0162C0} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Email</Text>
               <Text style={styles.detailValue}>{restaurantInfo.email}</Text>
             </View>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Address:</Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <View style={styles.iconContainer}>
+              <MapPin size={18} color={colors.c_0162C0} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Address</Text>
               <Text style={styles.detailValue}>{restaurantInfo.address}</Text>
             </View>
-            <View style={styles.descriptionRow}>
-              <Text style={styles.detailLabel}>Description:</Text>
-              <Text style={styles.detailValue}>
+          </View>
+
+          <View style={styles.descriptionRow}>
+            <View style={styles.iconContainer}>
+              <FileText size={18} color={colors.c_0162C0} />
+            </View>
+            <View style={styles.detailContent}>
+              <Text style={styles.detailLabel}>Description</Text>
+              <Text
+                style={styles.detailValue}
+                numberOfLines={4}
+                ellipsizeMode="tail"
+              >
                 {restaurantInfo.description}
               </Text>
             </View>
@@ -116,10 +180,23 @@ const RestaurantInfo = () => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.actionButton}
+            onPress={handleEdit}
+            activeOpacity={0.8}
+          >
+            <View style={styles.buttonIconContainer}>
+              <Edit size={22} color={colors.white} />
+            </View>
+            <Text style={styles.actionButtonText}>Edit</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
             onPress={handleMenus}
             activeOpacity={0.8}
           >
-            <UtensilsCrossed size={20} color={colors.white} />
+            <View style={styles.buttonIconContainer}>
+              <UtensilsCrossed size={22} color={colors.white} />
+            </View>
             <Text style={styles.actionButtonText}>Menus</Text>
           </TouchableOpacity>
 
@@ -128,7 +205,9 @@ const RestaurantInfo = () => {
             onPress={handleShowReviews}
             activeOpacity={0.8}
           >
-            <Star size={20} color={colors.white} />
+            <View style={styles.buttonIconContainer}>
+              <Star size={22} color={colors.white} fill={colors.white} />
+            </View>
             <Text style={styles.actionButtonText}>Show Reviews</Text>
           </TouchableOpacity>
         </View>
@@ -149,43 +228,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 24,
   },
   headerTitle: {
     fontSize: 22,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: colors.c_F3F3F3,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.medium,
-    color: colors.c_0162C0,
-  },
-  infoCard: {
-    backgroundColor: colors.white,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   imageContainer: {
     alignItems: 'center',
@@ -195,7 +243,9 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: colors.c_F3F3F3,
+    borderWidth: 1,
+    borderColor: colors.c_F3F3F3,
+  
   },
   restaurantName: {
     fontSize: 24,
@@ -209,7 +259,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   ratingText: {
     fontSize: 14,
@@ -217,46 +267,81 @@ const styles = StyleSheet.create({
     color: colors.c_666666,
   },
   detailsContainer: {
-    gap: 12,
+    gap: 20,
+    marginBottom: 24,
   },
   detailRow: {
     flexDirection: 'row',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    gap: 16,
   },
   descriptionRow: {
-    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+  },
+  iconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.c_F3F3F3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  detailContent: {
+    flex: 1,
+    gap: 4,
   },
   detailLabel: {
-    fontSize: 14,
-    fontFamily: fonts.semibold,
-    color: colors.c_2B2B2B,
-    width: 100,
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: 15,
     fontFamily: fonts.normal,
-    color: colors.c_666666,
-    flex: 1,
+    color: colors.c_2B2B2B,
+    lineHeight: 22,
   },
   actionsContainer: {
-    gap: 12,
+    gap: 16,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 12,
     backgroundColor: colors.c_0162C0,
-    borderRadius: 100,
-    height: 50,
-    paddingHorizontal: 20,
+    borderRadius: 16,
+    height: 56,
+    paddingHorizontal: 24,
+    shadowColor: colors.c_0162C0,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   reviewsButton: {
     backgroundColor: colors.c_F47E20,
+    shadowColor: colors.c_F47E20,
+  },
+  buttonIconContainer: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionButtonText: {
     fontSize: 16,
     fontFamily: fonts.semibold,
     color: colors.white,
+    letterSpacing: 0.3,
   },
 });

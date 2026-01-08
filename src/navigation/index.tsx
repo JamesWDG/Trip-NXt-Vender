@@ -3,10 +3,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-// import AuthStack from './authStack/AuthStack';
 import { navigationRef } from '../config/constants';
 import AuthStack from './authStack/AuthStack';
 import BottomStack from './bottomStack/BottomStack';
+import RestaurantInfo from '../screens/Restaurant/restaurantInfo/RestaurantInfo';
 
 export interface RootParamList {
   auth: undefined;
@@ -20,7 +20,7 @@ const RootNavigation: FC = () => {
       <BottomSheetModalProvider>
         <NavigationContainer ref={navigationRef} onReady={() => {}}>
           <RootNavigator.Navigator screenOptions={{ headerShown: false }}>
-            <RootNavigator.Screen name="auth" component={AuthStack} />
+           <RootNavigator.Screen name="auth" component={AuthStack} />
             <RootNavigator.Screen name="app" component={BottomStack} />
           </RootNavigator.Navigator>
         </NavigationContainer>
