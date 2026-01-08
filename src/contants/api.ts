@@ -11,6 +11,7 @@ type endpointTypes = {
     CREATE_RESTAURANT: string;
 }
 
+export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
 export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
 // export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1/user/' //local 
 

@@ -11,6 +11,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SearchIcon, Navigation, Clock, MapPin } from 'lucide-react-native';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
+import { GOOGLE_API_KEY } from '../../contants/api';
 
 export interface SearchHistoryItem {
   id: string;
@@ -30,6 +31,7 @@ interface DestinationSearchProps {
   onItemPress?: (item: SearchHistoryItem) => void;
   showCurrentLocation?: boolean;
   currentLocation?: SearchHistoryItem;
+  inputValue?: string;
 }
 
 const DestinationSearch: React.FC<DestinationSearchProps> = ({
@@ -39,6 +41,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   onItemPress,
   showCurrentLocation = true,
   currentLocation,
+  inputValue,
 }) => {
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHistoryItem[]>([]);
@@ -63,7 +66,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   const displayHistory = historyItems || [];
 
   // Google Places Autocomplete API
-  const GOOGLE_API_KEY = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
+  // const GOOGLE_API_KEY = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
 
   // Forward geocoding - search places using Google Places Autocomplete
   // const searchPlaces = async (query: string): Promise<SearchHistoryItem[]> => {
@@ -275,6 +278,12 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (inputValue !== undefined) {
+      setSearchText(inputValue);
+    }
+  }, [inputValue]);
 
   const isSearchingActive = searchText.length >= 3;
   const showSearchResults = isSearchingActive;

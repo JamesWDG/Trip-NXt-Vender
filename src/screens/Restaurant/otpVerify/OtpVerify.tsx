@@ -221,7 +221,7 @@ const OtpVerify = ({ route }: { route: any }) => {
           style={styles.container}
           contentContainerStyle={[
             styles.contentContainer,
-            { paddingTop: 100 + top },
+            // { paddingTop: 100 + top },
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -315,8 +315,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   contentContainer: {
-    flex: 1,
-    marginTop: 270,
+    // flex: 1,
+    marginTop: 280,
     // paddingBottom: 40,
     // justifyContent: 'center',
     alignItems: 'center',
