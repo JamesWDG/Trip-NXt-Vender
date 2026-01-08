@@ -45,6 +45,10 @@ const authSlice = createSlice({
         password: undefined,
       };
     },
+    setLogout: state => {
+      state.token = null;
+      state.user = null;
+    },
   },
   extraReducers: builder => {
     builder.addMatcher(
@@ -74,7 +78,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRememberMe, saveCredentials, clearCredentials } =
+export const { setRememberMe, saveCredentials, clearCredentials  , setLogout} =
   authSlice.actions;
 
 export default authSlice.reducer;
