@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     gap: 16,
     marginTop: 300,
   },
-  continueWithGoogleContainer: { width: width * 0.9, marginTop: 28 },
+  continueWithGoogleContainer: { marginTop: 28 },
   loginButtonContainer: { marginTop: 40 },
   introWrapper: {
     position: 'absolute',

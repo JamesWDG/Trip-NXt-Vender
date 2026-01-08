@@ -225,6 +225,7 @@ const styles = StyleSheet.create({
     // top: -140,
     left: 0,
     right: 0,
+    // backgroundColor: 'red',
     bottom: 0,
     zIndex: 10,
     flex: 1,
@@ -246,7 +247,9 @@ const styles = StyleSheet.create({
     // width: width * 1,
   },
   scrollViewContentContainer: {
-    paddingTop: 30,
+    // paddingTop: 30,
+    // paddingBottom: 150,
+    paddingTop: 260,
     paddingBottom: 150,
     zIndex: 100000,
   },
@@ -274,12 +277,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.normal,
   },
   continueWithGoogleContainer: {
-    width: width * 0.9,
+    // width: width * 0.9,
     marginVertical: 28,
   },
   scrollViewStyles: {},
   keyboardAvoidingView: {
     flex: 1,
-    marginTop: 250,
+    // zIndex: 1,
+    // marginTop: 250,
   },
 });

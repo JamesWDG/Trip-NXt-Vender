@@ -18,6 +18,7 @@ import fonts from '../../../config/fonts';
 import DestinationSearch, {
   SearchHistoryItem,
 } from '../../../components/destinationSearch/DestinationSearch';
+import MapView from 'react-native-maps';
 
 interface restaurantStateTypes {
   restaurantName: string;
@@ -106,6 +107,7 @@ const RestaurantDetails = () => {
 
   const handleMapPinPicker = () => {
     // Handle map pin picker action
+    navigation.navigate('Map');
     console.log('Map Pin Picker pressed');
     // TODO: Navigate to map picker screen or open map modal
   };

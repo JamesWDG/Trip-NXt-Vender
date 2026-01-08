@@ -91,6 +91,7 @@ const ResetPassword = ({ route }: { route: any }) => {
     <WrapperWithVideo otherStyles={styles.introWrapper}>
       <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle
+          showBack
           title={labels.passwordHeading}
           resizeMode="stretch"
         />

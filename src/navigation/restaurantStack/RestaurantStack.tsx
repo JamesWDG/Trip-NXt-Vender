@@ -20,6 +20,7 @@ import SubscriptionPlans from '../../screens/Ride/subscriptionPlans/Subscription
 import RideDetails from '../../screens/Restaurant/rideDetails/RideDetails';
 import RiderDetails from '../../screens/Restaurant/riderDetails/RiderDetails';
 import FindYourRide from '../../screens/Restaurant/findYourRide/FindYourRide';
+import Map from '../../screens/Restaurant/Map/Map';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,6 +38,7 @@ const RestaurantStack: FC = () => {
       {/* Authentication & Setup Flow */}
 
       <Stack.Screen name="RestaurantDetails" component={RestaurantDetails} />
+      <Stack.Screen name="Map" component={Map} />
       <Stack.Screen name="ScheduleAndBank" component={ScheduleAndBank} />
       <Stack.Screen name="StripeConnection" component={StripeConnection} />
       <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
