@@ -18,8 +18,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { User, Mail, Phone, Lock, Camera } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
-import LinearGradient from 'react-native-linear-gradient';
-import ImagePicker from 'react-native-image-crop-picker';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import images from '../../config/images';
