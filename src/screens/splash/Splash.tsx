@@ -15,19 +15,17 @@ const Splash: FC = () => {
   const { token } = useSelector((state: RootState) => state.auth);
   const { activeStack } = useSelector((state: RootState) => state.navigation);
   // console.log(activeStack);
-  const animation = useRef(new Animated.Value(10)).current;
+  const scaleAnimation = useRef(new Animated.Value(0.1)).current;
   useEffect(() => {
-    Animated.timing(animation, {
-      toValue: 2000,
+    Animated.timing(scaleAnimation, {
+      toValue: 1,
       duration: 1000,
       useNativeDriver: true,
     }).start();
-  }, [animation]);
+  }, [scaleAnimation]);
 
   const animatedStyle = {
-    width: animation,
-    height: animation,
-    borderRadius: '50%',
+    transform: [{ scale: scaleAnimation }],
   };
 
   useEffect(() => {
@@ -82,9 +80,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.primary,
   },
   object: {
-    backgroundColor: colors.primary,
     width: 100,
     height: 100,
     borderRadius: '50%',

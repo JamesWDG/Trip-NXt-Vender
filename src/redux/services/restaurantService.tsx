@@ -11,6 +11,13 @@ export const RestaurantApi = baseApi.injectEndpoints({
           method: 'GET',
         }),
       }),
+      addRestaurant: builder.mutation({
+        query: (data: any) => ({
+          url: endpoint.CREATE_RESTAURANT,
+          method: 'POST',
+          body: data,
+        }),
+      }),
       getAuthUserRestaurant: builder.query({
         query: (_: any) => ({
           url: endpoint.GET_AUTH_USER_RESTAURANT,
