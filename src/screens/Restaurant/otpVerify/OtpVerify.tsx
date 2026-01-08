@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   useOtpVerificationMutation,
   useResendOTPMutation,
@@ -27,6 +28,7 @@ import GradientButton from '../../../components/gradientButton/GradientButton';
 
 const OtpVerify = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
+  const { top } = useSafeAreaInsets();
   const [otp, setOtp] = useState(['', '', '', '']);
   const [timer, setTimer] = useState(60);
   const [canResend, setCanResend] = useState(false);
@@ -217,9 +219,13 @@ const OtpVerify = ({ route }: { route: any }) => {
       <>
         <ScrollView
           style={styles.container}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            { paddingTop: 100 + top },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
         >
           {/* Title */}
           {/* <Text style={styles.title}>Verify Your Account</Text> */}
@@ -306,14 +312,13 @@ export default OtpVerify;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    zIndex: 1,
   },
   contentContainer: {
-    // paddingHorizontal: 20,
     flex: 1,
-    paddingTop: 50,
-    justifyContent: 'center',
-    // paddingTop: '50%',
+    marginTop: 270,
     // paddingBottom: 40,
+    // justifyContent: 'center',
     alignItems: 'center',
   },
   title: {
@@ -418,5 +423,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     zIndex: 10,
+    pointerEvents: 'box-none',
   },
 });
