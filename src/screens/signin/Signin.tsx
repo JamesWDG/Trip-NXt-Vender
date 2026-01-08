@@ -43,7 +43,7 @@ const Signin = () => {
   };
   return (
     <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
-      <View style={styles.introWrapperContainer} pointerEvents="none">
+      <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle title={labels.login} resizeMode="stretch" />
       </View>
 

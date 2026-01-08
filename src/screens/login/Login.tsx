@@ -127,7 +127,7 @@ const Login = ({ navigation }: { navigation: any }) => {
 
   return (
     <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
-      <View style={styles.introWrapperContainer} pointerEvents="none">
+      <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle title={labels.login} resizeMode="stretch" />
       </View>
 
@@ -151,6 +151,7 @@ const Login = ({ navigation }: { navigation: any }) => {
               value={state.password}
               onChangeText={text => onChangeText(text, 'password')}
               title={labels.password}
+              secureTextEntry={true}
               errorBorder={!!state.errors.password}
               errorText={state.errors.password}
             />
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 10,
   },
-  rememberMeContainer: { flexDirection: 'row', gap: 10 },
+  rememberMeContainer: { flexDirection: 'row', gap: 22 },
   toggleContainer: {
     flexDirection: 'row',
     alignItems: 'center',

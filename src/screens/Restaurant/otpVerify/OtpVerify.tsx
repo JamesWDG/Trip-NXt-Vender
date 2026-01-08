@@ -202,8 +202,12 @@ const OtpVerify = ({ route }: { route: any }) => {
 
   return (
     <WrapperWithVideo introWrapper={true} otherStyles={styles.introWrapper}>
-      <View style={styles.introWrapperContainer} pointerEvents="none">
-        <IntroWrapperWithTitle title={labels.verify} resizeMode="stretch" />
+      <View style={styles.introWrapperContainer} pointerEvents="box-none">
+        <IntroWrapperWithTitle
+          showBack={true}
+          title={labels.verify}
+          resizeMode="stretch"
+        />
       </View>
       {/* // <WrapperContainer
     //   showRight={false}
@@ -306,7 +310,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     // paddingHorizontal: 20,
     flex: 1,
-    marginTop: 30,
+    paddingTop: 50,
     justifyContent: 'center',
     // paddingTop: '50%',
     // paddingBottom: 40,
