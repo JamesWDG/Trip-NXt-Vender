@@ -49,8 +49,9 @@ const ForgotPassword = () => {
 
   return (
     <WrapperWithVideo otherStyles={styles.introWrapper}>
-      <View style={styles.introWrapperContainer} pointerEvents="none">
+      <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle
+          showBack={true}
           title={labels.forgotPassword}
           resizeMode="stretch"
         />

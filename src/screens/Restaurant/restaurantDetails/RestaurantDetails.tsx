@@ -15,31 +15,51 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import DestinationSearch, {
+  SearchHistoryItem,
+} from '../../../components/destinationSearch/DestinationSearch';
+
+interface restaurantStateTypes {
+  restaurantName: string;
+  phoneNumber: string;
+  address: SearchHistoryItem | null;
+  about: string;
+  logoImage: string;
+  coverImage: string;
+}
 
 const RestaurantDetails = () => {
   const navigation = useNavigation<NavigationProp<any>>();
-  const [restaurantName, setRestaurantName] = useState('');
-  const [ownerName, setOwnerName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('user@example.com'); // Auto-filled
-  const [address, setAddress] = useState('');
-  const [about, setAbout] = useState('');
-  const [description, setDescription] = useState('');
-  const [logoImages, setLogoImages] = useState<string[]>([]);
-  const [coverImages, setCoverImages] = useState<string[]>([]);
+  const [state, setState] = useState<restaurantStateTypes>({
+    restaurantName: '',
+    phoneNumber: '',
+    address: null,
+    about: '',
+    logoImage: '',
+    coverImage: '',
+  });
+  // const [restaurantName, setRestaurantName] = useState('');
+  // const [ownerName, setOwnerName] = useState('');
+  // const [phoneNumber, setPhoneNumber] = useState('');
+  // const [email, setEmail] = useState('user@example.com'); // Auto-filled
+  // const [address, setAddress] = useState('');
+  // const [about, setAbout] = useState('');
+  // const [description, setDescription] = useState('');
+  // const [logoImages, setLogoImages] = useState<string[]>([]);
+  // const [coverImages, setCoverImages] = useState<string[]>([]);
 
   const handleLogoPicker = () => {
     ImagePicker.openPicker({
       mediaType: 'photo',
       cropping: false,
       includeBase64: false,
-      multiple: true,
+      multiple: false,
     })
-      .then((images: any) => {
-        const imagePaths = Array.isArray(images)
-          ? images.map((img: any) => img.path)
-          : [images.path];
-        setLogoImages(prev => [...prev, ...imagePaths]);
+      .then((image: any) => {
+        setState(prevState => ({
+          ...prevState,
+          logoImage: image.path,
+        }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -53,13 +73,15 @@ const RestaurantDetails = () => {
       mediaType: 'photo',
       cropping: false,
       includeBase64: false,
-      multiple: true,
+      width: 1080,
+      height: 600,
+      multiple: false,
     })
-      .then((images: any) => {
-        const imagePaths = Array.isArray(images)
-          ? images.map((img: any) => img.path)
-          : [images.path];
-        setCoverImages(prev => [...prev, ...imagePaths]);
+      .then((image: any) => {
+        setState(prevState => ({
+          ...prevState,
+          coverImage: image.path,
+        }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -68,12 +90,18 @@ const RestaurantDetails = () => {
       });
   };
 
-  const handleRemoveLogoImage = (index: number) => {
-    setLogoImages(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveLogoImage = () => {
+    setState(prevState => ({
+      ...prevState,
+      logoImage: '',
+    }));
   };
 
-  const handleRemoveCoverImage = (index: number) => {
-    setCoverImages(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveCoverImage = () => {
+    setState(prevState => ({
+      ...prevState,
+      coverImage: '',
+    }));
   };
 
   const handleMapPinPicker = () => {
@@ -90,16 +118,8 @@ const RestaurantDetails = () => {
     // }
 
     // Save restaurant details and navigate to next step
-    console.log('Restaurant details:', {
-      restaurantName,
-      ownerName,
-      phoneNumber,
-      email,
-      address,
-      about,
-      description,
-      logoImages,
-      coverImages,
+    return console.log('Restaurant details:', {
+      state,
     });
     navigation.navigate('RestaurantStack', {
       screen: 'ScheduleAndBank',
@@ -109,6 +129,7 @@ const RestaurantDetails = () => {
   return (
     <WrapperContainer
       hideBack={true}
+      showRight={false}
       title="Business Information"
       navigation={navigation}
     >
@@ -132,35 +153,42 @@ const RestaurantDetails = () => {
             <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Restaurant Name"
-                value={restaurantName}
-                onChangeText={setRestaurantName}
+                value={state.restaurantName}
+                onChangeText={text =>
+                  setState(prevState => ({
+                    ...prevState,
+                    restaurantName: text,
+                  }))
+                }
                 style={styles.input}
               />
             </View>
 
             {/* Owner Name */}
-            <View style={styles.inputWrapper}>
+            {/* <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Owner Name"
                 value={ownerName}
                 onChangeText={setOwnerName}
                 style={styles.input}
               />
-            </View>
+            </View> */}
 
             {/* Phone Number */}
             <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Phone Number"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
+                value={state.phoneNumber}
+                onChangeText={text =>
+                  setState(prevState => ({ ...prevState, phoneNumber: text }))
+                }
                 keyboardType="phone-pad"
                 style={styles.input}
               />
             </View>
 
             {/* Email (Auto-filled) */}
-            <View style={styles.inputWrapper}>
+            {/* <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Email (auto-filled)"
                 value={email}
@@ -170,17 +198,26 @@ const RestaurantDetails = () => {
                 editable={false}
                 style={[styles.input, styles.disabledInput]}
               />
-            </View>
+            </View> */}
 
             {/* Address */}
-            <View style={styles.inputWrapper}>
+            <DestinationSearch
+              onItemPress={(item: SearchHistoryItem) => {
+                setState(prevState => ({ ...prevState, address: item }));
+              }}
+              onSearchChange={(text: string) =>
+                console.log('locationText', text)
+              }
+              placeholder="Enter Address"
+            />
+            {/* <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Address"
                 value={address}
                 onChangeText={setAddress}
                 style={styles.input}
               />
-            </View>
+            </View> */}
 
             {/* Map Pin Picker */}
             <TouchableOpacity
@@ -196,15 +233,17 @@ const RestaurantDetails = () => {
             <View style={styles.inputWrapper}>
               <CustomTextArea
                 placeholder="About / Description"
-                value={about}
-                onChangeText={setAbout}
+                value={state.about}
+                onChangeText={text =>
+                  setState(prevState => ({ ...prevState, about: text }))
+                }
                 numberOfLines={4}
                 style={styles.textArea}
               />
             </View>
 
             {/* Description */}
-            <View style={styles.inputWrapper}>
+            {/* <View style={styles.inputWrapper}>
               <CustomTextArea
                 placeholder="About / Description"
                 value={description}
@@ -212,7 +251,7 @@ const RestaurantDetails = () => {
                 numberOfLines={4}
                 style={styles.textArea}
               />
-            </View>
+            </View> */}
           </View>
 
           {/* Upload Buttons */}
@@ -229,27 +268,25 @@ const RestaurantDetails = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Selected Logo Images */}
-              {logoImages.length > 0 && (
+              {/* Selected Logo Image */}
+              {state.logoImage ? (
                 <View style={styles.selectedImagesContainer}>
-                  {logoImages.map((imageUri, index) => (
-                    <View key={index} style={styles.imageItem}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.selectedImage}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => handleRemoveLogoImage(index)}
-                        activeOpacity={0.8}
-                      >
-                        <X size={16} color={colors.white} strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                  <View style={styles.imageItem}>
+                    <Image
+                      source={{ uri: state.logoImage }}
+                      style={styles.selectedImage}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={handleRemoveLogoImage}
+                      activeOpacity={0.8}
+                    >
+                      <X size={16} color={colors.white} strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              )}
+              ) : null}
             </View>
 
             {/* Cover Photo Upload */}
@@ -262,27 +299,25 @@ const RestaurantDetails = () => {
                 <Text style={styles.uploadButtonText}>Upload Cover Photo</Text>
               </TouchableOpacity>
 
-              {/* Selected Cover Images */}
-              {coverImages.length > 0 && (
+              {/* Selected Cover Image */}
+              {state.coverImage ? (
                 <View style={styles.selectedImagesContainer}>
-                  {coverImages.map((imageUri, index) => (
-                    <View key={index} style={styles.imageItem}>
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.selectedImage}
-                        resizeMode="cover"
-                      />
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => handleRemoveCoverImage(index)}
-                        activeOpacity={0.8}
-                      >
-                        <X size={16} color={colors.white} strokeWidth={2.5} />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
+                  <View style={styles.imageItem}>
+                    <Image
+                      source={{ uri: state.coverImage }}
+                      style={styles.selectedImage}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={handleRemoveCoverImage}
+                      activeOpacity={0.8}
+                    >
+                      <X size={16} color={colors.white} strokeWidth={2.5} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
           {/* Next Button */}
@@ -375,14 +410,14 @@ const styles = StyleSheet.create({
     color: colors.c_666666,
   },
   selectedImagesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    // flexDirection: 'row',
+    // flexWrap: 'wrap',
     gap: 12,
     marginTop: 8,
   },
   imageItem: {
     position: 'relative',
-    width: 100,
+    width: '100%',
     height: 100,
     borderRadius: 12,
     overflow: 'hidden',
@@ -390,6 +425,7 @@ const styles = StyleSheet.create({
   },
   selectedImage: {
     width: '100%',
+    // width: 200,
     height: '100%',
   },
   removeImageButton: {

@@ -1,4 +1,5 @@
 import {
+  Alert,
   KeyboardAvoidingView,
   ScrollView,
   StyleSheet,
@@ -39,7 +40,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
   const [state, setState] = useState<stateTypes>({
     name: '',
     email: '',
-    phone: '12025550147',
+    phone: '',
     password: '',
     cPassword: '',
     errors: {
@@ -119,8 +120,13 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
 
   return (
     <WrapperWithVideo otherStyles={styles.introWrapper}>
-      <View style={styles.introWrapperContainer} pointerEvents="none">
-        <IntroWrapperWithTitle title={labels.signup} resizeMode="stretch" />
+      <View style={styles.introWrapperContainer} pointerEvents="box-none">
+        <IntroWrapperWithTitle
+          showBack={true}
+          locationStyle={styles.locationContainerStyle}
+          title={labels.signup}
+          resizeMode="stretch"
+        />
       </View>
       {/* <View style={styles.tabButtonsContainer}>
         <TabButtons />
@@ -167,6 +173,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
               onChangeText={text => onChangeText(text, 'password')}
               title={labels.password}
               errorBorder={!!state.errors.password}
+              secureTextEntry={true}
               errorText={state.errors.password}
             />
             <Input
@@ -174,6 +181,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
               value={state.cPassword}
               onChangeText={text => onChangeText(text, 'cPassword')}
               title={labels.confirmPassword}
+              secureTextEntry={true}
               errorBorder={!!state.errors.cPassword}
               errorText={state.errors.cPassword}
             />
@@ -220,6 +228,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 10,
     flex: 1,
+  },
+  locationContainerStyle: {
+    // position: 'relative',
   },
   introWrapperContainer: {
     position: 'absolute',

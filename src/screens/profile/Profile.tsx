@@ -156,11 +156,19 @@ const Profile = () => {
                   icon={User}
                   value={userData?.data?.name || ''}
                   editable={false}
+                  placeholderTextColor={colors.white}
+                  style={styles.inputStyle}
+                  iconColor={colors.white}
+                  containerStyle={styles.inputContainer}
                   placeholder="Name"
                   // onChangeText={setName}
                 />
                 <ProfileInputField
                   icon={Mail}
+                  containerStyle={styles.inputContainer}
+                  placeholderTextColor={colors.white}
+                  style={styles.inputStyle}
+                  iconColor={colors.white}
                   value={userData?.data?.email || ''}
                   editable={false}
                   // placeholder="Email"
@@ -170,6 +178,10 @@ const Profile = () => {
                 <ProfileInputField
                   icon={Phone}
                   value={userData?.data?.phoneNumber || ''}
+                  placeholderTextColor={colors.white}
+                  style={styles.inputStyle}
+                  iconColor={colors.white}
+                  containerStyle={styles.inputContainer}
                   editable={false}
                   // placeholder="Phone Number"
                   // keyboardType="phone-pad"
@@ -302,6 +314,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: colors.c_0162C0,
     paddingTop: 20,
+  },
+  inputStyle: {
+    color: colors.white,
+  },
+  inputContainer: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
   },
   updateButton: {
     // height: 50,

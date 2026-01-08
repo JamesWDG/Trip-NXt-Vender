@@ -1,0 +1,17 @@
+diff --git a/node_modules/react-native-date-picker/ios/RNDatePicker.mm b/node_modules/react-native-date-picker/ios/RNDatePicker.mm
+index 7ec2dd2..2774f33 100644
+--- a/node_modules/react-native-date-picker/ios/RNDatePicker.mm
++++ b/node_modules/react-native-date-picker/ios/RNDatePicker.mm
+@@ -3,7 +3,12 @@
+ #ifdef RCT_NEW_ARCH_ENABLED
+ #import "RCTConvert.h"
+ #import <React/RCTConversions.h>
++#if __has_include(<react/renderer/components/RNDatePickerSpecs/ComponentDescriptors.h>)
+ #import <react/renderer/components/RNDatePickerSpecs/ComponentDescriptors.h>
++#else
++#import <react/renderer/components/rndatepicker/ComponentDescriptors.h>
++#endif
++// #import <react/renderer/components/RNDatePickerSpecs/ComponentDescriptors.h>
+ #import <react/renderer/components/RNDatePickerSpecs/EventEmitters.h>
+ #import <react/renderer/components/RNDatePickerSpecs/Props.h>
+ #import <react/renderer/components/RNDatePickerSpecs/RCTComponentViewHelpers.h>
