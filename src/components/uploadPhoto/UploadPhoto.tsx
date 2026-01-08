@@ -52,7 +52,6 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
-          console.log('ImagePicker Error: ', error);
         }
       });
   };

@@ -69,7 +69,6 @@ const SubscriptionPlans = () => {
 
   const handleSelectPlan = (planId: string) => {
     setSelectedPlan(planId);
-    console.log('Selected plan:', planId);
   };
 
   const handleProcessed = () => {

@@ -82,7 +82,7 @@ const RestaurantInfo = () => {
     navigation.navigate('Reviews');
   };
 
-  console.log(restaurantInfo, 'restaurantInforestaurantInforestaurantInfo');
+
 
   return (
     <WrapperContainer title="Restaurant Information" navigation={navigation}>

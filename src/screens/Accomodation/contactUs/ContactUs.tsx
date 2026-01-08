@@ -25,12 +25,7 @@ const ContactUs = () => {
   const [message, setMessage] = useState('');
 
   const handleSendNow = () => {
-    console.log('Send Now pressed', {
-      name,
-      email,
-      subject,
-      message,
-    });
+   
     // navigation.navigate('MessageSent');
   };
 

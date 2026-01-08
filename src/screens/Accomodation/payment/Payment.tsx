@@ -33,7 +33,7 @@ const Payment = () => {
 
   const handleAddNewCard = () => {
     // Navigate to add card screen
-    console.log('MyWallet');
+    
   };
 
   const handleScanCreditCard = () => {

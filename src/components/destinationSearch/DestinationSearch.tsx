@@ -262,7 +262,6 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   const handleItemPress = (item: SearchHistoryItem) => {
     onItemPress?.(item);
 
-    console.log(item, 'dbfeygeygy');
     setSearchText(item?.destination);
     setSearchResults([]);
   };

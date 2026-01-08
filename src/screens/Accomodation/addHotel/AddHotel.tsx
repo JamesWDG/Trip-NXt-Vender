@@ -31,14 +31,7 @@ const AddHotel = () => {
   const categories = ['Budget', 'Standard', 'Luxury'];
 
   const handleNext = () => {
-    // Handle next action
-    console.log('Next pressed', {
-      category: selectedCategory,
-      hotelName,
-      hotelAddress,
-      rentPerDay,
-      description,
-    });
+  
     navigation.navigate('Accomodation', { screen: 'PeopleStays' });
   };
 
