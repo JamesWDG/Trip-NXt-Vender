@@ -9,6 +9,7 @@ type endpointTypes = {
     GET_USER_PROFILE: string;
     UPDATE_USER_PROFILE: (id: number) => string;
     CREATE_RESTAURANT: string;
+    GET_RESTAURANT: (id:string) => string;
 }
 
 export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
@@ -23,8 +24,9 @@ export const endpoint: endpointTypes = Object.freeze({
     RESEND_OTP: '/user/resend-otp',
     RESET_PASSWORD: '/user/reset-password',
     GET_USER_PROFILE: '/user/get-auth-user',
-    UPDATE_USER_PROFILE: (id) => `/user/update-user/${id}`,
+    UPDATE_USER_PROFILE: (id:number) => `/user/update-user/${id}`,
     CREATE_RESTAURANT: '/restaurant/create',
+    GET_RESTAURANT: (id:string) => `/restaurant/get/${id}`,
 
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })
