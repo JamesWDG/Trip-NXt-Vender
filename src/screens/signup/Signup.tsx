@@ -82,7 +82,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
         role: [flowDetails?.user_type],
       };
       const res = await signup(data).unwrap();
-      console.log('res', res);
+     
       ShowToast('success', res.message);
       if (res.success) {
         dispatch(setActiveStack({ stack: flowDetails?.stack }));
