@@ -165,7 +165,10 @@ const Profile = ({ route }: { route: any }) => {
 
   return (
     <WrapperWithVideo otherStyles={styles.introWrapper}>
-      <IntroWrapperWithTitle title={'Edit Profile'} resizeMode="stretch" />
+      <IntroWrapperWithTitle title={'Edit Profile'} resizeMode="stretch" 
+      showBack={true} onBackPress={() => navigation.goBack()}
+      
+      />
 
       <KeyboardAvoidingView
         style={styles.container}
