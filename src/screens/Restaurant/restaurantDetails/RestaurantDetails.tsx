@@ -18,7 +18,7 @@ import fonts from '../../../config/fonts';
 import DestinationSearch, {
   SearchHistoryItem,
 } from '../../../components/destinationSearch/DestinationSearch';
-import MapView from 'react-native-maps';
+import { createRestaurantValidation } from '../../../utils/validations';
 
 interface restaurantStateTypes {
   restaurantName: string;
@@ -27,6 +27,14 @@ interface restaurantStateTypes {
   about: string;
   logoImage: string;
   coverImage: string;
+  errors: {
+    restaurantName?: string;
+    phoneNumber?: string;
+    address?: string;
+    about?: string;
+    logoImage?: string;
+    coverImage?: string;
+  };
 }
 
 const RestaurantDetails = () => {
@@ -38,9 +46,17 @@ const RestaurantDetails = () => {
     about: '',
     logoImage: '',
     coverImage: '',
+    errors: {
+      restaurantName: '',
+      phoneNumber: '',
+      address: '',
+      about: '',
+      coverImage: '',
+      logoImage: '',
+    },
   });
 
-  console.log(state.address);
+  // console.log(state.address);
   // const [restaurantName, setRestaurantName] = useState('');
   // const [ownerName, setOwnerName] = useState('');
   // const [phoneNumber, setPhoneNumber] = useState('');
@@ -59,10 +75,11 @@ const RestaurantDetails = () => {
       multiple: false,
     })
       .then((image: any) => {
-        setState(prevState => ({
-          ...prevState,
-          logoImage: image.path,
-        }));
+        updateField('logoImage', image.path, 'logoImage');
+        // setState(prevState => ({
+        //   ...prevState,
+        //   logoImage: image.path,
+        // }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -81,10 +98,11 @@ const RestaurantDetails = () => {
       multiple: false,
     })
       .then((image: any) => {
-        setState(prevState => ({
-          ...prevState,
-          coverImage: image.path,
-        }));
+        updateField('coverImage', image.path, 'coverImage');
+        // setState(prevState => ({
+        //   ...prevState,
+        //   coverImage: image.path,
+        // }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -119,6 +137,25 @@ const RestaurantDetails = () => {
   };
 
   const handleNext = () => {
+    const errors = createRestaurantValidation(state);
+    console.log('errors', errors);
+    setState(prevState => ({
+      ...prevState,
+      errors: {
+        ...prevState.errors,
+        ...errors,
+      },
+    }));
+    if (
+      errors.restaurantName ||
+      errors.phoneNumber ||
+      errors.address ||
+      errors.about ||
+      errors.logoImage ||
+      errors.coverImage
+    ) {
+      return;
+    }
     // Validate required fields
     // if (!restaurantName.trim() || !ownerName.trim() || !phoneNumber.trim()) {
     //   console.log('Please fill in all required fields');
@@ -133,6 +170,21 @@ const RestaurantDetails = () => {
       screen: 'ScheduleAndBank',
       params: { state },
     });
+  };
+
+  const updateField = (
+    key: keyof restaurantStateTypes,
+    value: any,
+    errorKey?: keyof restaurantStateTypes['errors'],
+  ) => {
+    setState(prev => ({
+      ...prev,
+      [key]: value,
+      errors: {
+        ...prev.errors,
+        ...(errorKey ? { [errorKey]: '' } : {}),
+      },
+    }));
   };
 
   return (
@@ -163,11 +215,14 @@ const RestaurantDetails = () => {
               <CustomTextInput
                 placeholder="Enter Restaurant Name"
                 value={state.restaurantName}
-                onChangeText={text =>
-                  setState(prevState => ({
-                    ...prevState,
-                    restaurantName: text,
-                  }))
+                errorBorder={!!state.errors.restaurantName}
+                errorText={state.errors.restaurantName}
+                onChangeText={
+                  text => updateField('restaurantName', text, 'restaurantName')
+                  // setState(prevState => ({
+                  //   ...prevState,
+                  //   restaurantName: text,
+                  // }))
                 }
                 style={styles.input}
               />
@@ -187,9 +242,12 @@ const RestaurantDetails = () => {
             <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Phone Number"
+                errorBorder={!!state.errors.phoneNumber}
+                errorText={state.errors.phoneNumber}
                 value={state.phoneNumber}
-                onChangeText={text =>
-                  setState(prevState => ({ ...prevState, phoneNumber: text }))
+                onChangeText={
+                  text => updateField('phoneNumber', text, 'phoneNumber')
+                  // setState(prevState => ({ ...prevState, phoneNumber: text }))
                 }
                 keyboardType="phone-pad"
                 style={styles.input}
@@ -211,15 +269,18 @@ const RestaurantDetails = () => {
 
             {/* Address */}
             <DestinationSearch
+              errorBorder={!!state.errors.address}
+              errorText={state.errors.address}
               inputValue={state.address?.destination || ''}
               onItemPress={(item: SearchHistoryItem) => {
-                setState(prevState => ({ ...prevState, address: item }));
+                updateField('address', item, 'address');
+                // setState(prevState => ({ ...prevState, address: item }));
               }}
               onSearchChange={(text: string) => {
                 // user typing manually
-                setState(prev => ({
-                  ...prev,
-                  address: {
+                updateField(
+                  'address',
+                  {
                     id: 'manual',
                     destination: text,
                     address: text,
@@ -229,7 +290,21 @@ const RestaurantDetails = () => {
                     latitude: 0,
                     longitude: 0,
                   },
-                }));
+                  'address',
+                );
+                // setState(prev => ({
+                //   ...prev,
+                //   address: {
+                //     id: 'manual',
+                //     destination: text,
+                //     address: text,
+                //     city: '',
+                //     state: '',
+                //     country: '',
+                //     latitude: 0,
+                //     longitude: 0,
+                //   },
+                // }));
               }}
               placeholder="Enter Address"
             />
@@ -255,10 +330,13 @@ const RestaurantDetails = () => {
             {/* About */}
             <View style={styles.inputWrapper}>
               <CustomTextArea
+                errorBorder={!!state.errors.about}
+                errorText={state.errors.about}
                 placeholder="About / Description"
                 value={state.about}
-                onChangeText={text =>
-                  setState(prevState => ({ ...prevState, about: text }))
+                onChangeText={
+                  text => updateField('about', text, 'about')
+                  // setState(prevState => ({ ...prevState, about: text }))
                 }
                 numberOfLines={4}
                 style={styles.textArea}
@@ -282,7 +360,10 @@ const RestaurantDetails = () => {
             {/* Logo Upload */}
             <View style={styles.uploadGroup}>
               <TouchableOpacity
-                style={styles.uploadButton}
+                style={[
+                  styles.uploadButton,
+                  !!state.errors.logoImage && { borderColor: colors.red },
+                ]}
                 onPress={handleLogoPicker}
                 activeOpacity={0.7}
               >
@@ -290,6 +371,9 @@ const RestaurantDetails = () => {
                   Click to Upload Logo
                 </Text>
               </TouchableOpacity>
+              {state.errors.logoImage && (
+                <Text style={styles.errorText}>{state.errors.logoImage}</Text>
+              )}
 
               {/* Selected Logo Image */}
               {state.logoImage ? (
@@ -315,12 +399,18 @@ const RestaurantDetails = () => {
             {/* Cover Photo Upload */}
             <View style={styles.uploadGroup}>
               <TouchableOpacity
-                style={styles.uploadButton}
+                style={[
+                  styles.uploadButton,
+                  !!state.errors.coverImage && { borderColor: colors.red },
+                ]}
                 onPress={handleCoverPicker}
                 activeOpacity={0.7}
               >
                 <Text style={styles.uploadButtonText}>Upload Cover Photo</Text>
               </TouchableOpacity>
+              {state.errors.coverImage && (
+                <Text style={styles.errorText}>{state.errors.coverImage}</Text>
+              )}
 
               {/* Selected Cover Image */}
               {state.coverImage ? (
@@ -486,5 +576,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    // marginTop: 5,
   },
 });

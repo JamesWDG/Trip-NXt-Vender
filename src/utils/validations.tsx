@@ -1,4 +1,5 @@
 import { isValidPhoneNumber } from 'libphonenumber-js';
+import { SearchHistoryItem } from '../components/destinationSearch/DestinationSearch';
 
 interface ValidationParams {
   name?: string;
@@ -15,6 +16,15 @@ interface ValidationParams {
     cPassword?: string;
     newPassword?: string;
   };
+}
+
+interface RestaurantValidationParams {
+  restaurantName?: string;
+  phoneNumber?: string;
+  address?: SearchHistoryItem | null;
+  about?: string;
+  logoImage?: string;
+  coverImage?: string;
 }
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -140,6 +150,53 @@ export const passwordValidation = (state: ValidationParams, type: string) => {
     errors.cPassword = 'Please enter your confirm password';
   } else if (state.newPassword !== state.cPassword) {
     errors.cPassword = 'Passwords do not match';
+  }
+
+  return errors;
+};
+
+export const createRestaurantValidation = (
+  state: RestaurantValidationParams,
+) => {
+  const errors = {
+    restaurantName: '',
+    phoneNumber: '',
+    address: '',
+    about: '',
+    logoImage: '',
+    coverImage: '',
+  };
+
+  if (!state.restaurantName?.trim()) {
+    errors.restaurantName = 'Please enter restaurant name';
+  }
+
+  if (!state.phoneNumber) {
+    errors.phoneNumber = 'Please enter phone number';
+  } else if (!isValidPhoneNumber(state.phoneNumber, 'US')) {
+    errors.phoneNumber = 'Please enter a valid phone number';
+  }
+
+  if (
+    !state.address ||
+    !state.address.destination?.trim() ||
+    !state.address.latitude ||
+    !state.address.longitude
+  ) {
+    errors.address = 'Please select restaurant address';
+  }
+  if (!state.about?.trim()) {
+    errors.about = 'Please enter restaurant description';
+  } else if (state.about.length < 10) {
+    errors.about = 'Description must be at least 10 characters';
+  }
+
+  if (!state.logoImage) {
+    errors.logoImage = 'Please upload restaurant logo';
+  }
+
+  if (!state.coverImage) {
+    errors.coverImage = 'Please upload restaurant banner';
   }
 
   return errors;

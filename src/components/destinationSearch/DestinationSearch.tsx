@@ -32,6 +32,8 @@ interface DestinationSearchProps {
   showCurrentLocation?: boolean;
   currentLocation?: SearchHistoryItem;
   inputValue?: string;
+  errorBorder?: boolean;
+  errorText?: string;
 }
 
 const DestinationSearch: React.FC<DestinationSearchProps> = ({
@@ -42,6 +44,8 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   showCurrentLocation = true,
   currentLocation,
   inputValue,
+  errorBorder,
+  errorText,
 }) => {
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHistoryItem[]>([]);
@@ -319,7 +323,12 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   return (
     <View style={styles.container}>
       {/* Search Input */}
-      <View style={styles.searchContainer}>
+      <View
+        style={[
+          styles.searchContainer,
+          errorBorder && { borderWidth: 1.5, borderColor: colors.red },
+        ]}
+      >
         {/* <SearchIcon size={20} color={colors.c_666666} /> */}
         <TextInput
           placeholder={placeholder}
@@ -329,6 +338,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
           onChangeText={handleSearchChange}
         />
       </View>
+      {errorText && <Text style={styles.errorText}>{errorText}</Text>}
 
       {/* Search Results */}
       {showSearchResults && (
@@ -521,5 +531,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.normal,
     color: colors.c_666666,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    marginTop: 5,
   },
 });
