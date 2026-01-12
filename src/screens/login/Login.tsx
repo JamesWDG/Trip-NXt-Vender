@@ -14,7 +14,7 @@ import fonts from '../../config/fonts';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import Input from '../../components/input/Input';
 import ToggleBox from '../../components/toggleBox/ToggleBox';
-import { ShowToast, width } from '../../config/constants';
+import { navigationRef, ShowToast, width } from '../../config/constants';
 import GradientButton from '../../components/gradientButton/GradientButton';
 import ButtonWithIcon from '../../components/buttonWithIcon/ButtonWithIcon';
 import { validateLoginFields } from '../../utils/validations';
@@ -49,6 +49,7 @@ const Login = ({ navigation }: { navigation: any }) => {
   const dispatch = useDispatch();
   const rememberMe = useSelector((state: RootState) => state.auth.rememberMe);
   const savedCredentials = useSelector((state: RootState) => state.auth.user);
+  const { activeStack } = useSelector((state: RootState) => state.navigation);
 
   // Load saved credentials on mount if rememberMe is true
   useEffect(() => {
@@ -100,6 +101,26 @@ const Login = ({ navigation }: { navigation: any }) => {
         } else {
           dispatch(clearCredentials());
         }
+        if (activeStack) {
+          if (navigationRef.isReady()) {
+            navigationRef.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'app',
+                  state: {
+                    routes: [
+                      {
+                        name: activeStack,
+                      },
+                    ],
+                    index: 0,
+                  },
+                },
+              ],
+            });
+          }
+        }
         // navigation.navigate('OtpVerify', { email: state.email });
       }
     } catch (error) {
@@ -108,6 +129,7 @@ const Login = ({ navigation }: { navigation: any }) => {
         (error as { data: { message: string } }).data.message ||
           'Something went wrong',
       );
+      console.log('error while login', error);
     }
   };
   const onSignupPress = () => {
