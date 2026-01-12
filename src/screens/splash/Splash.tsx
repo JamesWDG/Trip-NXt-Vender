@@ -28,42 +28,42 @@ const Splash: FC = () => {
     transform: [{ scale: scaleAnimation }],
   };
 
-  useEffect(() => {
-    setTimeout(() => {
-      navigation.navigate('GetStarted');
-    }, 3000);
-  }, []);
-
   // useEffect(() => {
   //   setTimeout(() => {
-  //     if (token) {
-  //       if (activeStack) {
-  //         if (navigationRef.isReady()) {
-  //           navigationRef.reset({
-  //             index: 0,
-  //             routes: [
-  //               {
-  //                 name: 'app',
-  //                 state: {
-  //                   routes: [
-  //                     {
-  //                       name: activeStack,
-  //                     },
-  //                   ],
-  //                   index: 0,
-  //                 },
-  //               },
-  //             ],
-  //           });
-  //         }
-  //       } else {
-  //         navigation.navigate('GetStarted');
-  //       }
-  //     } else {
-  //       navigation.navigate('Login');
-  //     }
+  //     navigation.navigate('GetStarted');
   //   }, 3000);
-  // }, [token, activeStack, navigation]);
+  // }, []);
+
+  useEffect(() => {
+    setTimeout(() => {
+      if (token) {
+        if (activeStack) {
+          if (navigationRef.isReady()) {
+            navigationRef.reset({
+              index: 0,
+              routes: [
+                {
+                  name: 'app',
+                  state: {
+                    routes: [
+                      {
+                        name: activeStack,
+                      },
+                    ],
+                    index: 0,
+                  },
+                },
+              ],
+            });
+          }
+        } else {
+          navigation.navigate('GetStarted');
+        }
+      } else {
+        navigation.navigate('Login');
+      }
+    }, 3000);
+  }, [token, activeStack, navigation]);
   return (
     <View style={styles.container}>
       <Animated.View style={[styles.object, animatedStyle]}>

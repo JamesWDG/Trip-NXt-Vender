@@ -1,8 +1,5 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import {  endpoint } from '../../contants/api';
+import { endpoint } from '../../contants/api';
 import { baseApi } from './api';
-
-
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: builder => ({
@@ -49,7 +46,7 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
     logout: builder.mutation({
-      query: (_) => ({
+      query: _ => ({
         url: endpoint.LOGOUT,
         method: 'POST',
       }),

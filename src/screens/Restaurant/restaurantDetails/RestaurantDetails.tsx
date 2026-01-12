@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { MapPin, X } from 'lucide-react-native';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -18,7 +18,7 @@ import fonts from '../../../config/fonts';
 import DestinationSearch, {
   SearchHistoryItem,
 } from '../../../components/destinationSearch/DestinationSearch';
-import MapView from 'react-native-maps';
+import { createRestaurantValidation } from '../../../utils/validations';
 
 interface restaurantStateTypes {
   restaurantName: string;
@@ -27,9 +27,17 @@ interface restaurantStateTypes {
   about: string;
   logoImage: string;
   coverImage: string;
+  errors: {
+    restaurantName?: string;
+    phoneNumber?: string;
+    address?: string;
+    about?: string;
+    logoImage?: string;
+    coverImage?: string;
+  };
 }
 
-const RestaurantDetails = () => {
+const RestaurantDetails = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [state, setState] = useState<restaurantStateTypes>({
     restaurantName: '',
@@ -38,9 +46,70 @@ const RestaurantDetails = () => {
     about: '',
     logoImage: '',
     coverImage: '',
+    errors: {
+      restaurantName: '',
+      phoneNumber: '',
+      address: '',
+      about: '',
+      coverImage: '',
+      logoImage: '',
+    },
   });
+  const { restaurantData, type, previousScreen } = route.params || {};
 
-  console.log(state.address);
+  // console.log('navigation props', navigation.getState().routes);
+
+  useEffect(() => {
+    if (restaurantData) {
+      const getLocation = () => {
+        if (!restaurantData?.location) return null;
+        if (typeof restaurantData.location === 'string') {
+          try {
+            return JSON.parse(restaurantData.location);
+          } catch (error) {
+            console.log('Error parsing location:', error);
+            return null;
+          }
+        }
+        return restaurantData.location;
+      };
+
+      const location = getLocation();
+
+      const formatFullAddress = (loc: any) => {
+        if (!loc) return '';
+        const parts = [loc.address, loc.city, loc.state, loc.country].filter(
+          Boolean,
+        );
+        return parts.join(', ') || loc.destination || '';
+      };
+
+      const address: SearchHistoryItem | null = location
+        ? {
+            id: location.id || 'existing',
+            destination: formatFullAddress(location),
+            address: location.address || '',
+            city: location.city || '',
+            state: location.state || '',
+            country: location.country || '',
+            latitude: location.latitude || 0,
+            longitude: location.longitude || 0,
+          }
+        : null;
+
+      setState(prevState => ({
+        ...prevState,
+        restaurantName: restaurantData?.name || '',
+        phoneNumber: restaurantData?.phoneNumber || '',
+        address: address,
+        about: restaurantData?.description || '',
+        logoImage: restaurantData?.logo || '',
+        coverImage: restaurantData?.banner || '',
+      }));
+    }
+  }, [restaurantData]);
+  // console.log('restaurantData ===>', restaurantData);
+  // console.log(state.address);
   // const [restaurantName, setRestaurantName] = useState('');
   // const [ownerName, setOwnerName] = useState('');
   // const [phoneNumber, setPhoneNumber] = useState('');
@@ -59,10 +128,7 @@ const RestaurantDetails = () => {
       multiple: false,
     })
       .then((image: any) => {
-        setState(prevState => ({
-          ...prevState,
-          logoImage: image.path,
-        }));
+        updateField('logoImage', image.path, 'logoImage');
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -81,10 +147,7 @@ const RestaurantDetails = () => {
       multiple: false,
     })
       .then((image: any) => {
-        setState(prevState => ({
-          ...prevState,
-          coverImage: image.path,
-        }));
+        updateField('coverImage', image.path, 'coverImage');
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -119,25 +182,73 @@ const RestaurantDetails = () => {
   };
 
   const handleNext = () => {
-    // Validate required fields
-    // if (!restaurantName.trim() || !ownerName.trim() || !phoneNumber.trim()) {
-    //   console.log('Please fill in all required fields');
-    //   return;
-    // }
+    const errors = createRestaurantValidation(state);
+    console.log('errors', errors);
+    setState(prevState => ({
+      ...prevState,
+      errors: {
+        ...prevState.errors,
+        ...errors,
+      },
+    }));
+    if (
+      errors.restaurantName ||
+      errors.phoneNumber ||
+      errors.address ||
+      errors.about ||
+      errors.logoImage ||
+      errors.coverImage
+    ) {
+      return;
+    }
+    let timings = null;
+    let deliveryRadius = null;
 
-    // Save restaurant details and navigate to next step
-    // return console.log('Restaurant details:', {
-    //   state,
-    // });
+    if (restaurantData) {
+      if (restaurantData.timings) {
+        try {
+          timings =
+            typeof restaurantData.timings === 'string'
+              ? JSON.parse(restaurantData.timings)
+              : restaurantData.timings;
+        } catch (error) {
+          console.log('Error parsing timings:', error);
+        }
+      }
+
+      deliveryRadius = restaurantData.deliveryRadius || null;
+    }
+
     navigation.navigate('RestaurantStack', {
       screen: 'ScheduleAndBank',
-      params: { state },
+      params: {
+        id: restaurantData?.id,
+        state,
+        timings,
+        type,
+        deliveryRadius,
+      },
     });
+  };
+
+  const updateField = (
+    key: keyof restaurantStateTypes,
+    value: any,
+    errorKey?: keyof restaurantStateTypes['errors'],
+  ) => {
+    setState(prev => ({
+      ...prev,
+      [key]: value,
+      errors: {
+        ...prev.errors,
+        ...(errorKey ? { [errorKey]: '' } : {}),
+      },
+    }));
   };
 
   return (
     <WrapperContainer
-      hideBack={true}
+      hideBack={previousScreen === 'RestaurantInfo' ? false : true}
       showRight={false}
       title="Business Information"
       navigation={navigation}
@@ -163,11 +274,14 @@ const RestaurantDetails = () => {
               <CustomTextInput
                 placeholder="Enter Restaurant Name"
                 value={state.restaurantName}
-                onChangeText={text =>
-                  setState(prevState => ({
-                    ...prevState,
-                    restaurantName: text,
-                  }))
+                errorBorder={!!state.errors.restaurantName}
+                errorText={state.errors.restaurantName}
+                onChangeText={
+                  text => updateField('restaurantName', text, 'restaurantName')
+                  // setState(prevState => ({
+                  //   ...prevState,
+                  //   restaurantName: text,
+                  // }))
                 }
                 style={styles.input}
               />
@@ -187,9 +301,12 @@ const RestaurantDetails = () => {
             <View style={styles.inputWrapper}>
               <CustomTextInput
                 placeholder="Enter Phone Number"
+                errorBorder={!!state.errors.phoneNumber}
+                errorText={state.errors.phoneNumber}
                 value={state.phoneNumber}
-                onChangeText={text =>
-                  setState(prevState => ({ ...prevState, phoneNumber: text }))
+                onChangeText={
+                  text => updateField('phoneNumber', text, 'phoneNumber')
+                  // setState(prevState => ({ ...prevState, phoneNumber: text }))
                 }
                 keyboardType="phone-pad"
                 style={styles.input}
@@ -211,15 +328,18 @@ const RestaurantDetails = () => {
 
             {/* Address */}
             <DestinationSearch
+              errorBorder={!!state.errors.address}
+              errorText={state.errors.address}
               inputValue={state.address?.destination || ''}
               onItemPress={(item: SearchHistoryItem) => {
-                setState(prevState => ({ ...prevState, address: item }));
+                updateField('address', item, 'address');
+                // setState(prevState => ({ ...prevState, address: item }));
               }}
               onSearchChange={(text: string) => {
                 // user typing manually
-                setState(prev => ({
-                  ...prev,
-                  address: {
+                updateField(
+                  'address',
+                  {
                     id: 'manual',
                     destination: text,
                     address: text,
@@ -229,7 +349,21 @@ const RestaurantDetails = () => {
                     latitude: 0,
                     longitude: 0,
                   },
-                }));
+                  'address',
+                );
+                // setState(prev => ({
+                //   ...prev,
+                //   address: {
+                //     id: 'manual',
+                //     destination: text,
+                //     address: text,
+                //     city: '',
+                //     state: '',
+                //     country: '',
+                //     latitude: 0,
+                //     longitude: 0,
+                //   },
+                // }));
               }}
               placeholder="Enter Address"
             />
@@ -255,10 +389,13 @@ const RestaurantDetails = () => {
             {/* About */}
             <View style={styles.inputWrapper}>
               <CustomTextArea
+                errorBorder={!!state.errors.about}
+                errorText={state.errors.about}
                 placeholder="About / Description"
                 value={state.about}
-                onChangeText={text =>
-                  setState(prevState => ({ ...prevState, about: text }))
+                onChangeText={
+                  text => updateField('about', text, 'about')
+                  // setState(prevState => ({ ...prevState, about: text }))
                 }
                 numberOfLines={4}
                 style={styles.textArea}
@@ -282,7 +419,10 @@ const RestaurantDetails = () => {
             {/* Logo Upload */}
             <View style={styles.uploadGroup}>
               <TouchableOpacity
-                style={styles.uploadButton}
+                style={[
+                  styles.uploadButton,
+                  !!state.errors.logoImage && { borderColor: colors.red },
+                ]}
                 onPress={handleLogoPicker}
                 activeOpacity={0.7}
               >
@@ -290,6 +430,9 @@ const RestaurantDetails = () => {
                   Click to Upload Logo
                 </Text>
               </TouchableOpacity>
+              {state.errors.logoImage && (
+                <Text style={styles.errorText}>{state.errors.logoImage}</Text>
+              )}
 
               {/* Selected Logo Image */}
               {state.logoImage ? (
@@ -315,12 +458,18 @@ const RestaurantDetails = () => {
             {/* Cover Photo Upload */}
             <View style={styles.uploadGroup}>
               <TouchableOpacity
-                style={styles.uploadButton}
+                style={[
+                  styles.uploadButton,
+                  !!state.errors.coverImage && { borderColor: colors.red },
+                ]}
                 onPress={handleCoverPicker}
                 activeOpacity={0.7}
               >
                 <Text style={styles.uploadButtonText}>Upload Cover Photo</Text>
               </TouchableOpacity>
+              {state.errors.coverImage && (
+                <Text style={styles.errorText}>{state.errors.coverImage}</Text>
+              )}
 
               {/* Selected Cover Image */}
               {state.coverImage ? (
@@ -486,5 +635,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    // marginTop: 5,
   },
 });

@@ -10,6 +10,7 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
     const token = state.auth?.token;
+    console.log('token ===>', token);
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
     }
@@ -20,10 +21,11 @@ const baseQuery = fetchBaseQuery({
 
 
 export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any) => {
+  console.log("args api", args, api, extraOptions)
   let result = await baseQuery(args, api, extraOptions);
   if (result.error && result.error.status === 401) {
     await api.dispatch(setLogout());
-    
+
   }
   return result;
 };

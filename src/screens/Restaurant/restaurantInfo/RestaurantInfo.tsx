@@ -6,8 +6,12 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import {
+  NavigationProp,
+  useIsFocused,
+  useNavigation,
+} from '@react-navigation/native';
 import {
   Edit,
   UtensilsCrossed,
@@ -21,17 +25,21 @@ import {
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import images from '../../../config/images';
 import { useLazyGetAuthUserRestaurantQuery } from '../../../redux/services/restaurantService';
+import Loader from '../../../components/AppLoader/Loader';
 
 const RestaurantInfo = () => {
   const navigation = useNavigation<NavigationProp<any>>();
 
-  const [getRestaurant, { data: restaurantData, isLoading }] = useLazyGetAuthUserRestaurantQuery();
+  const [getRestaurant, { data: restaurantData, isLoading }] =
+    useLazyGetAuthUserRestaurantQuery();
+  const isFocused = useIsFocused();
 
   useEffect(() => {
-    fetchRestaurant();
-  }, []);
+    if (isFocused) {
+      fetchRestaurant();
+    }
+  }, [isFocused]);
 
   const fetchRestaurant = async () => {
     try {
@@ -42,10 +50,26 @@ const RestaurantInfo = () => {
     }
   };
 
-  // Extract restaurant data from API response
   const restaurant = restaurantData?.data?.restaurant;
-  const location = restaurant?.location?.[0];
-  
+
+  const getLocation = () => {
+    if (!restaurant?.location) return {};
+    if (typeof restaurant.location === 'string') {
+      try {
+        return JSON.parse(restaurant.location);
+      } catch (error) {
+        console.log('Error parsing location:', error);
+        return {};
+      }
+    }
+    return restaurant.location;
+  };
+
+  const location = getLocation();
+  // console.log(
+  //   'location ===>',
+  //   JSON.parse(restaurantData?.data?.restaurant?.location),
+  // );
   // Format address from location object
   const formatAddress = () => {
     if (!location) return '';
@@ -71,7 +95,11 @@ const RestaurantInfo = () => {
   };
 
   const handleEdit = () => {
-    navigation.navigate('RestaurantDetails');
+    navigation.navigate('RestaurantDetails', {
+      restaurantData: restaurant,
+      type: 'edit',
+      previousScreen: 'RestaurantInfo',
+    });
   };
 
   const handleMenus = () => {
@@ -82,136 +110,138 @@ const RestaurantInfo = () => {
     navigation.navigate('Reviews');
   };
 
-
-
   return (
     <WrapperContainer title="Restaurant Information" navigation={navigation}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
-       
+      {isLoading ? (
+        <Loader flex={1} justifyContent="center" color={colors.primary} />
+      ) : (
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Restaurant Image/Logo */}
+          <View style={styles.imageContainer}>
+            <Image
+              source={
+                restaurantInfo.logo
+                  ? { uri: restaurantInfo.logo }
+                  : { uri: restaurantInfo.logo }
+              }
+              style={styles.restaurantImage}
+              resizeMode="cover"
+            />
+          </View>
 
-        {/* Restaurant Image/Logo */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={
-              restaurantInfo.logo
-                ? { uri: restaurantInfo.logo }
-                : { uri: restaurantInfo.logo }
-            }
-            style={styles.restaurantImage}
-            resizeMode="cover"
-          />
-        </View>
+          {/* Restaurant Name */}
+          <Text style={styles.restaurantName}>{restaurantInfo.name}</Text>
 
-        {/* Restaurant Name */}
-        <Text style={styles.restaurantName}>{restaurantInfo.name}</Text>
+          {/* Rating */}
+          <View style={styles.ratingContainer}>
+            <Star size={16} color={colors.c_F47E20} fill={colors.c_F47E20} />
+            <Text style={styles.ratingText}>
+              {restaurantInfo.rating} ({restaurantInfo.totalReviews} reviews)
+            </Text>
+          </View>
 
-        {/* Rating */}
-        <View style={styles.ratingContainer}>
-          <Star size={16} color={colors.c_F47E20} fill={colors.c_F47E20} />
-          <Text style={styles.ratingText}>
-            {restaurantInfo.rating} ({restaurantInfo.totalReviews} reviews)
-          </Text>
-        </View>
-
-        {/* Info Details */}
-        <View style={styles.detailsContainer}>
-          <View style={styles.detailRow}>
-            <View style={styles.iconContainer}>
-              <User size={18} color={colors.c_0162C0} />
+          {/* Info Details */}
+          <View style={styles.detailsContainer}>
+            <View style={styles.detailRow}>
+              <View style={styles.iconContainer}>
+                <User size={18} color={colors.c_0162C0} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Owner Name</Text>
+                <Text style={styles.detailValue}>
+                  {restaurantInfo.ownerName}
+                </Text>
+              </View>
             </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Owner Name</Text>
-              <Text style={styles.detailValue}>{restaurantInfo.ownerName}</Text>
+
+            <View style={styles.detailRow}>
+              <View style={styles.iconContainer}>
+                <Phone size={18} color={colors.c_0162C0} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Phone</Text>
+                <Text style={styles.detailValue}>{restaurantInfo.phone}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <View style={styles.iconContainer}>
+                <Mail size={18} color={colors.c_0162C0} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Email</Text>
+                <Text style={styles.detailValue}>{restaurantInfo.email}</Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <View style={styles.iconContainer}>
+                <MapPin size={18} color={colors.c_0162C0} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Address</Text>
+                <Text style={styles.detailValue}>{restaurantInfo.address}</Text>
+              </View>
+            </View>
+
+            <View style={styles.descriptionRow}>
+              <View style={styles.iconContainer}>
+                <FileText size={18} color={colors.c_0162C0} />
+              </View>
+              <View style={styles.detailContent}>
+                <Text style={styles.detailLabel}>Description</Text>
+                <Text
+                  style={styles.detailValue}
+                  numberOfLines={4}
+                  ellipsizeMode="tail"
+                >
+                  {restaurantInfo.description}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View style={styles.detailRow}>
-            <View style={styles.iconContainer}>
-              <Phone size={18} color={colors.c_0162C0} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Phone</Text>
-              <Text style={styles.detailValue}>{restaurantInfo.phone}</Text>
-            </View>
+          {/* Action Buttons */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleEdit}
+              activeOpacity={0.8}
+            >
+              <View style={styles.buttonIconContainer}>
+                <Edit size={22} color={colors.white} />
+              </View>
+              <Text style={styles.actionButtonText}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={handleMenus}
+              activeOpacity={0.8}
+            >
+              <View style={styles.buttonIconContainer}>
+                <UtensilsCrossed size={22} color={colors.white} />
+              </View>
+              <Text style={styles.actionButtonText}>Menus</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.reviewsButton]}
+              onPress={handleShowReviews}
+              activeOpacity={0.8}
+            >
+              <View style={styles.buttonIconContainer}>
+                <Star size={22} color={colors.white} fill={colors.white} />
+              </View>
+              <Text style={styles.actionButtonText}>Show Reviews</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.iconContainer}>
-              <Mail size={18} color={colors.c_0162C0} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Email</Text>
-              <Text style={styles.detailValue}>{restaurantInfo.email}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailRow}>
-            <View style={styles.iconContainer}>
-              <MapPin size={18} color={colors.c_0162C0} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Address</Text>
-              <Text style={styles.detailValue}>{restaurantInfo.address}</Text>
-            </View>
-          </View>
-
-          <View style={styles.descriptionRow}>
-            <View style={styles.iconContainer}>
-              <FileText size={18} color={colors.c_0162C0} />
-            </View>
-            <View style={styles.detailContent}>
-              <Text style={styles.detailLabel}>Description</Text>
-              <Text
-                style={styles.detailValue}
-                numberOfLines={4}
-                ellipsizeMode="tail"
-              >
-                {restaurantInfo.description}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleEdit}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonIconContainer}>
-              <Edit size={22} color={colors.white} />
-            </View>
-            <Text style={styles.actionButtonText}>Edit</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionButton}
-            onPress={handleMenus}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonIconContainer}>
-              <UtensilsCrossed size={22} color={colors.white} />
-            </View>
-            <Text style={styles.actionButtonText}>Menus</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionButton, styles.reviewsButton]}
-            onPress={handleShowReviews}
-            activeOpacity={0.8}
-          >
-            <View style={styles.buttonIconContainer}>
-              <Star size={22} color={colors.white} fill={colors.white} />
-            </View>
-            <Text style={styles.actionButtonText}>Show Reviews</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      )}
     </WrapperContainer>
   );
 };
@@ -245,7 +275,6 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 1,
     borderColor: colors.c_F3F3F3,
-  
   },
   restaurantName: {
     fontSize: 24,

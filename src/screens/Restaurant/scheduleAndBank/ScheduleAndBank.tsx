@@ -4,28 +4,38 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  PanResponder,
-  Animated,
 } from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import DateTimePicker from '../../../components/dateTimePicker/DateTimePicker';
 import DateTimeInput from '../../../components/dateTimePicker/DateTimeInput';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import {
+  useAddRestaurantMutation,
+  useUpdateRestaurantMutation,
+} from '../../../redux/services/restaurantService';
+import Loader from '../../../components/AppLoader/Loader';
+import { ShowToast } from '../../../config/constants';
+import moment from 'moment';
+import Slider from '@react-native-community/slider';
 
 type DayStatus = 'open' | 'close' | null;
 
 interface DaySchedule {
+  id?: number;
   day: string;
   status: DayStatus;
-  openTime?: Date;
-  closeTime?: Date;
+  open?: Date;
+  close?: Date;
 }
 
-const ScheduleAndBank = () => {
+const ScheduleAndBank = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
+  const [addRestaurant, { isLoading }] = useAddRestaurantMutation();
+  const [updateRestaurant, { isLoading: updateLoader }] =
+    useUpdateRestaurantMutation();
   const [schedule, setSchedule] = useState<DaySchedule[]>([
     { day: 'Monday', status: null },
     { day: 'Tuesday', status: null },
@@ -36,16 +46,20 @@ const ScheduleAndBank = () => {
     { day: 'Sunday', status: null },
   ]);
 
-  const [deliveryRadius, setDeliveryRadius] = useState(5); // in kilometers
+  const [deliveryRadius, setDeliveryRadius] = useState(100); // in kilometers
 
-  // Time picker modal state
+  const prevData = route?.params?.state || {};
+  const existingTimings = route?.params?.timings || null;
+  const existingDeliveryRadius = route?.params?.deliveryRadius || null;
+  const type = route?.params?.type || null;
+  const restaurantId = route?.params?.id || null;
+
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [selectedTimeType, setSelectedTimeType] = useState<
     'open' | 'close' | null
   >(null);
 
-  // Format time for display
   const formatTime = (date?: Date): string => {
     if (!date) return '';
     let hours = date.getHours();
@@ -56,64 +70,118 @@ const ScheduleAndBank = () => {
     return `${hours}:${formattedMinutes} ${period}`;
   };
 
-  const sliderWidth = useRef(0);
-  const sliderX = useRef(0);
-  const pan = useRef(new Animated.ValueXY()).current;
+  // console.log('existingTimings ===>', existingTimings);
 
-  const minRadius = 1;
-  const maxRadius = 50;
+  // const sliderWidth = useRef(0);
+  // const sliderX = useRef(0);
+  // const pan = useRef(new Animated.ValueXY()).current;
+
+  const minRadius = 5;
+  const maxRadius = 200;
 
   useEffect(() => {
-    // Initialize slider position based on deliveryRadius
-    if (sliderWidth.current > 0) {
-      const percentage = (deliveryRadius - minRadius) / (maxRadius - minRadius);
-      const position = percentage * sliderWidth.current;
-      pan.setValue({ x: position, y: 0 });
-    }
-  }, []);
+    if (existingTimings && Array.isArray(existingTimings)) {
+      setSchedule(prevSchedule => {
+        const updatedSchedule = [...prevSchedule];
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: evt => {
-        sliderX.current = evt.nativeEvent.locationX;
-        pan.setOffset({
-          x: (pan.x as any)._value,
-          y: 0,
+        existingTimings.forEach((timing: any) => {
+          const dayIndex = updatedSchedule.findIndex(
+            day => day.day.toLowerCase() === timing.day?.toLowerCase(),
+          );
+
+          if (dayIndex !== -1 && timing.open && timing.close) {
+            const today = new Date();
+            const [openHours, openMinutes] = timing.open.split(':').map(Number);
+            const [closeHours, closeMinutes] = timing.close
+              .split(':')
+              .map(Number);
+
+            const openTime = new Date(today);
+            openTime.setHours(openHours, openMinutes || 0, 0);
+
+            const closeTime = new Date(today);
+            closeTime.setHours(closeHours, closeMinutes || 0, 0);
+
+            updatedSchedule[dayIndex] = {
+              ...updatedSchedule[dayIndex],
+              id: timing?.id,
+              status: 'open',
+              open: openTime,
+              close: closeTime,
+            };
+          }
         });
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        const currentX = sliderX.current + gestureState.dx;
-        const newX = Math.max(0, Math.min(currentX, sliderWidth.current));
-        pan.setValue({ x: newX, y: 0 });
 
-        // Calculate radius value
-        const percentage = newX / sliderWidth.current;
-        const radius = Math.round(
-          minRadius + percentage * (maxRadius - minRadius),
-        );
-        setDeliveryRadius(radius);
-      },
-      onPanResponderRelease: () => {
-        pan.flattenOffset();
-      },
-    }),
-  ).current;
+        return updatedSchedule;
+      });
+    }
+
+    if (existingDeliveryRadius) {
+      setDeliveryRadius(Number(existingDeliveryRadius));
+    }
+  }, [existingTimings, existingDeliveryRadius]);
+
+  // useEffect(() => {
+  //   // Initialize slider position based on deliveryRadius
+  //   if (sliderWidth.current > 0) {
+  //     const percentage = (deliveryRadius - minRadius) / (maxRadius - minRadius);
+  //     const position = percentage * sliderWidth.current;
+  //     pan.setValue({ x: position, y: 0 });
+  //   }
+  // }, []);
+
+  // const panResponder = useRef(
+  //   PanResponder.create({
+  //     onStartShouldSetPanResponder: () => true,
+  //     onMoveShouldSetPanResponder: () => true,
+  //     onPanResponderGrant: evt => {
+  //       sliderX.current = evt.nativeEvent.locationX;
+  //       pan.setOffset({
+  //         x: (pan.x as any)._value,
+  //         y: 0,
+  //       });
+  //     },
+  //     onPanResponderMove: (evt, gestureState) => {
+  //       const currentX = sliderX.current + gestureState.dx;
+  //       const newX = Math.max(0, Math.min(currentX, sliderWidth.current));
+  //       pan.setValue({ x: newX, y: 0 });
+
+  //       // Calculate radius value
+  //       const percentage = newX / sliderWidth.current;
+  //       const radius = Math.round(
+  //         minRadius + percentage * (maxRadius - minRadius),
+  //       );
+  //       setDeliveryRadius(radius);
+  //     },
+  //     onPanResponderRelease: () => {
+  //       pan.flattenOffset();
+  //     },
+  //   }),
+  // ).current;
 
   const handleDayStatusChange = (index: number, status: 'open' | 'close') => {
     const newSchedule = [...schedule];
-    if (newSchedule[index].status === status) {
-      // If clicking the same status, toggle it off
-      newSchedule[index].status = null;
-      newSchedule[index].openTime = undefined;
-      newSchedule[index].closeTime = undefined;
+    if (status === 'open') {
+      // Toggle open status
+      if (newSchedule[index].status === 'open') {
+        // If already open, toggle it off
+        newSchedule[index].status = null;
+        newSchedule[index].open = undefined;
+        newSchedule[index].close = undefined;
+      } else {
+        // Set status to open and show open time picker
+        newSchedule[index].status = 'open';
+        setSelectedDayIndex(index);
+        setSelectedTimeType('open');
+        setShowTimePicker(true);
+      }
     } else {
-      // Set status and show time picker
-      newSchedule[index].status = status;
-      setSelectedDayIndex(index);
-      setSelectedTimeType(status);
-      setShowTimePicker(true);
+      // For 'close' button, only set close time if day is already open
+      if (newSchedule[index].status === 'open') {
+        setSelectedDayIndex(index);
+        setSelectedTimeType('close');
+        setShowTimePicker(true);
+      }
     }
     setSchedule(newSchedule);
   };
@@ -122,9 +190,22 @@ const ScheduleAndBank = () => {
     if (selectedDayIndex !== null && selectedTimeType) {
       const newSchedule = [...schedule];
       if (selectedTimeType === 'open') {
-        newSchedule[selectedDayIndex].openTime = date;
+        newSchedule[selectedDayIndex].open = date;
+        // If close time exists and is before open time, clear it
+        if (
+          newSchedule[selectedDayIndex].close &&
+          newSchedule[selectedDayIndex].close! <= date
+        ) {
+          newSchedule[selectedDayIndex].close = undefined;
+        }
       } else {
-        newSchedule[selectedDayIndex].closeTime = date;
+        const openTime = newSchedule[selectedDayIndex].open;
+        // Validate that close time is after open time
+        if (openTime && date <= openTime) {
+          ShowToast('error', 'Close time must be after open time');
+          return;
+        }
+        newSchedule[selectedDayIndex].close = date;
       }
       setSchedule(newSchedule);
     }
@@ -145,37 +226,134 @@ const ScheduleAndBank = () => {
   const getInitialDate = (): Date => {
     if (selectedDayIndex !== null && selectedTimeType) {
       const daySchedule = schedule[selectedDayIndex];
-      if (selectedTimeType === 'open' && daySchedule.openTime) {
-        return daySchedule.openTime;
-      } else if (selectedTimeType === 'close' && daySchedule.closeTime) {
-        return daySchedule.closeTime;
+      if (selectedTimeType === 'open' && daySchedule.open) {
+        return daySchedule.open;
+      } else if (selectedTimeType === 'close' && daySchedule.close) {
+        return daySchedule.close;
       }
     }
     return new Date();
   };
 
-  const handleContinue = () => {
-    // Save schedule details, navigate to subscription screen
-    console.log('Schedule details:', {
-      schedule,
-      deliveryRadius,
-    });
-    navigation.navigate('SubscriptionPlans');
+  const handleContinue = async () => {
+    const hasAnyOpenDay = schedule.some(day => day.status === 'open');
+    if (!hasAnyOpenDay) {
+      ShowToast('error', 'Please set timing for at least one day');
+      return;
+    }
+
+    const invalidDays = schedule.filter(
+      day => day.status === 'open' && (!day.open || !day.close),
+    );
+
+    if (invalidDays.length > 0) {
+      ShowToast(
+        'error',
+        `Please set both open and close times for ${invalidDays
+          .map(d => d.day)
+          .join(', ')}`,
+      );
+      return;
+    }
+
+    for (const day of schedule) {
+      if (day.status === 'open' && day.open && day.close) {
+        if (day.close <= day.open) {
+          ShowToast(
+            'error',
+            `Close time must be after open time on ${day.day}`,
+          );
+          return;
+        }
+      }
+    }
+
+    if (deliveryRadius < 100 || deliveryRadius > maxRadius) {
+      ShowToast(
+        'error',
+        `Delivery radius must be between 100 and ${maxRadius} km`,
+      );
+      return;
+    }
+
+    try {
+      let data = new FormData();
+
+      const { id, destination, ...cleanAddress } = prevData?.address || {};
+
+      const selectedSchedule = schedule
+        // .filter(day => day.status === 'open' && day.open && day.close)
+        .map(day => ({
+          // id: day?.id,
+          day: day.day.toLowerCase(),
+          open: day?.open ? moment(day.open).format('hh:mm:ss') : null,
+          close: day?.close ? moment(day.close).format('hh:mm:ss') : null,
+        }));
+
+      // return console.log('Selected schedule:', selectedSchedule);
+
+      data.append('name', prevData?.restaurantName);
+      data.append('phoneNumber', prevData?.phoneNumber);
+      data.append('location', JSON.stringify(cleanAddress));
+      data.append('description', prevData?.about);
+      data.append('logo', {
+        uri: prevData?.logoImage,
+        name: 'logo.jpg',
+        type: 'image/jpeg',
+      });
+      data.append('banner', {
+        uri: prevData?.coverImage,
+        name: 'cover.jpg',
+        type: 'image/jpeg',
+      });
+      data.append('timings', JSON.stringify(selectedSchedule));
+      data.append('deliveryRadius', deliveryRadius.toString());
+
+      // console.log('formData ===>', data);
+
+      const res =
+        type === 'edit'
+          ? await updateRestaurant({ id: restaurantId, data: data }).unwrap()
+          : await addRestaurant(data).unwrap();
+      console.log('restaurant create/update response ===>', res, type);
+      ShowToast(
+        'success',
+        type === 'edit'
+          ? 'Restaurant updated successfully'
+          : 'Restaurant created successfully',
+      );
+      if (res.success) {
+        navigation.navigate('RestaurantStack', {
+          screen: 'RestaurantHome',
+        });
+      }
+    } catch (error) {
+      ShowToast(
+        'error',
+        (error as { data: { message: string } })?.data?.message ||
+          'Something went wrong',
+      );
+      console.log('error while creating/updating the restaurant', error);
+    }
   };
 
   const handleConnectStripe = () => {
     navigation.navigate('StripeConnection');
   };
 
-  const handleSliderLayout = (event: any) => {
-    sliderWidth.current = event.nativeEvent.layout.width;
-    const percentage = (deliveryRadius - minRadius) / (maxRadius - minRadius);
-    const position = percentage * sliderWidth.current;
-    pan.setValue({ x: position, y: 0 });
-  };
+  // const handleSliderLayout = (event: any) => {
+  //   sliderWidth.current = event.nativeEvent.layout.width;
+  //   const percentage = (deliveryRadius - minRadius) / (maxRadius - minRadius);
+  //   const position = percentage * sliderWidth.current;
+  //   pan.setValue({ x: position, y: 0 });
+  // };
 
   return (
-    <WrapperContainer title="Schedule & Bank Setup" navigation={navigation}>
+    <WrapperContainer
+      showRight={false}
+      title="Schedule & Bank Setup"
+      navigation={navigation}
+    >
       <>
         <ScrollView
           style={styles.container}
@@ -220,17 +398,24 @@ const ScheduleAndBank = () => {
                     <TouchableOpacity
                       style={[
                         styles.statusButton,
-                        daySchedule.status === 'close' &&
+                        daySchedule.status === 'open' &&
+                          daySchedule.close &&
                           styles.statusButtonActive,
+                        daySchedule.status !== 'open' &&
+                          styles.statusButtonDisabled,
                       ]}
                       onPress={() => handleDayStatusChange(index, 'close')}
                       activeOpacity={0.7}
+                      disabled={daySchedule.status !== 'open'}
                     >
                       <Text
                         style={[
                           styles.statusButtonText,
-                          daySchedule.status === 'close' &&
+                          daySchedule.status === 'open' &&
+                            daySchedule.close &&
                             styles.statusButtonTextActive,
+                          daySchedule.status !== 'open' &&
+                            styles.statusButtonTextDisabled,
                         ]}
                       >
                         Close
@@ -242,7 +427,7 @@ const ScheduleAndBank = () => {
                   <View style={styles.timeContainer}>
                     <DateTimeInput
                       placeholder="Select Open Time"
-                      value={formatTime(daySchedule.openTime)}
+                      value={formatTime(daySchedule.open)}
                       onPress={() => {
                         setSelectedDayIndex(index);
                         setSelectedTimeType('open');
@@ -252,7 +437,7 @@ const ScheduleAndBank = () => {
                     />
                     <DateTimeInput
                       placeholder="Select Close Time"
-                      value={formatTime(daySchedule.closeTime)}
+                      value={formatTime(daySchedule.close)}
                       onPress={() => handleSetCloseTime(index)}
                       mode="time"
                     />
@@ -265,7 +450,23 @@ const ScheduleAndBank = () => {
           {/* Delivery Radius Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Radius</Text>
-            <View
+            <Slider
+              style={{ width: '100%', height: 40 }}
+              minimumValue={0}
+              maximumValue={1}
+              step={0.01}
+              value={(deliveryRadius - minRadius) / (maxRadius - minRadius)}
+              minimumTrackTintColor={colors.c_0162C0}
+              maximumTrackTintColor={colors.c_F3F3F3}
+              thumbTintColor={colors.white}
+              onValueChange={value => {
+                const radius = Math.round(
+                  minRadius + value * (maxRadius - minRadius),
+                );
+                setDeliveryRadius(radius);
+              }}
+            />
+            {/* <View
               style={styles.sliderContainer}
               onLayout={handleSliderLayout}
               {...panResponder.panHandlers}
@@ -292,7 +493,7 @@ const ScheduleAndBank = () => {
                   ]}
                 />
               </View>
-            </View>
+            </View> */}
             <View style={styles.sliderValueContainer}>
               <Text style={styles.sliderValue}>{deliveryRadius}</Text>
               <Text style={styles.sliderUnit}> km</Text>
@@ -326,9 +527,13 @@ const ScheduleAndBank = () => {
               onPress={handleContinue}
               activeOpacity={0.8}
             >
-              <Text style={styles.continueButtonText}>
-                Continue To Subscription
-              </Text>
+              {isLoading || updateLoader ? (
+                <Loader />
+              ) : (
+                <Text style={styles.continueButtonText}>
+                  {type === 'edit' ? 'Update' : 'Create'}
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -429,6 +634,12 @@ const styles = StyleSheet.create({
   },
   statusButtonTextActive: {
     color: colors.white,
+  },
+  statusButtonDisabled: {
+    opacity: 0.5,
+  },
+  statusButtonTextDisabled: {
+    color: colors.c_666666,
   },
   sliderContainer: {
     marginBottom: 12,
