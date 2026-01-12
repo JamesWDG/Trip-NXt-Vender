@@ -12,7 +12,10 @@ import DateTimePicker from '../../../components/dateTimePicker/DateTimePicker';
 import DateTimeInput from '../../../components/dateTimePicker/DateTimeInput';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import { useAddRestaurantMutation } from '../../../redux/services/restaurantService';
+import {
+  useAddRestaurantMutation,
+  useUpdateRestaurantMutation,
+} from '../../../redux/services/restaurantService';
 import Loader from '../../../components/AppLoader/Loader';
 import { ShowToast } from '../../../config/constants';
 import moment from 'moment';
@@ -21,6 +24,7 @@ import Slider from '@react-native-community/slider';
 type DayStatus = 'open' | 'close' | null;
 
 interface DaySchedule {
+  id?: number;
   day: string;
   status: DayStatus;
   open?: Date;
@@ -30,6 +34,8 @@ interface DaySchedule {
 const ScheduleAndBank = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [addRestaurant, { isLoading }] = useAddRestaurantMutation();
+  const [updateRestaurant, { isLoading: updateLoader }] =
+    useUpdateRestaurantMutation();
   const [schedule, setSchedule] = useState<DaySchedule[]>([
     { day: 'Monday', status: null },
     { day: 'Tuesday', status: null },
@@ -43,18 +49,17 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
   const [deliveryRadius, setDeliveryRadius] = useState(100); // in kilometers
 
   const prevData = route?.params?.state || {};
-  // console.log('params ===>', deliveryRadius);
+  const existingTimings = route?.params?.timings || null;
+  const existingDeliveryRadius = route?.params?.deliveryRadius || null;
+  const type = route?.params?.type || null;
+  const restaurantId = route?.params?.id || null;
 
-  // Time picker modal state
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState<number | null>(null);
   const [selectedTimeType, setSelectedTimeType] = useState<
     'open' | 'close' | null
   >(null);
 
-  console.log(deliveryRadius, schedule);
-
-  // Format time for display
   const formatTime = (date?: Date): string => {
     if (!date) return '';
     let hours = date.getHours();
@@ -65,12 +70,56 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
     return `${hours}:${formattedMinutes} ${period}`;
   };
 
+  // console.log('existingTimings ===>', existingTimings);
+
   // const sliderWidth = useRef(0);
   // const sliderX = useRef(0);
   // const pan = useRef(new Animated.ValueXY()).current;
 
   const minRadius = 5;
   const maxRadius = 200;
+
+  useEffect(() => {
+    if (existingTimings && Array.isArray(existingTimings)) {
+      setSchedule(prevSchedule => {
+        const updatedSchedule = [...prevSchedule];
+
+        existingTimings.forEach((timing: any) => {
+          const dayIndex = updatedSchedule.findIndex(
+            day => day.day.toLowerCase() === timing.day?.toLowerCase(),
+          );
+
+          if (dayIndex !== -1 && timing.open && timing.close) {
+            const today = new Date();
+            const [openHours, openMinutes] = timing.open.split(':').map(Number);
+            const [closeHours, closeMinutes] = timing.close
+              .split(':')
+              .map(Number);
+
+            const openTime = new Date(today);
+            openTime.setHours(openHours, openMinutes || 0, 0);
+
+            const closeTime = new Date(today);
+            closeTime.setHours(closeHours, closeMinutes || 0, 0);
+
+            updatedSchedule[dayIndex] = {
+              ...updatedSchedule[dayIndex],
+              id: timing?.id,
+              status: 'open',
+              open: openTime,
+              close: closeTime,
+            };
+          }
+        });
+
+        return updatedSchedule;
+      });
+    }
+
+    if (existingDeliveryRadius) {
+      setDeliveryRadius(Number(existingDeliveryRadius));
+    }
+  }, [existingTimings, existingDeliveryRadius]);
 
   // useEffect(() => {
   //   // Initialize slider position based on deliveryRadius
@@ -187,14 +236,12 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
   };
 
   const handleContinue = async () => {
-    // Validate schedule - if a day is open, it must have both open and close times
     const hasAnyOpenDay = schedule.some(day => day.status === 'open');
     if (!hasAnyOpenDay) {
       ShowToast('error', 'Please set timing for at least one day');
       return;
     }
 
-    // 4️⃣ Open days must have both open & close times
     const invalidDays = schedule.filter(
       day => day.status === 'open' && (!day.open || !day.close),
     );
@@ -209,7 +256,6 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       return;
     }
 
-    // 5️⃣ Close time must be after open time
     for (const day of schedule) {
       if (day.status === 'open' && day.open && day.close) {
         if (day.close <= day.open) {
@@ -230,41 +276,21 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       return;
     }
 
-    // const invalidDays = schedule?.filter(
-    //   day => day.status === 'open' && (!day.open || !day.close),
-    // );
-
-    // if (invalidDays.length > 0) {
-    //   ShowToast(
-    //     'error',
-    //     `Please set both open and close times for ${invalidDays
-    //       .map(d => d.day)
-    //       .join(', ')}`,
-    //   );
-    //   return;
-    // }
-
-    // if (deliveryRadius < 100) {
-    //   ShowToast('error', 'Delivery radius must be at least 100 km');
-    //   return;
-    // }
-
     try {
       let data = new FormData();
 
       const { id, destination, ...cleanAddress } = prevData?.address || {};
 
-      // return console.log('cleanaddress', cleanAddress);
-
       const selectedSchedule = schedule
-        .filter(day => day.status === 'open' && day.open && day.close)
-        .map(({ status, open, close, ...rest }) => ({
-          ...rest,
-          open: moment(open).format('hh:mm:ss'),
-          close: moment(close).format('hh:mm:ss'),
+        // .filter(day => day.status === 'open' && day.open && day.close)
+        .map(day => ({
+          // id: day?.id,
+          day: day.day.toLowerCase(),
+          open: day?.open ? moment(day.open).format('hh:mm:ss') : null,
+          close: day?.close ? moment(day.close).format('hh:mm:ss') : null,
         }));
 
-      // console.log('Selected schedule:', selectedSchedule);
+      // return console.log('Selected schedule:', selectedSchedule);
 
       data.append('name', prevData?.restaurantName);
       data.append('phoneNumber', prevData?.phoneNumber);
@@ -283,11 +309,23 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       data.append('timings', JSON.stringify(selectedSchedule));
       data.append('deliveryRadius', deliveryRadius.toString());
 
-      const res = await addRestaurant(data).unwrap();
-      console.log('restaurant create response ===>', res);
-      ShowToast('success', 'Restaurant created successfully');
+      // console.log('formData ===>', data);
+
+      const res =
+        type === 'edit'
+          ? await updateRestaurant({ id: restaurantId, data: data }).unwrap()
+          : await addRestaurant(data).unwrap();
+      console.log('restaurant create/update response ===>', res, type);
+      ShowToast(
+        'success',
+        type === 'edit'
+          ? 'Restaurant updated successfully'
+          : 'Restaurant created successfully',
+      );
       if (res.success) {
-        // navigation.navigate('SubscriptionPlans');
+        navigation.navigate('RestaurantStack', {
+          screen: 'RestaurantHome',
+        });
       }
     } catch (error) {
       ShowToast(
@@ -295,7 +333,7 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
         (error as { data: { message: string } })?.data?.message ||
           'Something went wrong',
       );
-      console.log('error while creating the restaurant', error);
+      console.log('error while creating/updating the restaurant', error);
     }
   };
 
@@ -312,7 +350,6 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
 
   return (
     <WrapperContainer
-      hideBack={true}
       showRight={false}
       title="Schedule & Bank Setup"
       navigation={navigation}
@@ -490,10 +527,12 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
               onPress={handleContinue}
               activeOpacity={0.8}
             >
-              {isLoading ? (
+              {isLoading || updateLoader ? (
                 <Loader />
               ) : (
-                <Text style={styles.continueButtonText}>Create</Text>
+                <Text style={styles.continueButtonText}>
+                  {type === 'edit' ? 'Update' : 'Create'}
+                </Text>
               )}
             </TouchableOpacity>
           </View>

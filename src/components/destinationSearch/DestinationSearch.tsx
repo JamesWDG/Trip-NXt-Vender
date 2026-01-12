@@ -50,6 +50,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
   const [searchText, setSearchText] = useState('');
   const [searchResults, setSearchResults] = useState<SearchHistoryItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [locationSelected, setLocationSelected] = useState(true);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // const defaultHistory: SearchHistoryItem[] = [
@@ -247,6 +248,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
     (text: string) => {
       setSearchText(text);
       onSearchChange?.(text);
+      setLocationSelected(false);
 
       // Clear search results if text is too short
       if (text.length < 3) {
@@ -271,6 +273,7 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
 
     setSearchText(item?.destination);
     setSearchResults([]);
+    setLocationSelected(true);
   };
 
   // Cleanup timeout on unmount
@@ -372,9 +375,11 @@ const DestinationSearch: React.FC<DestinationSearchProps> = ({
               ))}
             </>
           ) : (
-            <View style={styles.noResultsContainer}>
-              <Text style={styles.noResultsText}>No results found</Text>
-            </View>
+            !locationSelected && (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsText}>No results found</Text>
+              </View>
+            )
           )}
         </>
       )}

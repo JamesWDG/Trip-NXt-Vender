@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { MapPin, X } from 'lucide-react-native';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -37,7 +37,7 @@ interface restaurantStateTypes {
   };
 }
 
-const RestaurantDetails = () => {
+const RestaurantDetails = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [state, setState] = useState<restaurantStateTypes>({
     restaurantName: '',
@@ -55,7 +55,60 @@ const RestaurantDetails = () => {
       logoImage: '',
     },
   });
+  const { restaurantData, type, previousScreen } = route.params || {};
 
+  // console.log('navigation props', navigation.getState().routes);
+
+  useEffect(() => {
+    if (restaurantData) {
+      const getLocation = () => {
+        if (!restaurantData?.location) return null;
+        if (typeof restaurantData.location === 'string') {
+          try {
+            return JSON.parse(restaurantData.location);
+          } catch (error) {
+            console.log('Error parsing location:', error);
+            return null;
+          }
+        }
+        return restaurantData.location;
+      };
+
+      const location = getLocation();
+
+      const formatFullAddress = (loc: any) => {
+        if (!loc) return '';
+        const parts = [loc.address, loc.city, loc.state, loc.country].filter(
+          Boolean,
+        );
+        return parts.join(', ') || loc.destination || '';
+      };
+
+      const address: SearchHistoryItem | null = location
+        ? {
+            id: location.id || 'existing',
+            destination: formatFullAddress(location),
+            address: location.address || '',
+            city: location.city || '',
+            state: location.state || '',
+            country: location.country || '',
+            latitude: location.latitude || 0,
+            longitude: location.longitude || 0,
+          }
+        : null;
+
+      setState(prevState => ({
+        ...prevState,
+        restaurantName: restaurantData?.name || '',
+        phoneNumber: restaurantData?.phoneNumber || '',
+        address: address,
+        about: restaurantData?.description || '',
+        logoImage: restaurantData?.logo || '',
+        coverImage: restaurantData?.banner || '',
+      }));
+    }
+  }, [restaurantData]);
+  // console.log('restaurantData ===>', restaurantData);
   // console.log(state.address);
   // const [restaurantName, setRestaurantName] = useState('');
   // const [ownerName, setOwnerName] = useState('');
@@ -76,10 +129,6 @@ const RestaurantDetails = () => {
     })
       .then((image: any) => {
         updateField('logoImage', image.path, 'logoImage');
-        // setState(prevState => ({
-        //   ...prevState,
-        //   logoImage: image.path,
-        // }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -99,10 +148,6 @@ const RestaurantDetails = () => {
     })
       .then((image: any) => {
         updateField('coverImage', image.path, 'coverImage');
-        // setState(prevState => ({
-        //   ...prevState,
-        //   coverImage: image.path,
-        // }));
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -156,19 +201,33 @@ const RestaurantDetails = () => {
     ) {
       return;
     }
-    // Validate required fields
-    // if (!restaurantName.trim() || !ownerName.trim() || !phoneNumber.trim()) {
-    //   console.log('Please fill in all required fields');
-    //   return;
-    // }
+    let timings = null;
+    let deliveryRadius = null;
 
-    // Save restaurant details and navigate to next step
-    // return console.log('Restaurant details:', {
-    //   state,
-    // });
+    if (restaurantData) {
+      if (restaurantData.timings) {
+        try {
+          timings =
+            typeof restaurantData.timings === 'string'
+              ? JSON.parse(restaurantData.timings)
+              : restaurantData.timings;
+        } catch (error) {
+          console.log('Error parsing timings:', error);
+        }
+      }
+
+      deliveryRadius = restaurantData.deliveryRadius || null;
+    }
+
     navigation.navigate('RestaurantStack', {
       screen: 'ScheduleAndBank',
-      params: { state },
+      params: {
+        id: restaurantData?.id,
+        state,
+        timings,
+        type,
+        deliveryRadius,
+      },
     });
   };
 
@@ -189,7 +248,7 @@ const RestaurantDetails = () => {
 
   return (
     <WrapperContainer
-      hideBack={true}
+      hideBack={previousScreen === 'RestaurantInfo' ? false : true}
       showRight={false}
       title="Business Information"
       navigation={navigation}

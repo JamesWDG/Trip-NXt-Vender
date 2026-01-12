@@ -27,7 +27,12 @@ const PrimaryHeader = ({
   const { top } = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(top), [top]);
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        !hideBack && !showRight && { justifyContent: 'flex-start', gap: 20 },
+      ]}
+    >
       {goBack ? (
         hideBack ? null : (
           <TouchableOpacity

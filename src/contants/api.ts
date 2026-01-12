@@ -10,13 +10,14 @@ type endpointTypes = {
     UPDATE_USER_PROFILE: (id: number) => string;
     CREATE_RESTAURANT: string;
     GET_RESTAURANT: (id: string) => string;
+    UPDATE_RESTAURANT: (id: number) => string;
     GET_AUTH_USER_RESTAURANT: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
-export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
+// export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
 // export const BASE_URL: string = 'http://192.168.0.108:5003/api/v1' //live
-// export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1' //local 
+export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1' //local 
 
 export const endpoint: endpointTypes = Object.freeze({
     LOGIN: '/user/login',
@@ -31,6 +32,7 @@ export const endpoint: endpointTypes = Object.freeze({
     CREATE_RESTAURANT: '/restaurant/create',
     GET_AUTH_USER_RESTAURANT: '/restaurant/get',
     GET_RESTAURANT: (id: string) => `/restaurant/get/${id}`,
+    UPDATE_RESTAURANT: (id: number) => `/restaurant/update/${id}`,
 
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })
