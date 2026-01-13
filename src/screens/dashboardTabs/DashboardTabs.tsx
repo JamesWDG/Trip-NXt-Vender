@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { FC, useCallback, useState } from 'react';
+import  { FC, useCallback, useState } from 'react';
 import colors from '../../config/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import images from '../../config/images';

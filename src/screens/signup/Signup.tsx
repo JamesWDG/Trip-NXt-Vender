@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import WrapperWithVideo from '../../components/wrappers/WrapperWithVideo';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import labels from '../../config/labels';
@@ -40,9 +40,9 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
   const [state, setState] = useState<stateTypes>({
     name: '',
     email: '',
-    phone: '',
-    password: '',
-    cPassword: '',
+    phone: '19707840508',
+    password: 'Abcd!234',
+    cPassword: 'Abcd!234',
     errors: {
       name: '',
       email: '',
@@ -119,7 +119,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
   };
 
   return (
-    <WrapperWithVideo otherStyles={styles.introWrapper}>
+    <WrapperWithVideo otherStyles={styles.introWrapper} >
       <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle
           showBack={true}
