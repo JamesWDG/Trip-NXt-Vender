@@ -6,7 +6,6 @@ import colors from '../../config/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import fonts from '../../config/fonts';
 import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
 
 const GetStarted = () => {

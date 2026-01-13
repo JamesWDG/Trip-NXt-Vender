@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     top: 230,
   },
   contentContainer: {
-    flex: 1,
+    flex: 0.9,
     marginTop: 180,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,

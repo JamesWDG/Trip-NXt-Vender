@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "113975492634",
+    "project_id": "trip-nxt-vendor",
+    "storage_bucket": "trip-nxt-vendor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:113975492634:android:0f303c97835c5db0b451a3",
+        "android_client_info": {
+          "package_name": "com.tripnxtvendor"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "113975492634-j4r0g47ceeuhqcb0bsep6ahr7ohso83c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tripnxtvendor",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "113975492634-8rdk07o4p72pho33rmek0o8stjo54hvm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXjXGaQ6i7WXFYfzb7_nsWMuM38KpMS6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "113975492634-8rdk07o4p72pho33rmek0o8stjo54hvm.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "113975492634-gniv6ktechndt1vfnun8oqcagag8sm39.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.tripnxtvendor"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

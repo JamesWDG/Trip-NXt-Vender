@@ -42,7 +42,7 @@ const DashboardTabs: FC = () => {
   }, []);
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.contentContainer}>
+      <ScrollView bounces={false} contentContainerStyle={styles.contentContainer}>
         <ImageBackground
           source={images.location}
           style={styles.locationImage}
