@@ -1,28 +1,42 @@
 import {
   Image,
   ImageSourcePropType,
+  ImageURISource,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import React from 'react';
-import { Star } from 'lucide-react-native';
+import { Edit, Star, Trash2 } from 'lucide-react-native';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
 
 interface MenuItemCardProps {
-  image: ImageSourcePropType;
+  id: number;
+  category: string;
+  image: ImageURISource | string;
   name: string;
   description: string;
   price: number;
   rating: number;
   reviewCount: number;
   onPress?: () => void;
+  onDelete?: (id: number) => void;
+  extraToppings: {
+    id: number;
+    name: string;
+    price: number;
+    description: string
+  }[]
 }
 
 const MenuItemCard: React.FC<MenuItemCardProps> = ({
+  id,
+  category,
   image,
   name,
   description,
@@ -30,10 +44,28 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   rating,
   reviewCount,
   onPress,
+  onDelete,
+  extraToppings,
 }) => {
+  const navigation = useNavigation<NavigationProp<ParamListBase, string>>();
   const formatPrice = (amt: number) => {
     return `$${amt.toFixed(1)}`;
   };
+  const handleEditItem = () => {
+    navigation.navigate('MenuImage', {
+      type: 'edit',
+      id: id,
+      name: name,
+      description: description,
+      price: price,
+      image: image as string,
+      category: category,
+      extraToppings: extraToppings,
+    })
+  }
+  const handleDeleteItem = () => {
+    onDelete?.(id);
+  }
 
   return (
     <TouchableOpacity
@@ -41,19 +73,29 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Image source={image} style={styles.menuImage} resizeMode="cover" />
+      <Image source={{ uri: image as string }} style={styles.menuImage} resizeMode="cover" />
       <View style={styles.contentContainer}>
-        <Text style={styles.itemName}>{name}</Text>
-        <Text style={styles.description} numberOfLines={2}>
+        <View style={styles.itemNameContainer}>
+          <Text style={styles.itemName}>{name}</Text>
+          <View style={styles.actionContainer}>
+            <Pressable onPress={handleDeleteItem}>
+              <Trash2 size={16} color={colors.red} />
+            </Pressable>
+            <Pressable onPress={handleEditItem}>
+              <Edit size={16} color={colors.black} />
+            </Pressable>
+          </View>
+        </View>
+        <Text style={styles.description} numberOfLines={1}>
           {description}
         </Text>
         <Text style={styles.price}>{formatPrice(price)}</Text>
-        <View style={styles.ratingContainer}>
+        {/* <View style={styles.ratingContainer}>
           <Star size={16} color="#FFD700" fill="#FFD700" />
           <Text style={styles.ratingText}>
             {rating} ({reviewCount} reviews)
           </Text>
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );
@@ -63,11 +105,12 @@ export default MenuItemCard;
 
 const styles = StyleSheet.create({
   card: {
+    marginHorizontal: 2,
     flexDirection: 'row',
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 0.5,
     borderColor: colors.c_DDDDDD,
   },
@@ -80,26 +123,34 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     marginLeft: 12,
+    justifyContent: 'space-around',
+  },
+  itemNameContainer: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
-    marginBottom: 6,
   },
   description: {
     fontSize: 12,
     fontFamily: fonts.normal,
     color: colors.c_666666,
-    marginBottom: 8,
+    // marginBottom: 8,
     lineHeight: 18,
   },
   price: {
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
-    marginBottom: 8,
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
   },
   ratingContainer: {
     flexDirection: 'row',

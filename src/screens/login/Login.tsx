@@ -26,6 +26,7 @@ import {
   clearCredentials,
 } from '../../redux/slices/authSlice';
 import { RootState } from '../../redux/store';
+import { CommonActions } from '@react-navigation/native';
 
 interface stateTypes {
   email: string;
@@ -38,8 +39,8 @@ interface stateTypes {
 
 const Login = ({ navigation }: { navigation: any }) => {
   const [state, setState] = useState<stateTypes>({
-    email: '',
-    password: '',
+    email: 'wdgtest1@yopmail.com',
+    password: 'Abcd!234',
     errors: {
       email: '',
       password: '',
@@ -61,12 +62,6 @@ const Login = ({ navigation }: { navigation: any }) => {
       }));
     }
   }, []);
-
-  useEffect(() => {
-    if (!rememberMe && savedCredentials?.email && savedCredentials?.password) {
-      dispatch(clearCredentials());
-    }
-  }, [rememberMe, dispatch]);
 
   const handleRememberMe = () => {
     const newRememberMeValue = !rememberMe;
@@ -101,33 +96,32 @@ const Login = ({ navigation }: { navigation: any }) => {
         } else {
           dispatch(clearCredentials());
         }
-        if (activeStack) {
-          if (navigationRef.isReady()) {
-            navigationRef.reset({
-              index: 0,
-              routes: [
-                {
-                  name: 'app',
-                  state: {
-                    routes: [
-                      {
-                        name: activeStack,
-                      },
-                    ],
-                    index: 0,
-                  },
+        console.log('activeStack', activeStack, res.data.role);
+        if (navigationRef.isReady()) {
+          console.log('navigationRef.isReady()', navigationRef.isReady());
+          navigationRef.dispatch(CommonActions.reset({
+            index: 0,
+            routes: [
+              {
+                name: 'app',
+                state: {
+                  routes: [
+                    {
+                      name: res.data.role === 'restaurant_owner' ? 'RestaurantStack' : res.data.role === 'accommodation_owner' ? 'Accomodation' : 'CabStack',
+                    },
+                  ],
+                  index: 0,
                 },
-              ],
-            });
-          }
+              },
+            ],
+          }));
         }
-        // navigation.navigate('OtpVerify', { email: state.email });
       }
     } catch (error) {
       ShowToast(
         'error',
         (error as { data: { message: string } }).data.message ||
-          'Something went wrong',
+        'Something went wrong',
       );
       console.log('error while login', error);
     }
@@ -312,3 +306,5 @@ const styles = StyleSheet.create({
   },
   scrollViewContentContainer: {},
 });
+
+

@@ -201,10 +201,10 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       } else {
         const openTime = newSchedule[selectedDayIndex].open;
         // Validate that close time is after open time
-        if (openTime && date <= openTime) {
-          ShowToast('error', 'Close time must be after open time');
-          return;
-        }
+        // if (openTime && date <= openTime) {
+        //   ShowToast('error', 'Close time must be after open time');
+        //   return;
+        // }
         newSchedule[selectedDayIndex].close = date;
       }
       setSchedule(newSchedule);
@@ -256,17 +256,17 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       return;
     }
 
-    for (const day of schedule) {
-      if (day.status === 'open' && day.open && day.close) {
-        if (day.close <= day.open) {
-          ShowToast(
-            'error',
-            `Close time must be after open time on ${day.day}`,
-          );
-          return;
-        }
-      }
-    }
+    // for (const day of schedule) {
+    //   if (day.status === 'open' && day.open && day.close) {
+    //     if (day.close <= day.open) {
+    //       ShowToast(
+    //         'error',
+    //         `Close time must be after open time on ${day.day}`,
+    //       );
+    //       return;
+    //     }
+    //   }
+    // }
 
     if (deliveryRadius < 100 || deliveryRadius > maxRadius) {
       ShowToast(

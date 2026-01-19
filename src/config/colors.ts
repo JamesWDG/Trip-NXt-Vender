@@ -1,5 +1,5 @@
 const colors = Object.freeze({
-
+    red: 'red',
     transparent: "transparent",
     black: "#000000",
     white: "#FFFFFF",

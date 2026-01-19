@@ -15,7 +15,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import { TabStackArray } from '../../contants/tabsStack';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../redux/store';
 import { selectActiveStack } from '../../redux/slices/navigationSlice';
 
 const TabBars = (props: BottomTabBarProps) => {

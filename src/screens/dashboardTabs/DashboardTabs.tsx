@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { FC, useCallback, useState } from 'react';
+import  { FC, useCallback, useState } from 'react';
 import colors from '../../config/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import images from '../../config/images';
@@ -17,7 +17,7 @@ import fonts from '../../config/fonts';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 import GeneralStyles from '../../utils/GeneralStyles';
-import { useAppDispatch } from '../../store/hooks';
+import { useAppDispatch } from '../../redux/store';
 import { setActiveStack } from '../../redux/slices/navigationSlice';
 const DashboardTabs: FC = () => {
   const navigation = useNavigation<NavigationPropType>();

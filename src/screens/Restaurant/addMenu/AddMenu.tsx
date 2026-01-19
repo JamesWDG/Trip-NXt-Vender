@@ -5,14 +5,16 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import React, { useState, useRef } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { Plus, Check } from 'lucide-react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { NavigationProp, RouteProp, useNavigation } from '@react-navigation/native';
+import { Plus, Check, Trash2 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import SelectInput from '../../../components/selectInput/SelectInput';
 import BottomSheetComp from '../../../components/bottomSheetComp/BottomSheetComp';
 import { BottomSheetComponentRef } from '../../../components/bottomSheetComp/BottomSheetComp';
+import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
+import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 
@@ -21,7 +23,14 @@ interface MenuItem {
   name: string;
 }
 
-const AddMenu = () => {
+interface MenuItemInput {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+}
+
+const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [selectedItems, setSelectedItems] = useState<string[]>([
     '',
@@ -32,6 +41,15 @@ const AddMenu = () => {
   ]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const bottomSheetRef = useRef<BottomSheetComponentRef>(null);
+  const [menuItemsInput, setMenuItemsInput] = useState<MenuItemInput[]>([
+    route.params?.extraToppings ? route.params?.extraToppings
+      : {
+        id: Date.now().toString(),
+        name: '',
+        description: '',
+        price: '',
+      },
+  ]);
 
   // Sample menu items - replace with actual data from API
   const menuItems: MenuItem[] = [
@@ -63,9 +81,32 @@ const AddMenu = () => {
   };
 
   const handleAddNewItems = () => {
-    // Handle add new items action
-    console.log('Add New Items pressed');
-    // TODO: Navigate to add new item screen or open modal
+    // Add a new set of input fields
+    setMenuItemsInput(prev => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        name: '',
+        description: '',
+        price: '',
+      },
+    ]);
+  };
+
+  const handleItemChange = (
+    id: string,
+    field: 'name' | 'description' | 'price',
+    value: string,
+  ) => {
+    setMenuItemsInput(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    );
+  };
+
+  const handleRemoveItem = (id: string) => {
+    setMenuItemsInput(prev => prev.filter(item => item.id !== id));
   };
 
   const handleNext = () => {
@@ -80,7 +121,19 @@ const AddMenu = () => {
 
     // Save menu items and navigate to menu image screen
     console.log('Selected items:', selectedItems);
-    navigation.navigate('RestaurantStack', { screen: 'MenuImage' });
+    navigation.navigate('RestaurantStack', {
+      screen: 'MenuImage',
+      params: {
+        type: route.params?.type,
+        name: route.params?.name,
+        price: route.params?.price,
+        description: route.params?.description,
+        image: route.params?.image,
+        category: route.params?.category,
+        extraToppings: menuItemsInput,
+        id: route.params?.id,
+      },
+    });
   };
 
   const renderMenuItem = (item: MenuItem) => {
@@ -110,6 +163,13 @@ const AddMenu = () => {
     );
   };
 
+  useEffect(() => {
+    console.log('route.params?.extraToppings ===>', route.params?.extraToppings);
+    if (route.params?.extraToppings) {
+      setMenuItemsInput(route.params?.extraToppings);
+    }
+  }, [route.params?.extraToppings]);
+
   return (
     <WrapperContainer title="Add Menu" navigation={navigation}>
       <>
@@ -118,15 +178,47 @@ const AddMenu = () => {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
-          {/* Select Input Fields */}
+          {/* Menu Items Input Fields */}
           <View style={styles.inputsContainer}>
-            {selectedItems.map((value, index) => (
-              <View key={index} style={styles.inputWrapper}>
-                <SelectInput
-                  placeholder={`Select Menu Item ${index + 1}`}
-                  value={value}
-                  onPress={() => handleSelectPress(index)}
-                />
+            {menuItemsInput.map((item, index) => (
+              <View key={item.id} style={styles.itemContainer}>
+                <View style={styles.itemHeader}>
+                  <Text style={styles.itemLabel}>Item {index + 1}</Text>
+                  {menuItemsInput.length > 1 && (
+                    <TouchableOpacity
+                      style={styles.removeButton}
+                      onPress={() => handleRemoveItem(item.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={18} color={colors.red} strokeWidth={2} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <View style={styles.inputWrapper}>
+                  <CustomTextInput
+                    placeholder="Item Name"
+                    value={item.name}
+                    onChangeText={value => handleItemChange(item.id, 'name', value)}
+                  />
+                </View>
+                <View style={styles.inputWrapper}>
+                  <CustomTextArea
+                    placeholder="Description"
+                    value={item.description}
+                    onChangeText={value =>
+                      handleItemChange(item.id, 'description', value)
+                    }
+                    style={styles.textArea}
+                  />
+                </View>
+                <View style={styles.inputWrapper}>
+                  <CustomTextInput
+                    placeholder="Price"
+                    value={item?.price?.toString()}
+                    onChangeText={value => handleItemChange(item.id, 'price', value)}
+                    keyboardType="numeric"
+                  />
+                </View>
               </View>
             ))}
           </View>
@@ -157,7 +249,7 @@ const AddMenu = () => {
         </ScrollView>
 
         {/* Bottom Sheet for Menu Item Selection */}
-        <BottomSheetComp
+        {/* <BottomSheetComp
           ref={bottomSheetRef}
           snapPoints={['50%', '75%']}
           enablePanDownToClose={true}
@@ -171,7 +263,7 @@ const AddMenu = () => {
               {menuItems.map(item => renderMenuItem(item))}
             </ScrollView>
           </View>
-        </BottomSheetComp>
+        </BottomSheetComp> */}
       </>
     </WrapperContainer>
   );
@@ -191,8 +283,33 @@ const styles = StyleSheet.create({
   inputsContainer: {
     marginBottom: 20,
   },
+  itemContainer: {
+    marginBottom: 24,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.c_F3F3F3,
+  },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  itemLabel: {
+    fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+  },
+  removeButton: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: colors.c_F3F3F3,
+  },
   inputWrapper: {
     marginBottom: 16,
+  },
+  textArea: {
+    minHeight: 100,
   },
   addButton: {
     marginTop: 10,

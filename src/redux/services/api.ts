@@ -27,6 +27,7 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
     await api.dispatch(setLogout());
 
   }
+  console.log('result ===>', result);
   return result;
 };
 
@@ -34,4 +35,5 @@ export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
   endpoints: () => ({}),
+  tagTypes: ['Menu'],
 });

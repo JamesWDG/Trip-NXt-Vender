@@ -12,7 +12,7 @@ const WrapperContainer = ({
   goBack = true,
   showRight = true,
   hideBack = false,
-  onBackPress = () => {},
+  onBackPress = null,
   onMenuPress = () => {},
 }: {
   title: string;
@@ -21,7 +21,7 @@ const WrapperContainer = ({
   goBack?: boolean;
   showRight?: boolean;
   hideBack?: boolean;
-  onBackPress?: () => void;
+  onBackPress?: null | (() => void);
   onMenuPress?: () => void;
 }) => {
   return (
@@ -30,7 +30,7 @@ const WrapperContainer = ({
         title={title}
         showRight={showRight}
         hideBack={hideBack}
-        onBackPress={() => navigation?.goBack()}
+        onBackPress={() => onBackPress ? onBackPress() : navigation?.goBack()}
         goBack={goBack}
         onMenuPress={onMenuPress}
       />

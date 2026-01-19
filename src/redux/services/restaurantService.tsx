@@ -36,6 +36,36 @@ export const RestaurantApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
     }),
+    addMenuItem: builder.mutation({
+      query: (data: any) => ({
+        url: endpoint.ADD_MENU_ITEM,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Menu'],
+    }),
+    getMenuItems: builder.query({
+      query: () => ({
+        url: endpoint.GET_MENU_ITEMS,
+        method: 'GET',
+      }),
+      providesTags: ['Menu'],
+    }),
+    updateMenuItem: builder.mutation({
+      query: ({ id, data }) => ({
+        url: endpoint.UPDATE_MENU_ITEM(id),
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Menu'],
+    }),
+    deleteMenuItem: builder.mutation({
+      query: (id: number) => ({
+        url: endpoint.DELETE_MENU_ITEM(id),
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Menu'],
+    }),
   }),
 });
 
@@ -44,4 +74,8 @@ export const {
   useAddRestaurantMutation,
   useLazyGetAuthUserRestaurantQuery,
   useUpdateRestaurantMutation,
+  useAddMenuItemMutation,
+  useLazyGetMenuItemsQuery,
+  useUpdateMenuItemMutation,
+  useDeleteMenuItemMutation
 } = RestaurantApi;

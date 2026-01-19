@@ -7,32 +7,118 @@ import {
   TextInput,
   Image,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import React, { useState } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import React, { FC, useEffect, useState } from 'react';
+import { NavigationProp, ParamListBase, RouteProp, useNavigation } from '@react-navigation/native';
 import { Plus, X } from 'lucide-react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import ImagePicker from 'react-native-image-crop-picker';
+import ImagePicker, { Image as ImageType } from 'react-native-image-crop-picker';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import { useAddMenuItemMutation, useUpdateMenuItemMutation } from '../../../redux/services/restaurantService';
+import { addMenuItemValidation, MenuItemValidationParams } from '../../../utils/validations';
+import { ShowToast } from '../../../config/constants';
 
-const MenuImage = () => {
-  const navigation = useNavigation<NavigationProp<any>>();
+interface MenuImageProps {
+  route: RouteProp<{
+    params: {
+      type: 'add' | 'edit';
+      id?: number;
+      name?: string;
+      description?: string;
+      price?: number;
+      image?: string;
+      category?: string;
+      extraToppings?: any[];
+    }
+  }>;
+  navigation: NavigationProp<ParamListBase, string>;
+}
+
+const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
+  const [screenType, setScreenType] = useState<'add' | 'edit'>('add');
   const [selectedCategory, setSelectedCategory] = useState<string>('Starters');
   const [newCategory, setNewCategory] = useState('');
   const [itemName, setItemName] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
+  const [selectedImage, setSelectedImage] = useState<ImageType | null | string>(null);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<MenuItemValidationParams & { image: string }>({
+    category: '',
+    name: '',
+    price: '',
+    description: '',
+    image: '',
+  });
+  const [addMenuItem, { isLoading }] = useAddMenuItemMutation();
+  const [updateMenuItem] = useUpdateMenuItemMutation();
   const categories = ['Starters', 'Mains', 'Drinks', 'Desserts'];
 
-  const handleAddNewItems = () => {
-    // Navigate to RideDetails screen
-    navigation.navigate('RestaurantStack', { screen: 'RideDetails' });
+  useEffect(() => {
+    // if (screenType === 'edit') {
+      setSelectedCategory(route.params?.category || '');
+      setItemName(route.params?.name || '');
+      setPrice(route.params?.price?.toString() || '');
+      setDescription(route.params?.description || '');
+      setSelectedImage(route.params?.image || null);
+      setScreenType(route.params?.type as 'add' | 'edit');
+    // }
+  }, [route.params])
+
+  const handleAddNewItems = async () => {
+    setErrors({
+      category: '',
+      name: '',
+      price: '',
+      description: '',
+      image: '',
+    })
+    try {
+      setLoading(true);
+      const error: Partial<typeof errors> = addMenuItemValidation({
+        category: selectedCategory,
+        name: itemName,
+        price: price,
+        description: description,
+      });
+      if (!selectedImage) {
+        error.image = 'Please upload image';
+      }
+      if (Object.keys(error)?.length > 0) {
+        setErrors({
+          ...errors,
+          ...error,
+        });
+        return;
+      }
+      const data = new FormData();
+      data.append('category', selectedCategory);
+      data.append('name', itemName);
+      data.append('price', price);
+      data.append('description', description);
+      data.append('image', {
+        name: (selectedImage as ImageType)?.filename || 'image.jpg',
+        type: (selectedImage as ImageType)?.mime || 'image/jpeg',
+        uri: (selectedImage as ImageType)?.path,
+      });
+      console.log('route.params?.extraToppings ===>', route.params?.extraToppings);
+      if (route.params?.extraToppings && route.params?.extraToppings?.length > 0) {
+        data.append('extraToppings', JSON.stringify(route.params?.extraToppings));
+      }
+      const res = await addMenuItem(data).unwrap();
+      console.log('res adding menu item: ', res);
+      navigation.navigate('RestaurantStack', { screen: 'Menu' });
+      ShowToast('success', 'Menu item added successfully');
+    } catch (error) {
+      console.log('Error adding menu item:', error);
+      ShowToast('error', 'Failed to add menu item');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCategorySelect = (category: string) => {
@@ -47,10 +133,59 @@ const MenuImage = () => {
     }
   };
 
-  const handleEditItem = () => {
-    // Handle edit item action
-    console.log('Edit item pressed');
-    // TODO: Load item data for editing
+  const handleEditItem = async () => {
+    setErrors({
+      category: '',
+      name: '',
+      price: '',
+      description: '',
+      image: '',
+    })
+    try {
+      setLoading(true);
+      const error: Partial<typeof errors> = addMenuItemValidation({
+        category: selectedCategory,
+        name: itemName,
+        price: price,
+        description: description,
+      });
+      if (!selectedImage) {
+        error.image = 'Please upload image';
+      }
+      if (Object.keys(error)?.length > 0) {
+        setErrors({
+          ...errors,
+          ...error,
+        });
+        return;
+      }
+      const data = new FormData();
+      data.append('category', selectedCategory);
+      data.append('name', itemName);
+      data.append('price', price);
+      data.append('description', description);
+      if (typeof selectedImage !== 'string') {
+        data.append('image', {
+          name: (selectedImage as ImageType)?.filename || 'image.jpg',
+          type: (selectedImage as ImageType)?.mime || 'image/jpeg',
+          uri: (selectedImage as ImageType)?.path,
+        });
+      }
+      console.log('route.params?.extraToppings ===>', route.params?.extraToppings);
+      if (route.params?.extraToppings && route.params?.extraToppings?.length > 0) {
+        data.append('extraToppings', JSON.stringify(route.params?.extraToppings));
+      }
+      console.log('data ===>', data, route.params.id);
+      const res = await updateMenuItem({ id: route.params?.id, data }).unwrap();
+      console.log('res adding menu item: ', res);
+      navigation.navigate('RestaurantStack', { screen: 'Menu' });
+      ShowToast('success', 'Menu item added successfully');
+    } catch (error) {
+      console.log('Error Updating menu item:', error);
+      ShowToast('error', 'Failed to update menu item');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleImagePicker = () => {
@@ -60,7 +195,7 @@ const MenuImage = () => {
       includeBase64: false,
     })
       .then(image => {
-        setSelectedImage(image.path);
+        setSelectedImage(image);
       })
       .catch(error => {
         if (error.code !== 'E_PICKER_CANCELLED') {
@@ -77,37 +212,17 @@ const MenuImage = () => {
     navigation.goBack();
   };
 
-  const handleSave = () => {
-    // Validate and save
-    // if (!itemName.trim() || !price.trim()) {
-    //   Alert.alert('Error', 'Please fill in all required fields');
-    //   return;
-    // }
-
+  const handleSave = async () => {
     // Save item data
-    console.log('Saving item:', {
-      category: selectedCategory,
-      itemName,
-      price,
-      description,
-      image: selectedImage,
-    });
-
-    navigation.navigate('RestaurantStack', { screen: 'RestaurantHome' });
-    // Show success message
-    // Alert.alert('Success', 'Item saved successfully!', [
-    //   {
-    //     text: 'OK',
-    //     onPress: () => {
-    //       // Navigate back to menu after success
-    //       navigation.navigate('RideDetails');
-    //     },
-    //   },
-    // ]);
+    if (screenType === 'add') {
+      await handleAddNewItems();
+    } else {
+      handleEditItem();
+    }
   };
 
   return (
-    <WrapperContainer title="Edit Product" navigation={navigation}>
+    <WrapperContainer title={`${screenType === 'add' ? 'Add' : 'Edit'} Product`} navigation={navigation}>
       <>
         <ScrollView
           style={styles.container}
@@ -115,7 +230,7 @@ const MenuImage = () => {
           showsVerticalScrollIndicator={false}
         >
           {/* Add New Items Button */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.addButton}
             onPress={handleAddNewItems}
             activeOpacity={0.8}
@@ -127,7 +242,7 @@ const MenuImage = () => {
               <Plus size={20} color={colors.white} strokeWidth={2.5} />
               <Text style={styles.addButtonText}>Add New Items</Text>
             </LinearGradient>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Categories Section */}
           <View style={styles.section}>
@@ -141,7 +256,7 @@ const MenuImage = () => {
                   style={[
                     styles.categoryButton,
                     selectedCategory === category &&
-                      styles.categoryButtonActive,
+                    styles.categoryButtonActive,
                   ]}
                   onPress={() => handleCategorySelect(category)}
                   activeOpacity={0.7}
@@ -150,7 +265,7 @@ const MenuImage = () => {
                     style={[
                       styles.categoryButtonText,
                       selectedCategory === category &&
-                        styles.categoryButtonTextActive,
+                      styles.categoryButtonTextActive,
                     ]}
                   >
                     {category}
@@ -172,30 +287,30 @@ const MenuImage = () => {
                   onSubmitEditing={handleAddCategory}
                 />
               </View>
+              {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
             </View>
           </View>
 
           {/* Existing Item Card */}
-          <View style={styles.itemCard}>
+          {screenType === 'edit' && <View style={styles.itemCard}>
             <View style={styles.itemCardContent}>
               <View style={styles.itemCardInfo}>
-                <Text style={styles.itemCardName}>Burger</Text>
-                <Text style={styles.itemCardDetails}>$10 • Available</Text>
+                <Text style={styles.itemCardName}>{route.params?.name}</Text>
+                <Text style={styles.itemCardDetails}>{route.params?.price} • Available</Text>
               </View>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.editButton}
                 onPress={handleEditItem}
                 activeOpacity={0.7}
               >
                 <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
-          </View>
+          </View>}
 
           {/* Add / Edit Item Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Add / Edit Item</Text>
-
+            <Text style={styles.sectionTitle}>{screenType === 'add' ? 'Add' : 'Edit'} Item</Text>
             {/* Item Name Input */}
             <View style={styles.inputWrapper}>
               <CustomTextInput
@@ -204,6 +319,7 @@ const MenuImage = () => {
                 onChangeText={setItemName}
                 style={styles.input}
               />
+              {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
             </View>
 
             {/* Price Input */}
@@ -215,6 +331,7 @@ const MenuImage = () => {
                 keyboardType="numeric"
                 style={styles.input}
               />
+              {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
             </View>
 
             {/* Description Input */}
@@ -226,6 +343,7 @@ const MenuImage = () => {
                 numberOfLines={4}
                 style={styles.textArea}
               />
+              {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
             </View>
 
             {/* Photo Upload Area */}
@@ -237,7 +355,7 @@ const MenuImage = () => {
               {selectedImage ? (
                 <View style={styles.imagePreviewContainer}>
                   <Image
-                    source={{ uri: selectedImage }}
+                    source={{ uri: typeof selectedImage === 'string' ? selectedImage : selectedImage?.path }}
                     style={styles.previewImage}
                     resizeMode="cover"
                   />
@@ -255,6 +373,23 @@ const MenuImage = () => {
                 </Text>
               )}
             </TouchableOpacity>
+            {errors.image && <Text style={styles.errorText}>{errors.image}</Text>}
+          </View>
+
+          <View>
+            <TouchableOpacity onPress={() =>navigation.navigate('AddMenu', {
+              type: screenType,
+              name: itemName,
+              price: price,
+              description: description,
+              image: selectedImage,
+              category: selectedCategory,
+              id: route.params?.id,
+              extraToppings: route.params?.extraToppings || [],
+            })} activeOpacity={0.7} style={styles.addPhotoButton}>
+              <Plus size={20} color={colors.white} />
+              <Text style={styles.addButtonText}>Add Extras</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Bottom Action Buttons */}
@@ -267,11 +402,12 @@ const MenuImage = () => {
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
+              disabled={loading}
               style={styles.saveButton}
               onPress={handleSave}
               activeOpacity={0.8}
             >
-              <Text style={styles.saveButtonText}>Save Now</Text>
+              {loading ? <ActivityIndicator size="small" color={colors.white} /> : <Text style={styles.saveButtonText}>Save Now</Text>}
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -508,4 +644,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     color: colors.white,
   },
+  errorText: {
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    color: colors.red,
+    marginTop: 4,
+  },
+  addPhotoButton: {
+    backgroundColor: colors.c_0162C0,
+    borderRadius: 100,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
 });
+

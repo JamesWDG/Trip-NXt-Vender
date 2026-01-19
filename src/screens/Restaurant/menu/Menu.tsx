@@ -1,72 +1,68 @@
 import {
   FlatList,
+  SectionList,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import MenuItemCard from '../../../components/menuItemCard/MenuItemCard';
 import images from '../../../config/images';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import { useDeleteMenuItemMutation, useLazyGetMenuItemsQuery } from '../../../redux/services/restaurantService';
+import { ShowToast } from '../../../config/constants';
+import { MenuItemValidationParams } from '../../../utils/validations';
+import DeleteModal, { DeleteModalRef } from '../../../components/deleteModal/DeleteModal';
 
 const Menu = () => {
   const navigation = useNavigation<NavigationProp<any>>();
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [getMenuItems] = useLazyGetMenuItemsQuery();
+  const deleteModalRef = useRef<DeleteModalRef>(null);
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
+  const [deleteMenuItem, { isLoading }] = useDeleteMenuItemMutation();
+  
+  const onDeleteItem = (id: number) => {
+    setSelectedItemId(id);
+    deleteModalRef.current?.open();
+  }
 
-  const menuItems = [
-    {
-      id: '1',
-      image: images.placeholder,
-      name: 'Pretzel Chicken Noodle Soup',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 24.0,
-      rating: 4.8,
-      reviewCount: 150,
-    },
-    {
-      id: '2',
-      image: images.placeholder,
-      name: 'Crispy Chicken Burger',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 18.5,
-      rating: 4.5,
-      reviewCount: 89,
-    },
-    {
-      id: '3',
-      image: images.placeholder,
-      name: 'Grilled Chicken Wrap',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 16.0,
-      rating: 4.7,
-      reviewCount: 120,
-    },
-    {
-      id: '4',
-      image: images.placeholder,
-      name: 'BBQ Chicken Pizza',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 22.0,
-      rating: 4.9,
-      reviewCount: 200,
-    },
-    {
-      id: '5',
-      image: images.placeholder,
-      name: 'Chicken Caesar Salad',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 15.5,
-      rating: 4.6,
-      reviewCount: 95,
-    },
-  ];
+  const handleDeleteItem = async (id: number) => {
+    try {
+      const res = await deleteMenuItem(id).unwrap();
+      console.log('res deleting menu item: ', res);
+      ShowToast('success', 'Item deleted successfully');
+      fetchMenuItems();
+    } catch (error) {
+      ShowToast('error', 'Failed to delete item');
+    }
+  }
+  const fetchMenuItems = async () => {
+    try {
+      const res = await getMenuItems({}).unwrap();
+      console.log('menu items: ', res);
+      setMenuItems(res.data);
+    } catch (error) {
+      console.log('error fetching menu items: ', error);
+      ShowToast('error', 'Failed to fetch menu items');
+    }
+  }
 
+  useEffect(() => {
+    const subscribe = navigation.addListener('focus', () => {
+      fetchMenuItems();
+    });
+    return () => {
+      subscribe();
+    };
+  }, [])
   const handleAddNewItems = () => {
     // Navigate to add menu screen
-    navigation.navigate('AddMenu');
+    navigation.navigate('MenuImage', { type: 'add' });
   };
 
   const handleMenuItemPress = (itemId: string) => {
@@ -75,7 +71,7 @@ const Menu = () => {
   };
 
   return (
-    <WrapperContainer title="Menu" navigation={navigation}>
+    <WrapperContainer title="Menu" navigation={navigation} onBackPress={() => navigation.navigate('RestaurantStack', { screen: 'RestaurantHome' })}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -86,23 +82,33 @@ const Menu = () => {
         </View>
 
         {/* Menu Items List */}
-        <FlatList
-          data={menuItems}
+        <SectionList
+          sections={menuItems}
+          renderSectionHeader={({ section: { title } }) => (
+            <View style={{marginTop: 10}}>
+              <Text style={styles.headerTitle}>{title}</Text>
+            </View>
+          )}
           renderItem={({ item }) => (
             <MenuItemCard
+              id={item.id}
+              category={item.category}
               image={item.image}
               name={item.name}
               description={item.description}
               price={item.price}
-              rating={item.rating}
-              reviewCount={item.reviewCount}
+              rating={item.rating || 0}
+              reviewCount={item.reviewCount || 0}
+              extraToppings={item.toppings || []}
               onPress={() => handleMenuItemPress(item.id)}
+              onDelete={onDeleteItem}
             />
           )}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
+        <DeleteModal ref={deleteModalRef} onDelete={() => handleDeleteItem(selectedItemId as number)}/>
       </View>
     </WrapperContainer>
   );

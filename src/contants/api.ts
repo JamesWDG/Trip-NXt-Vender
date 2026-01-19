@@ -12,6 +12,10 @@ type endpointTypes = {
     GET_RESTAURANT: (id: string) => string;
     UPDATE_RESTAURANT: (id: number) => string;
     GET_AUTH_USER_RESTAURANT: string;
+    ADD_MENU_ITEM: string;
+    GET_MENU_ITEMS: string;
+    UPDATE_MENU_ITEM: (id: number) => string;
+    DELETE_MENU_ITEM: (id: number) => string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -33,6 +37,9 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_AUTH_USER_RESTAURANT: '/restaurant/get',
     GET_RESTAURANT: (id: string) => `/restaurant/get/${id}`,
     UPDATE_RESTAURANT: (id: number) => `/restaurant/update/${id}`,
-
+    ADD_MENU_ITEM: '/menu',
+    GET_MENU_ITEMS: '/menu/restaurant',
+    UPDATE_MENU_ITEM: (id: number) => `/menu/${id}`,
+    DELETE_MENU_ITEM: (id: number) => `/menu/${id}`,
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })

@@ -29,6 +29,14 @@ interface RestaurantValidationParams {
 
 const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+export type MenuItemValidationParams = {
+  id?: number;
+  category: string;
+  name: string;
+  price: string;
+  description: string;
+};
+
 const strongPasswordValidation = (password: string) => {
   if (!password) return 'Please enter your password';
 
@@ -199,5 +207,22 @@ export const createRestaurantValidation = (
     errors.coverImage = 'Please upload restaurant banner';
   }
 
+  return errors;
+};
+
+export const addMenuItemValidation = (state: MenuItemValidationParams) => {
+  const errors: Partial<MenuItemValidationParams> = {};
+  if (!state.category) {
+    errors.category = 'Please select category';
+  }
+  if (!state.name) {
+    errors.name = 'Please enter item name';
+  }
+  if (!state.price) {
+    errors.price = 'Please enter item price';
+  }
+  if (!state.description) {
+    errors.description = 'Please enter item description';
+  }
   return errors;
 };

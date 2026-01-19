@@ -27,7 +27,7 @@ import { ShowToast, width } from '../../config/constants';
 import WrapperWithVideo from '../../components/wrappers/WrapperWithVideo';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import { RootState } from '../../redux/store';
-import { useAppSelector } from '../../store/hooks';
+import { useAppSelector } from '../../redux/store';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
 import Loader from '../../components/AppLoader/Loader';
 
