@@ -34,7 +34,19 @@ const AddHotel = () => {
   const categories = ['Budget', 'Standard', 'Luxury'];
 
   const handleNext = () => {
-    navigation.navigate('Accomodation', { screen: 'PeopleStays', params: { hotelName, hotelAddress, rentPerDay, rentPerHour, description, category: selectedCategory, postalCode, website, phoneNumber } });
+    navigation.navigate('Accomodation', {
+      screen: 'PeopleStays', params: {
+        hotelName,
+        hotelAddress,
+        rentPerDay,
+        rentPerHour,
+        description,
+        category: selectedCategory,
+        postalCode,
+        website: 'www.google.com',
+        phoneNumber
+      }
+    });
   };
 
   return (
@@ -109,11 +121,11 @@ const AddHotel = () => {
               value={postalCode}
               onChangeText={setPostalCode}
             />
-            <CustomTextInput
+            {/* <CustomTextInput
               placeholder="Enter Website URL"
               value={website}
               onChangeText={setWebsite}
-            />
+            /> */}
             <CustomTextInput
               placeholder="Enter Phone Number"
               value={phoneNumber}

@@ -51,7 +51,6 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 8,
-    backgroundColor: 'red',
   },
   selectedIconContainer: {
     // Additional styling if needed

@@ -88,7 +88,11 @@ const UploadPhoto = ({route}: {route: RouteProp<{ UploadPhoto: UploadPhotoRouteP
       })
       console.log("data: ",data)
       const res = await createHotel(data).unwrap();
-      console.log("res creating accomodation: ",res)
+      console.log("res creating accomodation: ",res);
+      if(res?.success){
+        ShowToast('success', res?.message);
+        navigation.navigate('Accomodation', { screen: 'Home' });
+      }
     } catch (error) {
       console.log("Error Creating Accomodation: ",error)
       ShowToast('error', 'Failed to create accomodation');

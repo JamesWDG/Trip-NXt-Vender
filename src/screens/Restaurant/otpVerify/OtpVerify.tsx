@@ -121,9 +121,10 @@ const OtpVerify = ({ route }: { route: any }) => {
         type: type,
       };
       const res = await otpVerification(data).unwrap();
+      // const res = route.params;
       console.log('res', res);
       ShowToast('success', res.message);
-      if (res.success) {
+      if (res?.success) {
         if (type === 'reset') {
           (navigation as any).navigate('ResetPassword', { type, email });
         } else {
@@ -145,6 +146,12 @@ const OtpVerify = ({ route }: { route: any }) => {
                           }
                         : {}),
                       ...(screenToNavigate?.selectedStack === 'CabStack'
+                        ? { params: { screen: screenToNavigate?.screenName } }
+                        : {}),
+                      ...(screenToNavigate?.selectedStack === 'CabStack'
+                        ? { params: { screen: screenToNavigate?.screenName } }
+                        : {}),
+                      ...(screenToNavigate?.selectedStack === 'Accomodation'
                         ? { params: { screen: screenToNavigate?.screenName } }
                         : {}),
                     },

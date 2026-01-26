@@ -91,6 +91,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
           screenToNavigate: {
             selectedStack: flowDetails?.stack,
             screenName: flowDetails?.screenName,
+            type: 'register'
           },
         });
       }
