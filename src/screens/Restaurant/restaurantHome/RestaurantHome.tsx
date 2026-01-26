@@ -20,6 +20,8 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
 import { useLazyGetUserQuery } from '../../../redux/services/authService';
+import { useLazyGetHotelQuery } from '../../../redux/services/hotelService';
+import HotelCard from '../../../components/hotelCard/HotelCard';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -73,9 +75,27 @@ const currentOrdersData: Order[] = [
   },
 ];
 
+interface Hotel {
+  id: number;
+  name: string;
+  rentPerDay: string;
+  rentPerHour: string;
+  numberOfBeds: string;
+  numberOfBathrooms: string;
+  images: string[];
+  location?: {
+    street: string;
+    city: string;
+    state: string;
+    country: string;
+  };
+}
+
 const RestaurantHome = () => {
   const navigation = useNavigation<NavigationPropType>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [getHotel] = useLazyGetHotelQuery();
   const [userData, setUserData] = useState<{
     name: string;
     description: string;
@@ -85,6 +105,33 @@ const RestaurantHome = () => {
     description: '',
     logo: '',
   });
+
+  const fetchHotel = async () => {
+    try {
+      const res = await getHotel({}).unwrap();
+      console.log('hotel data ===>', res);
+      
+      // Handle different response structures
+      const responseData = res.data?.data || res.data;
+      
+      if (Array.isArray(responseData)) {
+        // If response is an array of hotels
+        setHotels(responseData);
+      } else if (responseData?.hotel) {
+        // If response has a single hotel object
+        setHotels([responseData.hotel]);
+      } else if (Array.isArray(responseData?.hotels)) {
+        // If response has hotels array
+        setHotels(responseData.hotels);
+      } else {
+        setHotels([]);
+      }
+    } catch (error) {
+      console.log('error ===>', error);
+      setHotels([]);
+    }
+  }
+
   const [getUser] =
     useLazyGetUserQuery();
 
@@ -108,6 +155,10 @@ const RestaurantHome = () => {
   useEffect(() => {
     fetchRestaurant();
   },[])
+  useEffect(() => {
+    fetchHotel();
+  },[]);
+
 
   const handleAccept = (orderId: string) => {
     console.log('Accept order:', orderId);
@@ -189,17 +240,17 @@ const RestaurantHome = () => {
             {/* Summary Statistics Card */}
             <View style={[styles.statsCard, GeneralStyles.shadow]}>
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>05</Text>
-                <Text style={styles.statLabel}>Orders</Text>
+                <Text style={styles.statValue}>{hotels?.length || 0}</Text>
+                <Text style={styles.statLabel}>Hotels</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>10</Text>
+                <Text style={styles.statValue}>00</Text>
                 <Text style={styles.statLabel}>Completed</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>05</Text>
+                <Text style={styles.statValue}>00</Text>
                 <Text style={styles.statLabel}>Cancelled</Text>
               </View>
             </View>

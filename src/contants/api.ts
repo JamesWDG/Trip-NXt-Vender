@@ -17,6 +17,7 @@ type endpointTypes = {
     UPDATE_MENU_ITEM: (id: number) => string;
     DELETE_MENU_ITEM: (id: number) => string;
     GET_FEATURES_ITEMS: string;
+    GET_HOTEL: string;
     CREATE_HOTEL: string;
 }
 
@@ -45,5 +46,6 @@ export const endpoint: endpointTypes = Object.freeze({
     DELETE_MENU_ITEM: (id: number) => `/menu/${id}`,
     GET_FEATURES_ITEMS: '/feature',
     CREATE_HOTEL: '/hotel',
+    GET_HOTEL: '/hotel',
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })
