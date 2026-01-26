@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { FC, useState } from 'react';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import Counter from '../../../components/counter/Counter';
@@ -19,7 +19,19 @@ import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
 
-const PeopleStays = () => {
+interface PeopleStaysRouteParams {
+  hotelName: string;
+  hotelAddress: string;
+  rentPerDay: string;
+  rentPerHour: string;
+  description: string;
+  category: string;
+  postalCode: string;
+  website: string;
+  phoneNumber: string;
+}
+
+const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }, 'PeopleStays'> }> = ({ route }) => {
   const navigation = useNavigation<NavigationPropType>();
   const [guests, setGuests] = useState(1);
   const [bedrooms, setBedrooms] = useState(2);
@@ -33,10 +45,11 @@ const PeopleStays = () => {
   >(null);
 
   const handleTimeSelect = (time: string) => {
+    const fTime = time.split(' ')[0];
     if (selectedTimeType === 'checkIn') {
-      setCheckInTime(time);
+      setCheckInTime(fTime);
     } else if (selectedTimeType === 'checkOut') {
-      setCheckOutTime(time);
+      setCheckOutTime(fTime);
     }
   };
 
@@ -60,9 +73,26 @@ const PeopleStays = () => {
       checkInTime,
       checkOutTime,
     });
-    navigation.navigate('Accomodation', { screen: 'Features' });
-    // navigation.navigate('NextScreen');
-  };
+    navigation.navigate('Accomodation', {
+      screen: 'Features', params: {
+        hotelName: route.params.hotelName,
+        hotelAddress: route.params.hotelAddress,
+        rentPerDay: route.params.rentPerDay,
+        rentPerHour: route.params.rentPerHour,
+        description: route.params.description,
+        guests,
+        bedrooms,
+        beds,
+        bathrooms,
+        checkInTime,
+        checkOutTime,
+        category: route.params.category,
+        postalCode: route.params.postalCode,
+        website: route.params.website,
+        phoneNumber: route.params.phoneNumber
+      }
+    });
+  }
 
   return (
     <WrapperContainer navigation={navigation} title="People Stays">

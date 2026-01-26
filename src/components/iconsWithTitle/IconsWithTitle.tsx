@@ -1,6 +1,7 @@
 import {
   Image,
   ImageSourcePropType,
+  Pressable,
   StyleSheet,
   Text,
   View,
@@ -11,15 +12,16 @@ import colors from '../../config/colors';
 interface Params {
   image: string;
   title: string;
+  onPress?: () => void;
 }
-const IconsWithTitle = ({ image, title }: Params) => {
+const IconsWithTitle = ({ image, title, onPress = () => {} }: Params) => {
   return (
-    <View style={styles.container}>
+    <Pressable onPress={onPress} style={styles.container}>
       <View style={[styles.box]}>
         <Image source={image as ImageSourcePropType} />
       </View>
       <Text>{title}</Text>
-    </View>
+    </Pressable>
   );
 };
 

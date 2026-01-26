@@ -68,7 +68,7 @@ const MyHotels = () => {
             }}
           />
         )}
-        keyExtractor={item => item.toString()}
+        keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />

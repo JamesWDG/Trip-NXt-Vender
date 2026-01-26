@@ -1,18 +1,17 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React from 'react';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo } from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
-import { LucideIcon } from 'lucide-react-native';
 
 interface FeatureItemProps {
-  icon: React.ComponentType<any>;
+  icon: string;
   label: string;
   isSelected?: boolean;
   onPress?: () => void;
 }
 
 const FeatureItem: React.FC<FeatureItemProps> = ({
-  icon: Icon,
+  icon,
   label,
   isSelected = false,
   onPress,
@@ -23,7 +22,7 @@ const FeatureItem: React.FC<FeatureItemProps> = ({
       onPress={onPress}
       activeOpacity={0.7}>
       <View style={[styles.iconContainer, isSelected && styles.selectedIconContainer]}>
-        <Icon size={24} color={isSelected ? colors.white : colors.c_2B2B2B} />
+        <Image source={{ uri: icon }} style={styles.icon} />
       </View>
       <Text style={[styles.label, isSelected && styles.selectedLabel]}>{label}</Text>
     </TouchableOpacity>
@@ -52,6 +51,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 8,
+    backgroundColor: 'red',
   },
   selectedIconContainer: {
     // Additional styling if needed
@@ -65,6 +65,11 @@ const styles = StyleSheet.create({
   selectedLabel: {
     color: colors.white,
     fontFamily: fonts.medium,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
 });
 

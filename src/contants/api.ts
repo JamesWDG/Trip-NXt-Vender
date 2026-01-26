@@ -16,6 +16,8 @@ type endpointTypes = {
     GET_MENU_ITEMS: string;
     UPDATE_MENU_ITEM: (id: number) => string;
     DELETE_MENU_ITEM: (id: number) => string;
+    GET_FEATURES_ITEMS: string;
+    CREATE_HOTEL: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -41,5 +43,7 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_MENU_ITEMS: '/menu/restaurant',
     UPDATE_MENU_ITEM: (id: number) => `/menu/${id}`,
     DELETE_MENU_ITEM: (id: number) => `/menu/${id}`,
+    GET_FEATURES_ITEMS: '/feature',
+    CREATE_HOTEL: '/hotel',
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })

@@ -15,6 +15,9 @@
       android:enableOnBackInvokedCallback="false"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+       <meta-data
+        android:name="com.google.android.geo.API_KEY"
+        android:value="AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE"/>
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

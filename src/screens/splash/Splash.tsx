@@ -31,6 +31,7 @@ const Splash: FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.navigate('GetStarted');
+      // navigation.navigate('MyHotels');
     }, 3000);
     return () => clearTimeout(timer);
   }, []);

@@ -7,7 +7,7 @@ import {
   Image,
   FlatList,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import images from '../../../config/images';
 import { width } from '../../../config/constants';
 import colors from '../../../config/colors';
@@ -18,8 +18,8 @@ import SectionHeader from '../../../components/sectionHeader/SectionHeader';
 import OrderRequestCard from '../../../components/orderRequestCard/OrderRequestCard';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
-import DrawerModal from '../../../components/drawers/DrawerModal';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
+import { useLazyGetUserQuery } from '../../../redux/services/authService';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -76,6 +76,38 @@ const currentOrdersData: Order[] = [
 const RestaurantHome = () => {
   const navigation = useNavigation<NavigationPropType>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [userData, setUserData] = useState<{
+    name: string;
+    description: string;
+    logo: string;
+  }>({
+    name: '',
+    description: '',
+    logo: '',
+  });
+  const [getUser] =
+    useLazyGetUserQuery();
+
+    const fetchRestaurant = async () => {
+      try {
+        
+        const res = await getUser({}).unwrap();
+        console.log('restaurant data ===>', res);
+        setUserData({
+          name: res.data.restaurant.name,
+          description: res.data.restaurant.description,
+          logo: res.data.restaurant.logo,
+        });
+      } catch (error) {
+        console.log('error ===>', error);
+      }finally {
+
+      }
+    }
+
+  useEffect(() => {
+    fetchRestaurant();
+  },[])
 
   const handleAccept = (orderId: string) => {
     console.log('Accept order:', orderId);
@@ -135,21 +167,21 @@ const RestaurantHome = () => {
             <View style={[styles.restaurantCard]}>
               <View style={styles.restaurantInfo}>
                 <Image
-                  source={images.placeholder}
+                  source={{ uri: userData.logo }}
                   style={styles.restaurantImage}
                   resizeMode="cover"
                 />
                 <View style={styles.restaurantDetails}>
                   <View style={styles.restaurantHeader}>
-                    <Text style={styles.restaurantName}>Galaxy Kitchen</Text>
+                    <Text style={styles.restaurantName}>{userData.name}</Text>
 
                     <Text style={styles.restaurantDescription}>
-                      Lorem Ipsum is simply
+                      {userData.description}
                     </Text>
                   </View>
-                  <View style={styles.vegTag}>
+                  {/* <View style={styles.vegTag}>
                     <Text style={styles.vegTagText}>VEG</Text>
-                  </View>
+                  </View> */}
                 </View>
               </View>
             </View>

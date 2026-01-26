@@ -13,10 +13,10 @@ import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
-import { width } from '../../../config/constants';
 import GeneralStyles from '../../../utils/GeneralStyles';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
+import DestinationSearch, { SearchHistoryItem } from '../../../components/destinationSearch/DestinationSearch';
 
 const AddHotel = () => {
   const navigation = useNavigation<NavigationPropType>();
@@ -24,15 +24,17 @@ const AddHotel = () => {
     'Budget' | 'Standard' | 'Luxury'
   >('Standard');
   const [hotelName, setHotelName] = useState('');
-  const [hotelAddress, setHotelAddress] = useState('');
+  const [hotelAddress, setHotelAddress] = useState<SearchHistoryItem | null>(null);
   const [rentPerDay, setRentPerDay] = useState('');
+  const [rentPerHour, setRentPerHour] = useState('');
   const [description, setDescription] = useState('');
-
+  const [postalCode, setPostalCode] = useState('');
+  const [website, setWebsite] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const categories = ['Budget', 'Standard', 'Luxury'];
 
   const handleNext = () => {
-  
-    navigation.navigate('Accomodation', { screen: 'PeopleStays' });
+    navigation.navigate('Accomodation', { screen: 'PeopleStays', params: { hotelName, hotelAddress, rentPerDay, rentPerHour, description, category: selectedCategory, postalCode, website, phoneNumber } });
   };
 
   return (
@@ -77,11 +79,16 @@ const AddHotel = () => {
             />
 
             {/* Hotel Address */}
-            <CustomTextInput
+            {/* <CustomTextInput
               placeholder="Enter Hotel Address"
               value={hotelAddress}
               onChangeText={setHotelAddress}
-            />
+            /> */}
+            <View>
+              <DestinationSearch showCurrentLocation={true} onItemPress={(item) => {
+                setHotelAddress(item as SearchHistoryItem)
+              }} />
+            </View>
 
             {/* Rent per day */}
             <CustomTextInput
@@ -90,7 +97,29 @@ const AddHotel = () => {
               onChangeText={setRentPerDay}
               keyboardType="numeric"
             />
+            <CustomTextInput
+              placeholder="$ Enter Rent per hour"
+              value={rentPerHour}
+              onChangeText={setRentPerHour}
+              keyboardType="numeric"
+            />
 
+            <CustomTextInput
+              placeholder="Enter Postal Code"
+              value={postalCode}
+              onChangeText={setPostalCode}
+            />
+            <CustomTextInput
+              placeholder="Enter Website URL"
+              value={website}
+              onChangeText={setWebsite}
+            />
+            <CustomTextInput
+              placeholder="Enter Phone Number"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="numeric"
+            />
             {/* Description */}
             <CustomTextArea
               placeholder="Enter Description"
@@ -121,7 +150,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 100,
+    paddingBottom: 130,
     marginTop: 30,
   },
   segmentedControl: {

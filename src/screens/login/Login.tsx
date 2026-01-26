@@ -39,8 +39,8 @@ interface stateTypes {
 
 const Login = ({ navigation }: { navigation: any }) => {
   const [state, setState] = useState<stateTypes>({
-    email: 'wdgtest1@yopmail.com',
-    password: 'Abcd!234',
+    email:  '',//'wdgtest1@yopmail.com',
+    password: '',//'Abcd!234',
     errors: {
       email: '',
       password: '',

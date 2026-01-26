@@ -8,7 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import React, { useState } from 'react';
-import ImagePicker from 'react-native-image-crop-picker';
+import ImagePicker, { ImageCropPicker } from 'react-native-image-crop-picker';
 import GeneralStyles from '../../utils/GeneralStyles';
 import images from '../../config/images';
 import colors from '../../config/colors';
@@ -25,8 +25,7 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
   onImagesChange,
   maxImages = 10,
 }) => {
-  const [selectedImages, setSelectedImages] = useState<string[]>([]);
-
+  const [selectedImages, setSelectedImages] = useState<any[]>([]);
   const openImagePicker = () => {
     const remainingSlots = maxImages - selectedImages.length;
     if (remainingSlots <= 0) {
@@ -45,8 +44,8 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
       includeBase64: false,
     })
       .then(images => {
-        const newImagePaths = images.map((img: any) => img.path);
-        const updatedImages = [...selectedImages, ...newImagePaths];
+        // const newImagePaths = images.map((img: any) => img.path);
+        const updatedImages = [...selectedImages, ...images];
         setSelectedImages(updatedImages);
         onImagesChange?.(updatedImages);
       })
@@ -85,7 +84,7 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
         {/* First Image - Full Width (Larger) */}
         {selectedImages.length > 0 && (
           <View style={styles.firstImageContainer}>
-            {renderImageItem(selectedImages[0], 0)}
+            {renderImageItem(selectedImages[0].path, 0)}
           </View>
         )}
 
@@ -93,7 +92,7 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
         <View style={styles.gridContainer}>
           {selectedImages.slice(1).map((imagePath, index) => (
             <View key={index + 1} style={styles.gridItem}>
-              {renderImageItem(imagePath, index + 1)}
+              {renderImageItem(imagePath.path, index + 1)}
             </View>
           ))}
 
@@ -121,7 +120,7 @@ const UploadPhotoComp: React.FC<UploadPhotoCompProps> = ({
             </TouchableOpacity>
           )}
           {/* Add More Button in Grid */}
-          {selectedImages.length < maxImages && (
+          {(selectedImages.length < maxImages && selectedImages.length > 0) && (
             <TouchableOpacity
               style={[
                 styles.uploadButton,

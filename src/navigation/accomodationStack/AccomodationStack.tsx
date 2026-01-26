@@ -30,6 +30,7 @@ const AccomodationStack: FC = () => {
         animation: 'fade_from_bottom',
       }}
     >
+      {/* <Stack.Screen name="MyHotels" component={MyHotels} /> */}
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="HotelDetails" component={HotelDetails} />
       <Stack.Screen name="UploadPhoto" component={UploadPhoto} />
@@ -42,7 +43,6 @@ const AccomodationStack: FC = () => {
       <Stack.Screen name="MyWallet" component={MyWallet} />
       <Stack.Screen name="Payment" component={Payment} />
       <Stack.Screen name="AddHotel" component={AddHotel} />
-      <Stack.Screen name="MyHotels" component={MyHotels} />
       <Stack.Screen name="ThankNote" component={ThankNote} />
       <Stack.Screen name="MessageSent" component={MessageSent} />
       <Stack.Screen name="MyCalender" component={MyCalender} />

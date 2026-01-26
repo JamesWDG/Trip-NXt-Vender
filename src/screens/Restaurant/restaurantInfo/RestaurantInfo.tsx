@@ -25,14 +25,14 @@ import {
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import { useLazyGetAuthUserRestaurantQuery } from '../../../redux/services/restaurantService';
 import Loader from '../../../components/AppLoader/Loader';
+import { useLazyGetUserQuery } from '../../../redux/services/authService';
 
 const RestaurantInfo = () => {
   const navigation = useNavigation<NavigationProp<any>>();
 
   const [getRestaurant, { data: restaurantData, isLoading }] =
-    useLazyGetAuthUserRestaurantQuery();
+    useLazyGetUserQuery();
   const isFocused = useIsFocused();
 
   useEffect(() => {

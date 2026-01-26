@@ -1065,6 +1065,14 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@danielsledz/react-native-skeleton-placeholder@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@danielsledz/react-native-skeleton-placeholder/-/react-native-skeleton-placeholder-1.0.2.tgz#baf6669953619a5a138451cf2c5f49a7aa6d024b"
+  integrity sha512-sUv2OZ42hp8YPwyvIw+yADYqxiVniDu+4OgecMOmXcOp8B7gIh8TMsJJHdCta0M4bMX0UcdH/IDd4ipCpfrdAA==
+  dependencies:
+    "@react-native-masked-view/masked-view" "^0.3.2"
+    react-native-linear-gradient "^2.8.3"
+
 "@egjs/hammerjs@^2.0.17":
   version "2.0.17"
   resolved "https://registry.yarnpkg.com/@egjs/hammerjs/-/hammerjs-2.0.17.tgz#5dc02af75a6a06e4c2db0202cae38c9263895124"
@@ -2084,6 +2092,11 @@
   integrity sha512-lsOIHhvxtGe4dGfsCOwyFux+eGB9b1zaII0/tvrsJMhH7Gm77RxZA8VCGefDqw/UBU3YpQ395LXs997nNok0pQ==
   dependencies:
     plist "^3.1.0"
+
+"@react-native-masked-view/masked-view@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@react-native-masked-view/masked-view/-/masked-view-0.3.2.tgz#7064533a573e3539ec912f59c1f457371bf49dd9"
+  integrity sha512-XwuQoW7/GEgWRMovOQtX3A4PrXhyaZm0lVUiY8qJDvdngjLms9Cpdck6SmGAUNqQwcj2EadHC1HwL0bEyoa/SQ==
 
 "@react-native/assets-registry@0.82.1":
   version "0.82.1"

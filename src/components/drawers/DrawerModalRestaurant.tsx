@@ -26,21 +26,33 @@ const upperTabData = [
     id: 1,
     name: 'Home',
     image: images.drawer_home,
+    onPress: (navigation: NavigationPropType) => {
+      navigation.navigate('RestaurantStack', { screen: 'RestaurantHome' });
+    },
   },
   {
     id: 2,
     name: 'Help',
     image: images.help,
+    onPress: (navigation: NavigationPropType) => {
+      console.log('help');
+    },
   },
   {
     id: 3,
     name: 'Notifications',
     image: images.bell,
+    onPress: (navigation: NavigationPropType) => {
+      console.log('notifications');
+    },
   },
   {
     id: 4,
     name: 'Profile',
     image: images.user_circle,
+    onPress: (navigation: NavigationPropType) => {
+      console.log('profile');
+    },
   },
 ];
 
@@ -90,7 +102,7 @@ const importantLinksData = [
       navigation.navigate('RestaurantStack', { screen: 'Earning' }),
   },
   {
-    id: 3,
+    id: 5,
     name: 'Info',
     image: images.messages,
     navigation: (navigation: NavigationPropType) =>
@@ -147,7 +159,14 @@ const DrawerModalRestaurant = ({
   }: {
     item: (typeof upperTabData)[0];
   }) => {
-    return <IconsWithTitle image={item.image} title={item.name} />;
+    return <IconsWithTitle image={item.image} title={item.name} onPress={() => {
+      if (item.onPress) {
+        setIsModalVisible(false);
+        setTimeout(() => {
+          item.onPress(navigation);
+        }, 100);
+      }
+    }} />;
   };
   const renderVerticalTabs = ({
     item,

@@ -33,7 +33,7 @@ export const TabStackArray: ITabStack[] = [
     },
     {
         name: 'Home',
-        image: images.user,
+        image: images.home_tab,
         navigation: "RestaurantHome",
         homeScreen: "RestaurantHome",
         flow: "RestaurantStack",

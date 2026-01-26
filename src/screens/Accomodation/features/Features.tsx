@@ -1,123 +1,115 @@
 import {
+  Dimensions,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import FeatureItem from '../../../components/featureItem/FeatureItem';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
-import {
-  Wifi,
-  Bed,
-  Tv,
-  Bath,
-  UtensilsCrossed,
-  Flame,
-  Coffee,
-  Laptop,
-  Waves,
-  Droplet,
-  Zap,
-  Dumbbell,
-  ChefHat,
-  Utensils,
-  Waves as Beach,
-  Cloud,
-  Heart,
-  Shield,
-  HeartPulse,
-} from 'lucide-react-native';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import { useLazyGetFeaturesItemsQuery } from '../../../redux/services/hotelService';
+import { ShowToast } from '../../../config/constants';
 
 interface Feature {
-  id: string;
-  icon: React.ComponentType<any>;
-  label: string;
+  title: string;
+  data: {
+    id: number;
+    name: string;
+    image: string;
+    type: string;
+  }[]
 }
 
-const Features = () => {
+interface FeaturesRouteParams {
+  category: string;
+  postalCode: string;
+  website: string;
+  phoneNumber: string;
+  bathrooms: number,
+  bedrooms: number,
+  beds: number,
+  checkInTime: string,
+  checkOutTime: string,
+  guests: number,
+  hotelName: string,
+  hotelAddress: string,
+  rentPerDay: string,
+  rentPerHour: string,
+  description: string,
+  features: number[];
+}
+
+const Features = ({ route }: { route: RouteProp<{ Features: FeaturesRouteParams }, 'Features'> }) => {
   const navigation = useNavigation<NavigationPropType>();
-  const [selectedFeatures, setSelectedFeatures] = useState<Set<string>>(
-    new Set(),
-  );
-  const [selectedSpecials, setSelectedSpecials] = useState<Set<string>>(
-    new Set(),
-  );
-  const [selectedSafety, setSelectedSafety] = useState<Set<string>>(new Set());
   const [showMoreSafety, setShowMoreSafety] = useState(false);
+  const [features, setFeatures] = useState<Feature[]>([]);
+  const [ids, setIds] = useState<number[]>([]);
+  const [fetchFeatures] = useLazyGetFeaturesItemsQuery();
 
-  const features: Feature[] = [
-    { id: 'wifi', icon: Wifi, label: 'Wifi' },
-    { id: 'beds', icon: Bed, label: 'Beds' },
-    { id: 'tv', icon: Tv, label: 'TV' },
-    { id: 'bath', icon: Bath, label: 'Bath' },
-    { id: 'bar', icon: UtensilsCrossed, label: 'Bar' },
-    { id: 'heating', icon: Flame, label: 'Heating' },
-    { id: 'coffee', icon: Coffee, label: 'Coffee' },
-    { id: 'work', icon: Laptop, label: 'Work' },
-  ];
-
-  const specialsFeatures: Feature[] = [
-    { id: 'pool', icon: Waves, label: 'Pool' },
-    { id: 'hotTub', icon: Droplet, label: 'Hot Tub' },
-    { id: 'firePit', icon: Zap, label: 'Fire Pit' },
-    { id: 'gym', icon: Dumbbell, label: 'Gym' },
-    { id: 'bbqGrill', icon: ChefHat, label: 'Bbq Grill' },
-    { id: 'dining', icon: Utensils, label: 'Dining' },
-    { id: 'beach', icon: Beach, label: 'Beach' },
-  ];
-
-  const safetyItems: Feature[] = [
-    { id: 'smoke', icon: Cloud, label: 'Smoke' },
-    { id: 'aidKit', icon: HeartPulse, label: 'Aid Kit' },
-    { id: 'fireEx', icon: Shield, label: 'Fire Ex' },
-    { id: 'aed', icon: Heart, label: 'AED' },
-  ];
-
-  const toggleFeature = (
-    id: string,
-    set: Set<string>,
-    setter: (set: Set<string>) => void,
-  ) => {
-    const newSet = new Set(set);
-    if (newSet.has(id)) {
-      newSet.delete(id);
-    } else {
-      newSet.add(id);
+  const fetchFeaturesList = async () => {
+    try {
+      const res = await fetchFeatures({}).unwrap();
+      console.log('features list: ', res);
+      setFeatures(res.data);
+    } catch (error) {
+      console.log('error fetching features list: ', error);
+      ShowToast('error', 'Failed to fetch features list');
     }
-    setter(newSet);
-  };
+  }
+
+  useEffect(() => {
+    fetchFeaturesList();
+    console.log("Route: ", route.params)
+  }, [])
+
+  const handleToggle = (recordId: number) => {
+    setIds(ids.includes(recordId) ? ids.filter(id => id !== recordId) : [...ids, recordId]);
+  }
 
   const handleNext = () => {
-    navigation.navigate('Accomodation', { screen: 'UploadPhoto' });
-    console.log('Selected Features:', {
-      features: Array.from(selectedFeatures),
-      specials: Array.from(selectedSpecials),
-      safety: Array.from(selectedSafety),
+    navigation.navigate('Accomodation', {
+      screen: 'UploadPhoto', params: {
+        bathrooms: route.params.bathrooms,
+        bedrooms: route.params.bedrooms,
+        beds: route.params.beds,
+        checkInTime: route.params.checkInTime,
+        checkOutTime: route.params.checkOutTime,
+        guests: route.params.guests,
+        hotelName: route.params.hotelName,
+        hotelAddress: route.params.hotelAddress,
+        rentPerDay: route.params.rentPerDay,
+        rentPerHour: route.params.rentPerHour,
+        description: route.params.description,
+        features: ids.join(','),
+        category: route.params.category,
+        postalCode: route.params.postalCode,
+        website: route.params.website,
+        phoneNumber: route.params.phoneNumber
+      }
     });
+    console.log('Selected Features:');
     // navigation.navigate('NextScreen');
   };
 
   const renderFeatureGrid = (
-    items: Feature[],
-    selectedSet: Set<string>,
-    onToggle: (id: string) => void,
+    items: Feature['data'],
   ) => {
     return (
       <View style={styles.gridContainer}>
         {items.map(item => (
           <FeatureItem
             key={item.id}
-            icon={item.icon}
-            label={item.label}
-            isSelected={selectedSet.has(item.id)}
-            onPress={() => onToggle(item.id)}
+            icon={item.image}
+            label={item.name}
+            isSelected={ids.includes(item.id)}
+            onPress={() => handleToggle(item.id)}
           />
         ))}
       </View>
@@ -131,27 +123,26 @@ const Features = () => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Features Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Features</Text>
-          {renderFeatureGrid(features, selectedFeatures, id =>
-            toggleFeature(id, selectedFeatures, setSelectedFeatures),
-          )}
-        </View>
+        </View> */}
 
         {/* Specials Features Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Specials Features</Text>
-          {renderFeatureGrid(specialsFeatures, selectedSpecials, id =>
-            toggleFeature(id, selectedSpecials, setSelectedSpecials),
-          )}
+          {/* <Text style={styles.sectionTitle}>Specials Features</Text> */}
+          {
+            features.map((feature, index) => (
+              <View style={styles.section} key={index.toString()}>
+                <Text style={styles.sectionTitle}>{feature.title}</Text>
+                {renderFeatureGrid(feature.data)}
+              </View>
+            ))
+          }
         </View>
 
         {/* Safety Items Section */}
-        <View style={styles.section}>
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Safety Items?</Text>
-          {renderFeatureGrid(safetyItems, selectedSafety, id =>
-            toggleFeature(id, selectedSafety, setSelectedSafety),
-          )}
           {!showMoreSafety && (
             <TouchableOpacity
               style={styles.showMoreContainer}
@@ -160,7 +151,7 @@ const Features = () => {
               <Text style={styles.showMoreText}>Show More</Text>
             </TouchableOpacity>
           )}
-        </View>
+        </View> */}
 
         {/* Next Button */}
         <View style={styles.buttonContainer}>
@@ -185,7 +176,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   section: {
-    marginBottom: 32,
+    // marginBottom: 32,
   },
   sectionTitle: {
     fontSize: 24,
@@ -196,7 +187,9 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: Dimensions.get('window').width * 0.02,
+    // justifyContent: 'space-between',
   },
   showMoreContainer: {
     alignItems: 'center',
@@ -209,6 +202,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 10,
   },
 });
