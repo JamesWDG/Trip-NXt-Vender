@@ -21,6 +21,7 @@ interface HotelCardProps {
   baths: number;
   parking: number;
   location: string;
+  show?: boolean;
   onPress?: () => void;
 }
 
@@ -34,6 +35,7 @@ const HotelCard: React.FC<HotelCardProps> = ({
   parking,
   location,
   onPress,
+  show = true,
 }) => {
   return (
     <TouchableOpacity
@@ -49,7 +51,8 @@ const HotelCard: React.FC<HotelCardProps> = ({
             {price}/night ★ {rating}
           </Text>
         </View>
-        <View style={styles.featuresContainer}>
+        {
+          show ? <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🛏️</Text>
             <Text style={styles.featureText}>{beds} Bed</Text>
@@ -62,8 +65,9 @@ const HotelCard: React.FC<HotelCardProps> = ({
             <Text style={styles.featureIcon}>🚗</Text>
             <Text style={styles.featureText}>{parking} Parking</Text>
           </View>
-        </View>
-        <Text style={styles.location}>{location}</Text>
+        </View>:null
+        }
+        <Text style={styles.location} numberOfLines={1} ellipsizeMode="tail">{location}</Text>
       </View>
     </TouchableOpacity>
   );
