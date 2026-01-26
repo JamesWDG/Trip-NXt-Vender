@@ -20,6 +20,7 @@ type endpointTypes = {
     GET_HOTEL: string;
     CREATE_HOTEL: string;
     GET_ORDERS: (id:string)=>string;
+    UPDATE_ORDER_STATUS: (id:string)=>string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -49,5 +50,6 @@ export const endpoint: endpointTypes = Object.freeze({
     CREATE_HOTEL: '/hotel',
     GET_HOTEL: '/hotel',
     GET_ORDERS: (id:string)=>'/order/get-orders-by-restaurant-id/'+id,
+    UPDATE_ORDER_STATUS: (id:string)=>'/order/update-order-status/'+id,
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })

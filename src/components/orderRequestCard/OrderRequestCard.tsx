@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import React from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
@@ -23,6 +23,8 @@ interface OrderRequestCardProps {
   onReject?: () => void;
   onOrderReady?: () => void;
   showAcceptReject?: boolean; // If true, shows Accept/Reject buttons, else shows Order Ready button
+  isAccepting?: boolean;
+  isRejecting?: boolean;
 }
 
 const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
@@ -36,6 +38,8 @@ const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
   onReject,
   onOrderReady,
   showAcceptReject = true,
+  isAccepting = false,
+  isRejecting = false,
 }) => {
   const formatAmount = (amt: number) => {
     return `$${amt.toFixed(0)}`;
@@ -51,7 +55,7 @@ const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
       </View>
 
       {/* Customer Name */}
-      <Text style={styles.customerName}>{customerName}</Text>
+      {/* <Text style={styles.customerName}>{customerName}</Text> */}
 
       {/* Separator */}
       <View style={styles.separator} />
@@ -86,18 +90,28 @@ const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
       {showAcceptReject ? (
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.acceptButton}
+            style={[styles.acceptButton, (isAccepting || isRejecting) && styles.buttonDisabled]}
             onPress={onAccept}
             activeOpacity={0.8}
+            disabled={isAccepting || isRejecting}
           >
-            <Text style={styles.acceptButtonText}>Accept</Text>
+            {isAccepting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.acceptButtonText}>Accept</Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.rejectButton}
+            style={[styles.rejectButton, (isAccepting || isRejecting) && styles.buttonDisabled]}
             onPress={onReject}
             activeOpacity={0.8}
+            disabled={isAccepting || isRejecting}
           >
-            <Text style={styles.rejectButtonText}>Reject</Text>
+            {isRejecting ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <Text style={styles.rejectButtonText}>Reject</Text>
+            )}
           </TouchableOpacity>
         </View>
       ) : (
@@ -238,5 +252,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.semibold,
     color: colors.white,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
