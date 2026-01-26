@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
@@ -17,11 +17,27 @@ import fonts from '../../config/fonts';
 import { TabStackArray } from '../../contants/tabsStack';
 import { useAppSelector } from '../../redux/store';
 import { selectActiveStack } from '../../redux/slices/navigationSlice';
+import { useLazyGetUserQuery } from '../../redux/services/authService';
 
 const TabBars = (props: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
   const mainContainer = useMemo(() => mainContainerStyle(bottom), [bottom]);
   const activeStack = useAppSelector(selectActiveStack);
+  const [getUser] = useLazyGetUserQuery();
+
+  const fetchUser = async () => {
+    try {
+      const res = await getUser(undefined).unwrap();
+      console.log('user data ===>', res);
+    } catch (error) {
+      console.log('error ===>', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchUser();
+  },[])
+
 
   // Get current route and nested route name
   const currentRoute = props.state.routes[props.state.index];
