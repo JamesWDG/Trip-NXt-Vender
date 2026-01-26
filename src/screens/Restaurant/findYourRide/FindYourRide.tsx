@@ -42,7 +42,11 @@ const FindYourRide = () => {
 
     try {
       // Simulate API call or processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise<void>(resolve => {
+        setTimeout(() => {
+          resolve();
+        }, 2000);
+      });
 
       // Show success toast
       ShowToast('success', 'Rider details saved successfully');
@@ -79,7 +83,6 @@ const FindYourRide = () => {
               placeholder="Enter rider name"
               value={riderName}
               onChangeText={setRiderName}
-              autoCapitalize="words"
             />
           </View>
 
@@ -89,7 +92,7 @@ const FindYourRide = () => {
               placeholder="Enter phone number"
               value={riderPhone}
               onChangeText={setRiderPhone}
-              keyboardType="phone-pad"
+              keyboardType="numeric"
             />
           </View>
 
