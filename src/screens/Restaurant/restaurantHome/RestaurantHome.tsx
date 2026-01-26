@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
 import { useLazyGetUserQuery } from '../../../redux/services/authService';
+import { useLazyGetOrdersQuery } from '../../../redux/services/orderService';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -80,30 +81,115 @@ const RestaurantHome = () => {
     name: string;
     description: string;
     logo: string;
+    restaurantId?: string;
   }>({
     name: '',
     description: '',
     logo: '',
   });
-  const [getUser] =
-    useLazyGetUserQuery();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [getUser] = useLazyGetUserQuery();
+  const [getOrders] = useLazyGetOrdersQuery();
 
-    const fetchRestaurant = async () => {
-      try {
-        
-        const res = await getUser({}).unwrap();
-        console.log('restaurant data ===>', res);
+  const fetchRestaurant = async () => {
+    try {
+      const res = await getUser({}).unwrap();
+      console.log('restaurant data ===>', res);
+      
+      // Check if restaurant exists
+      if (!res.data?.restaurant) {
+        console.log('No restaurant data found');
         setUserData({
-          name: res.data.restaurant.name,
-          description: res.data.restaurant.description,
-          logo: res.data.restaurant.logo,
+          name: '',
+          description: '',
+          logo: '',
         });
-      } catch (error) {
-        console.log('error ===>', error);
-      }finally {
-
+        setOrders([]);
+        return;
       }
+
+      const restaurantId = res.data?.restaurant?.id?.toString() || res.data?.restaurant?._id?.toString();
+      
+      setUserData({
+        name: res.data.restaurant.name || '',
+        description: res.data.restaurant.description || '',
+        logo: res.data.restaurant.logo || '',
+        restaurantId: restaurantId || undefined,
+      });
+      
+      // Fetch orders only if restaurant ID is valid (not null, undefined, or empty)
+      if (restaurantId && restaurantId.trim() !== '') {
+        await fetchOrders(restaurantId);
+      } else {
+        console.log('Restaurant ID not available, skipping orders fetch');
+        setOrders([]);
+      }
+    } catch (error) {
+      console.log('error ===>', error);
+      setOrders([]);
     }
+  };
+
+  const fetchOrders = async (restaurantId: string) => {
+    // Validate restaurant ID before making API call
+    if (!restaurantId || restaurantId.trim() === '') {
+      console.log('Invalid restaurant ID, skipping orders fetch');
+      setOrders([]);
+      return;
+    }
+
+    try {
+      const res = await getOrders(restaurantId).unwrap();
+      console.log('orders data ===>', res);
+      
+      // Check if API call was successful
+      if (!res.success && res.message) {
+        console.log('Orders API error:', res.message);
+        setOrders([]);
+        return;
+      }
+      
+      // Map API response to Order interface
+      const ordersData = res.data?.data || res.data || [];
+      const mappedOrders: Order[] = Array.isArray(ordersData)
+        ? ordersData.map((order: any, index: number) => {
+            // Format time from createdAt or updatedAt
+            const date = order.createdAt || order.updatedAt || new Date();
+            const timeStr = new Date(date).toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
+            });
+
+            // Map items if available
+            const items: OrderItem[] = order.items?.map((item: any) => ({
+              quantity: item.quantity || 1,
+              name: item.name || item.menuItem?.name || 'Item',
+              price: item.price || item.menuItem?.price || 0,
+            })) || [];
+
+            return {
+              id: order.id?.toString() || order._id?.toString() || index.toString(),
+              orderNumber: order.orderNumber || order.orderId || order.id?.toString() || `ORD-${index + 1}`,
+              time: timeStr,
+              customerName: order.customerName || order.user?.name || 'Customer',
+              items: items,
+              totalBill: order.totalAmount || order.totalBill || order.amount || 0,
+              paymentMethod: (order.paymentMethod || order.paymentType || 'Cash') as PaymentMethod,
+            };
+          })
+        : [];
+      
+      setOrders(mappedOrders);
+    } catch (error: any) {
+      console.log('error fetching orders ===>', error);
+      // If error is due to missing restaurant ID, just set empty array
+      if (error?.data?.message?.includes('restaurantId') || error?.message?.includes('restaurantId')) {
+        console.log('Restaurant ID related error, setting empty orders');
+      }
+      setOrders([]);
+    }
+  };
 
   useEffect(() => {
     fetchRestaurant();
@@ -189,18 +275,22 @@ const RestaurantHome = () => {
             {/* Summary Statistics Card */}
             <View style={[styles.statsCard, GeneralStyles.shadow]}>
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>05</Text>
+                <Text style={styles.statValue}>{orders.length}</Text>
                 <Text style={styles.statLabel}>Orders</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>10</Text>
+                <Text style={styles.statValue}>
+                  {orders.filter(order => order.paymentMethod === 'Online').length}
+                </Text>
                 <Text style={styles.statLabel}>Completed</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statColumn}>
-                <Text style={styles.statValue}>05</Text>
-                <Text style={styles.statLabel}>Cancelled</Text>
+                <Text style={styles.statValue}>
+                  {orders.filter(order => order.paymentMethod === 'Cash').length}
+                </Text>
+                <Text style={styles.statLabel}>Cash</Text>
               </View>
             </View>
           </View>
@@ -218,11 +308,16 @@ const RestaurantHome = () => {
               />
             </View>
             <FlatList
-              data={currentOrdersData}
+              data={orders.length > 0 ? orders : currentOrdersData}
               renderItem={renderOrderCard}
               keyExtractor={item => item.id}
               scrollEnabled={false}
               contentContainerStyle={styles.ordersList}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>No orders found</Text>
+                </View>
+              )}
             />
           </View>
         </ScrollView>
@@ -365,5 +460,16 @@ const styles = StyleSheet.create({
   },
   ordersHeader: {
     paddingHorizontal: 20,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
   },
 });
