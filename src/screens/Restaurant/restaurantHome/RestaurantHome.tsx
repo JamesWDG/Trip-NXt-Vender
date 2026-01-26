@@ -40,39 +40,6 @@ interface Order {
   paymentMethod: PaymentMethod;
 }
 
-// Sample data for current orders
-const currentOrdersData: Order[] = [
-  {
-    id: '1',
-    orderNumber: '0214',
-    time: '05:30 PM',
-    customerName: 'Leonelle Ferguson',
-    items: [{ quantity: 1, name: 'Burger Chees', price: 250 }],
-    totalBill: 250,
-    paymentMethod: 'Cash',
-  },
-  {
-    id: '2',
-    orderNumber: '0215',
-    time: '06:00 PM',
-    customerName: 'John Doe',
-    items: [
-      { quantity: 2, name: 'Pizza Margherita', price: 300 },
-      { quantity: 1, name: 'Coca Cola', price: 50 },
-    ],
-    totalBill: 650,
-    paymentMethod: 'Online',
-  },
-  {
-    id: '3',
-    orderNumber: '0216',
-    time: '06:15 PM',
-    customerName: 'Jane Smith',
-    items: [{ quantity: 3, name: 'Chicken Wings', price: 400 }],
-    totalBill: 1200,
-    paymentMethod: 'Cash',
-  },
-];
 
 const RestaurantHome = () => {
   const navigation = useNavigation<NavigationPropType>();
@@ -88,6 +55,7 @@ const RestaurantHome = () => {
     logo: '',
   });
   const [orders, setOrders] = useState<Order[]>([]);
+  const [fullOrdersData, setFullOrdersData] = useState<any[]>([]); // Store full order data from API
   const [restaurantId, setRestaurantId] = useState<string>('');
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<'accept' | 'reject' | null>(null);
@@ -167,6 +135,7 @@ const RestaurantHome = () => {
       const ordersMap = new Map<number, {
         order: any;
         items: OrderItem[];
+        fullOrderData: any; // Store full order data for navigation
       }>();
 
       ordersData.forEach((orderItem: any) => {
@@ -175,10 +144,24 @@ const RestaurantHome = () => {
         const item = orderItem.item;
 
         if (!ordersMap.has(orderId)) {
-          // Create new order entry
+          // Create new order entry with full data including restaurant and user info
           ordersMap.set(orderId, {
             order: order,
             items: [],
+            fullOrderData: {
+              id: orderItem.id,
+              orderId: orderItem.orderId,
+              restaurantId: orderItem.restaurantId,
+              itemId: orderItem.itemId,
+              quantity: orderItem.quantity,
+              status: orderItem.status,
+              createdAt: orderItem.createdAt,
+              updatedAt: orderItem.updatedAt,
+              order: orderItem.order, // Full order with user info
+              item: orderItem.item, // Menu item
+              restaurant: orderItem.restaurant, // Restaurant info
+              allItems: [orderItem], // Store all order items for this order
+            },
           });
         }
 
@@ -189,6 +172,11 @@ const RestaurantHome = () => {
           name: item?.name || 'Item',
           price: item?.price || 0,
         });
+        
+        // Add to full order data items array
+        if (!orderData.fullOrderData.allItems.find((oi: any) => oi.id === orderItem.id)) {
+          orderData.fullOrderData.allItems.push(orderItem);
+        }
       });
 
       // Convert map to array with date for sorting
@@ -224,9 +212,11 @@ const RestaurantHome = () => {
         return dateB - dateA;
       });
 
-      // Extract orders without createdAt
+      // Extract orders without createdAt and store full data
       const finalOrders: Order[] = ordersWithDate.map(item => item.order);
+      const fullOrdersArray = Array.from(ordersMap.values()).map(orderData => orderData.fullOrderData);
       
+      setFullOrdersData(fullOrdersArray);
       setOrders(finalOrders);
     } catch (error: any) {
       console.log('error fetching orders ===>', error);
@@ -260,15 +250,45 @@ const RestaurantHome = () => {
         id: orderId,
         data
       }).unwrap();
+      await fetchOrders(restaurantId);
       
       console.log('Order accepted successfully:', res);
       
       // Show success toast
       ShowToast('success', res?.message || 'Order accepted successfully');
       
-      // Refresh orders list after successful update
+      // Find the full order data to pass to OrderDetails (before refresh)
+      const currentOrderData = fullOrdersData.find(
+        (order: any) => order.orderId?.toString() === orderId || order.order?.id?.toString() === orderId
+      );
+      
+      // Refresh orders list to get updated status
       if (restaurantId && restaurantId.trim() !== '') {
         await fetchOrders(restaurantId);
+      }
+      
+      // Navigate to OrderDetails with order data
+      // Use current order data if available, otherwise it will be available after refresh
+      if (currentOrderData) {
+        // Update status in the data before navigating
+        const updatedOrderData = {
+          ...currentOrderData,
+          order: {
+            ...currentOrderData.order,
+            status: 'dispatched', // Update status to dispatched
+          },
+        };
+        navigation.navigate('OrderDetails', { orderData: updatedOrderData });
+      } else {
+        // If not found, wait a bit for state update then navigate
+        setTimeout(() => {
+          const updatedOrder = fullOrdersData.find(
+            (order: any) => order.orderId?.toString() === orderId || order.order?.id?.toString() === orderId
+          );
+          if (updatedOrder) {
+            navigation.navigate('OrderDetails', { orderData: updatedOrder });
+          }
+        }, 500);
       }
     } catch (error: any) {
       console.log('Error accepting order:', error);
@@ -330,6 +350,8 @@ const RestaurantHome = () => {
     const isRejecting = isCurrentOrderLoading && loadingAction === 'reject';
 
 
+
+    console.log(item, "dfnceugeuygeufygugeyfugyefg")
     console.log('isAcceptindshjfbejahg', item );
     return (
       <OrderRequestCard
@@ -437,7 +459,7 @@ const RestaurantHome = () => {
               />
             </View>
             <FlatList
-              data={orders.length > 0 ? orders : currentOrdersData}
+              data={orders}
               renderItem={renderOrderCard}
               keyExtractor={item => item.id}
               scrollEnabled={false}
