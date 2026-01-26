@@ -8,7 +8,7 @@ import {
   ImageBackground,
 } from 'react-native';
 import React, { useState, useMemo } from 'react';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useRoute } from '@react-navigation/native';
 import { Star } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import OrderHeader from '../../../components/orderHeader/OrderHeader';
@@ -23,52 +23,74 @@ interface OrderItem {
   name: string;
   description: string;
   price: number;
-  rating: number;
-  reviewCount: number;
+  quantity: number;
 }
 
 const OrderDetails = () => {
   const navigation = useNavigation<NavigationProp<any>>();
+  const route = useRoute();
   const { top } = useSafeAreaInsets();
   const [isOnline, setIsOnline] = useState(true);
   const [notificationCount] = useState(3);
 
+  // Get order data from route params
+  const orderData = (route.params as any)?.orderData;
+
   const contentStyles = useMemo(() => makeContentStyles(top), [top]);
 
-  const orderItems: OrderItem[] = [
-    {
-      id: '1',
-      image: images.placeholder,
-      name: 'Chicken burger Noodle Soup',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 24.0,
-      rating: 4.8,
-      reviewCount: 150,
-    },
-    {
-      id: '2',
-      image: images.placeholder,
-      name: 'Pretzel Chicken Noodle Soup',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 24.0,
-      rating: 4.8,
-      reviewCount: 150,
-    },
-    {
-      id: '3',
-      image: images.placeholder,
-      name: 'Pretzel Chicken Noodle Soup',
-      description: 'Lorem Ipsum is simply dummy text',
-      price: 24.0,
-      rating: 4.8,
-      reviewCount: 150,
-    },
-  ];
+  // Extract order information
+  const order = orderData?.order || {};
+  const allItems = orderData?.allItems || [];
+  const user = order?.user || {};
+  const restaurant = orderData?.restaurant || {};
+  const deliveryAddress = order?.deliveryAddress || {};
 
-  const subtotal = 75.58;
-  const couponDiscount = 5.5;
-  const deliveryFee = 5.0;
-  const totalAmount = subtotal - couponDiscount + deliveryFee;
+  // Format order items from API data
+  const orderItems: OrderItem[] = allItems.map((item: any) => ({
+    id: item?.id?.toString() || item?.itemId?.toString() || '',
+    image: item?.item?.image ? { uri: item.item.image } : images.placeholder,
+    name: item?.item?.name || 'Item',
+    description: item?.item?.description || '',
+    price: item?.item?.price || item?.price || 0,
+    quantity: item?.quantity || 1,
+  }));
+
+  // Calculate amounts from order data
+  const subtotal = order?.subTotal || 0;
+  const deliveryFee = order?.deliveryFee || 0;
+  const tax = order?.tax || 0;
+  const discountId = order?.discountId;
+  const couponDiscount = discountId ? 0 : 0; // You can calculate discount if needed
+  const totalAmount = order?.totalAmount || subtotal + deliveryFee + tax;
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  // Parse restaurant location if it's a string
+  const getRestaurantLocation = () => {
+    if (!restaurant?.location) return {};
+    if (typeof restaurant.location === 'string') {
+      try {
+        return JSON.parse(restaurant.location);
+      } catch {
+        return {};
+      }
+    }
+    return restaurant.location;
+  };
+
+  const restaurantLocation = getRestaurantLocation();
 
   const handlePrint = () => {
     // Handle print action
@@ -99,7 +121,7 @@ const OrderDetails = () => {
   };
 
   const renderOrderItem = (item: OrderItem, index: number) => (
-    <View key={item.id}>
+    <View key={item.id || index}>
       <View style={styles.orderItem}>
         <Image
           source={item.image}
@@ -107,17 +129,18 @@ const OrderDetails = () => {
           resizeMode="cover"
         />
         <View style={styles.itemContent}>
-          <Text style={styles.itemName}>{item.name}</Text>
-          <Text style={styles.itemDescription} numberOfLines={2}>
-            {item.description}
-          </Text>
-          <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
-          <View style={styles.ratingContainer}>
-            <Star size={14} color="#FFD700" fill="#FFD700" />
-            <Text style={styles.ratingText}>
-              {item.rating} ({item.reviewCount} reviews)
-            </Text>
+          <View style={styles.itemHeader}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemQuantity}>x{item.quantity}</Text>
           </View>
+          {item.description ? (
+            <Text style={styles.itemDescription} numberOfLines={2}>
+              {item.description}
+            </Text>
+          ) : null}
+          <Text style={styles.itemPrice}>
+            {formatPrice(item.price * item.quantity)}
+          </Text>
         </View>
       </View>
       {index < orderItems.length - 1 && <View style={styles.separator} />}
@@ -179,7 +202,12 @@ const OrderDetails = () => {
         >
           {/* Custom Header with Print Button */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Order Details</Text>
+            <View>
+              <Text style={styles.headerTitle}>Order Details</Text>
+              {order?.id && (
+                <Text style={styles.orderId}>Order #{order.id}</Text>
+              )}
+            </View>
             <TouchableOpacity
               style={styles.printButton}
               onPress={handlePrint}
@@ -189,16 +217,44 @@ const OrderDetails = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Customer Information */}
+          {user && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Customer Information</Text>
+              {user.name && (
+                <Text style={styles.infoText}>Name: {user.name}</Text>
+              )}
+              {user.email && (
+                <Text style={styles.infoText}>Email: {user.email}</Text>
+              )}
+              {user.phoneNumber && (
+                <Text style={styles.infoText}>Phone: {user.phoneNumber}</Text>
+              )}
+            </View>
+          )}
+
+          {/* Delivery Address */}
+          {deliveryAddress?.location && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Delivery Address</Text>
+              <Text style={styles.infoText}>{deliveryAddress.location}</Text>
+            </View>
+          )}
+
           {/* Ordered Items List */}
-          <View style={styles.itemsSection}>
-            {orderItems.map((item, index) => renderOrderItem(item, index))}
-          </View>
+          {orderItems.length > 0 && (
+            <View style={styles.itemsSection}>
+              <Text style={styles.sectionTitle}>Ordered Items</Text>
+              {orderItems.map((item, index) => renderOrderItem(item, index))}
+            </View>
+          )}
 
           {/* Payment Summary Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Payment Summary</Text>
             {renderPaymentRow('Subtotal', subtotal)}
-            {renderPaymentRow(
+            {tax > 0 && renderPaymentRow('Tax', tax)}
+            {couponDiscount > 0 && renderPaymentRow(
               'Coupon discount',
               `-${formatPrice(couponDiscount)}`,
             )}
@@ -207,19 +263,53 @@ const OrderDetails = () => {
             {renderPaymentRow('Total Amount', totalAmount, true)}
           </View>
 
-          {/* Order Details Summary Section */}
+          {/* Order Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Order Details</Text>
-            {renderPaymentRow('1x Chicken Cheese Burger', totalAmount)}
-            {renderPaymentRow('Subtotal', subtotal)}
-            {renderPaymentRow(
-              'Coupon discount',
-              `-${formatPrice(couponDiscount)}`,
+            <Text style={styles.sectionTitle}>Order Information</Text>
+            {order?.status && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Status:</Text>
+                <Text style={[styles.infoValue, styles.statusText]}>
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                </Text>
+              </View>
             )}
-            {renderPaymentRow('Delivery Fee', deliveryFee, false, true)}
-            <View style={styles.dashedSeparator} />
-            {renderPaymentRow('Total Amount', totalAmount, true)}
+            {order?.createdAt && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Order Date:</Text>
+                <Text style={styles.infoValue}>{formatDate(order.createdAt)}</Text>
+              </View>
+            )}
+            {order?.updatedAt && order.updatedAt !== order.createdAt && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Last Updated:</Text>
+                <Text style={styles.infoValue}>{formatDate(order.updatedAt)}</Text>
+              </View>
+            )}
           </View>
+
+          {/* Restaurant Information */}
+          {restaurant && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Restaurant Information</Text>
+              {restaurant.name && (
+                <Text style={styles.infoText}>Name: {restaurant.name}</Text>
+              )}
+              {restaurant.phoneNumber && (
+                <Text style={styles.infoText}>Phone: {restaurant.phoneNumber}</Text>
+              )}
+              {restaurantLocation.address && (
+                <Text style={styles.infoText}>
+                  Address: {[
+                    restaurantLocation.address,
+                    restaurantLocation.city,
+                    restaurantLocation.state,
+                    restaurantLocation.country,
+                  ].filter(Boolean).join(', ')}
+                </Text>
+              )}
+            </View>
+          )}
         </ScrollView>
 
         {/* Find Rider Button */}
@@ -320,11 +410,23 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     justifyContent: 'space-between',
   },
+  itemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   itemName: {
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
-    // marginBottom: 4,
+    flex: 1,
+  },
+  itemQuantity: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    marginLeft: 8,
   },
   itemDescription: {
     fontSize: 12,
@@ -414,5 +516,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  orderId: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    marginTop: 4,
+  },
+  infoText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_2B2B2B,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+  },
+  statusText: {
+    textTransform: 'capitalize',
+    color: colors.c_0162C0,
   },
 });
