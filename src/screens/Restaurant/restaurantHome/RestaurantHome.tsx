@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import images from '../../../config/images';
-import { width } from '../../../config/constants';
+import { width, ShowToast } from '../../../config/constants';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
@@ -20,7 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
 import { useLazyGetUserQuery } from '../../../redux/services/authService';
-import { useLazyGetOrdersQuery } from '../../../redux/services/orderService';
+import { useLazyGetOrdersQuery, useUpdateOrderStatusMutation } from '../../../redux/services/orderService';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -88,8 +88,12 @@ const RestaurantHome = () => {
     logo: '',
   });
   const [orders, setOrders] = useState<Order[]>([]);
+  const [restaurantId, setRestaurantId] = useState<string>('');
+  const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
+  const [loadingAction, setLoadingAction] = useState<'accept' | 'reject' | null>(null);
   const [getUser] = useLazyGetUserQuery();
   const [getOrders] = useLazyGetOrdersQuery();
+  const [updateOrderStatus] = useUpdateOrderStatusMutation();
 
   const fetchRestaurant = async () => {
     try {
@@ -108,20 +112,22 @@ const RestaurantHome = () => {
         return;
       }
 
-      const restaurantId = res.data?.restaurant?.id?.toString() || res.data?.restaurant?._id?.toString();
+      const restaurantIdValue = res.data?.restaurant?.id?.toString() || res.data?.restaurant?._id?.toString();
       
       setUserData({
         name: res.data.restaurant.name || '',
         description: res.data.restaurant.description || '',
         logo: res.data.restaurant.logo || '',
-        restaurantId: restaurantId || undefined,
+        restaurantId: restaurantIdValue || undefined,
       });
       
-      // Fetch orders only if restaurant ID is valid (not null, undefined, or empty)
-      if (restaurantId && restaurantId.trim() !== '') {
-        await fetchOrders(restaurantId);
+      // Store restaurant ID separately for easy access
+      if (restaurantIdValue && restaurantIdValue.trim() !== '') {
+        setRestaurantId(restaurantIdValue);
+        await fetchOrders(restaurantIdValue);
       } else {
         console.log('Restaurant ID not available, skipping orders fetch');
+        setRestaurantId('');
         setOrders([]);
       }
     } catch (error) {
@@ -149,38 +155,79 @@ const RestaurantHome = () => {
         return;
       }
       
-      // Map API response to Order interface
-      const ordersData = res.data?.data || res.data || [];
-      const mappedOrders: Order[] = Array.isArray(ordersData)
-        ? ordersData.map((order: any, index: number) => {
-            // Format time from createdAt or updatedAt
-            const date = order.createdAt || order.updatedAt || new Date();
-            const timeStr = new Date(date).toLocaleTimeString('en-US', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true,
-            });
-
-            // Map items if available
-            const items: OrderItem[] = order.items?.map((item: any) => ({
-              quantity: item.quantity || 1,
-              name: item.name || item.menuItem?.name || 'Item',
-              price: item.price || item.menuItem?.price || 0,
-            })) || [];
-
-            return {
-              id: order.id?.toString() || order._id?.toString() || index.toString(),
-              orderNumber: order.orderNumber || order.orderId || order.id?.toString() || `ORD-${index + 1}`,
-              time: timeStr,
-              customerName: order.customerName || order.user?.name || 'Customer',
-              items: items,
-              totalBill: order.totalAmount || order.totalBill || order.amount || 0,
-              paymentMethod: (order.paymentMethod || order.paymentType || 'Cash') as PaymentMethod,
-            };
-          })
-        : [];
+      // API returns array of order items, need to group by orderId
+      const ordersData = res.data || [];
       
-      setOrders(mappedOrders);
+      if (!Array.isArray(ordersData) || ordersData.length === 0) {
+        setOrders([]);
+        return;
+      }
+
+      // Group order items by orderId
+      const ordersMap = new Map<number, {
+        order: any;
+        items: OrderItem[];
+      }>();
+
+      ordersData.forEach((orderItem: any) => {
+        const orderId = orderItem.orderId;
+        const order = orderItem.order;
+        const item = orderItem.item;
+
+        if (!ordersMap.has(orderId)) {
+          // Create new order entry
+          ordersMap.set(orderId, {
+            order: order,
+            items: [],
+          });
+        }
+
+        // Add item to the order
+        const orderData = ordersMap.get(orderId)!;
+        orderData.items.push({
+          quantity: orderItem.quantity || 1,
+          name: item?.name || 'Item',
+          price: item?.price || 0,
+        });
+      });
+
+      // Convert map to array with date for sorting
+      const ordersWithDate = Array.from(ordersMap.entries()).map(([orderId, orderData]) => {
+        const order = orderData.order;
+        const date = order?.createdAt || new Date();
+        
+        // Format time from createdAt
+        const timeStr = new Date(date).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        return {
+          order: {
+            id: order?.id?.toString() || `order-${orderId}`,
+            orderNumber: order?.id?.toString() || `ORD-${orderId}`,
+            time: timeStr,
+            customerName: `Customer #${order?.userId || 'N/A'}`,
+            items: orderData.items,
+            totalBill: order?.totalAmount || order?.subTotal || 0,
+            paymentMethod: (order?.paymentMethod || 'Cash') as PaymentMethod,
+          },
+          createdAt: date,
+        };
+      });
+
+      // Sort by most recent first (by createdAt date)
+      ordersWithDate.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return dateB - dateA;
+      });
+
+      // Extract orders without createdAt
+      const finalOrders: Order[] = ordersWithDate.map(item => item.order);
+      
+      setOrders(finalOrders);
     } catch (error: any) {
       console.log('error fetching orders ===>', error);
       // If error is due to missing restaurant ID, just set empty array
@@ -195,29 +242,111 @@ const RestaurantHome = () => {
     fetchRestaurant();
   },[])
 
-  const handleAccept = (orderId: string) => {
-    console.log('Accept order:', orderId);
-    // TODO: Handle accept logic
+  const handleAccept = async (orderId: string) => {
+    if (!orderId || orderId.trim() === '') {
+      ShowToast('error', 'Invalid order ID');
+      return;
+    }
+
+    try {
+      setLoadingOrderId(orderId);
+      setLoadingAction('accept');
+      console.log('Accepting order with ID:', orderId);
+      
+      // Call updateOrderStatus API: PUT /order/update-order-status/:id
+      // Body: { status: 'dispatched' }
+      const data = {status: 'dispatched',  restaurantId}
+      const res = await updateOrderStatus({
+        id: orderId,
+        data
+      }).unwrap();
+      
+      console.log('Order accepted successfully:', res);
+      
+      // Show success toast
+      ShowToast('success', res?.message || 'Order accepted successfully');
+      
+      // Refresh orders list after successful update
+      if (restaurantId && restaurantId.trim() !== '') {
+        await fetchOrders(restaurantId);
+      }
+    } catch (error: any) {
+      console.log('Error accepting order:', error);
+      console.log('Error details:', error?.data || error?.message);
+      
+      // Show error toast
+      const errorMessage = error?.data?.message || error?.message || 'Failed to accept order. Please try again.';
+      ShowToast('error', errorMessage);
+    } finally {
+      setLoadingOrderId(null);
+      setLoadingAction(null);
+    }
   };
 
-  const handleReject = (orderId: string) => {
-    console.log('Reject order:', orderId);
-    // TODO: Handle reject logic
+  const handleReject = async (orderId: string) => {
+    if (!orderId || orderId.trim() === '') {
+      ShowToast('error', 'Invalid order ID');
+      return;
+    }
+
+    try {
+      setLoadingOrderId(orderId);
+      setLoadingAction('reject');
+      console.log('Rejecting order with ID:', orderId);
+      
+      // Call updateOrderStatus API: PUT /order/update-order-status/:id
+      // Body: { status: 'cancelled' }
+      const data = {status: 'cancelled',  restaurantId}
+      const res = await updateOrderStatus({
+        id: orderId,
+        data
+      }).unwrap();
+      
+      console.log('Order rejected successfully:', res);
+      
+      // Show success toast
+      ShowToast('success', res?.message || 'Order rejected successfully');
+      
+      // Refresh orders list after successful update
+      if (restaurantId && restaurantId.trim() !== '') {
+        await fetchOrders(restaurantId);
+      }
+    } catch (error: any) {
+      console.log('Error rejecting order:', error);
+      console.log('Error details:', error?.data || error?.message);
+      
+      // Show error toast
+      const errorMessage = error?.data?.message || error?.message || 'Failed to reject order. Please try again.';
+      ShowToast('error', errorMessage);
+    } finally {
+      setLoadingOrderId(null);
+      setLoadingAction(null);
+    }
   };
 
-  const renderOrderCard = ({ item }: { item: Order }) => (
-    <OrderRequestCard
-      orderNumber={item.orderNumber}
-      time={item.time}
-      customerName={item.customerName}
-      items={item.items}
-      totalBill={item.totalBill}
-      paymentMethod={item.paymentMethod}
-      showAcceptReject={true}
-      onAccept={() => handleAccept(item.id)}
-      onReject={() => handleReject(item.id)}
-    />
-  );
+  const renderOrderCard = ({ item }: { item: Order }) => {
+    const isCurrentOrderLoading = loadingOrderId === item.id;
+    const isAccepting = isCurrentOrderLoading && loadingAction === 'accept';
+    const isRejecting = isCurrentOrderLoading && loadingAction === 'reject';
+
+
+    console.log('isAcceptindshjfbejahg', item );
+    return (
+      <OrderRequestCard
+        orderNumber={item.orderNumber}
+        time={item.time}
+        customerName={item.customerName}
+        items={item.items}
+        totalBill={item.totalBill}
+        paymentMethod={item.paymentMethod}
+        showAcceptReject={true}
+        onAccept={() => handleAccept(item.id)}
+        onReject={() => handleReject(item.id)}
+        isAccepting={isAccepting}
+        isRejecting={isRejecting}
+      />
+    );
+  };
   return (
     <View style={GeneralStyles.flex}>
       <ImageBackground
