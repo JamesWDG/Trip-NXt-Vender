@@ -6,25 +6,50 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import images from '../../../config/images';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 import labels from '../../../config/labels';
 import HomeHeader from '../../../components/homeHeader/HomeHeader';
 import SearchWithFilters from '../../../components/searchWithFilters/SearchWithFilters';
-import { height } from '../../../config/constants';
+import { height, ShowToast, width } from '../../../config/constants';
 import colors from '../../../config/colors';
 import GeneralStyles from '../../../utils/GeneralStyles';
 import fonts from '../../../config/fonts';
-import { homeCardData } from '../../../contants/Accomodation';
+import { homeCardData, Hotel } from '../../../contants/Accomodation';
 import HomeCard from '../../../components/Accomodation/homecard/HomeCard';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 import HotelCard from '../../../components/hotelCard/HotelCard';
 import DrawerModal from '../../../components/drawers/DrawerModal';
+import { useLazyGetMyHotelQuery } from '../../../redux/services/hotelService';
 const Home = () => {
   const navigation = useNavigation<NavigationPropType>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [getMyHotel, { isLoading }] = useLazyGetMyHotelQuery();
+  const [myHotels, setMyHotels] = useState<Hotel[]>([]);
+  const [loading, setLoading] = useState(false);
+  const fetchMyHotels = async () => {
+    try {
+      setLoading(true);
+      const res = await getMyHotel({}).unwrap();
+      console.log('my hotels: ', res);
+      setMyHotels(res.data);
+    } catch (error) {
+      console.log('error fetching my hotels: ', error);
+      ShowToast('error', 'Failed to fetch my hotels');
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    const subscribe = navigation.addListener('focus', () => {
+      fetchMyHotels();
+    });
+    return () => {
+      subscribe();
+    };
+  }, [])
   return (
     <View style={[GeneralStyles.flex, styles.container]}>
       <ImageBackground
@@ -70,8 +95,10 @@ const Home = () => {
 
               <View style={GeneralStyles.paddingHorizontal}>
                 <GradientButtonForAccomodation
-                  title="+ Add Item"
-                  onPress={() => {}}
+                  title="+ Add Hotel"
+                  onPress={() => {
+                    navigation.navigate('MyHotels');
+                  }}
                   fontFamily={fonts.bold}
                   fontSize={16}
                 />
@@ -80,26 +107,31 @@ const Home = () => {
 
             {/* Second Section */}
             <View style={styles.sectionStyles}>
-              <Text style={styles.secondSectionTitle}>Active Rentals</Text>
+              <Text style={styles.secondSectionTitle}>My Hotels</Text>
               <FlatList
-                contentContainerStyle={styles.contentContainer}
-                showsHorizontalScrollIndicator={false}
-                data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+                data={myHotels}
+                keyExtractor={(item, index) => index.toString()}
                 horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.myHotelsListContent}
+                ItemSeparatorComponent={() => <View style={styles.cardGap} />}
                 renderItem={({ item }) => (
-                  <HotelCard
-                    image={images.apartment}
-                    hotelName="Lux Hotel Casino"
-                    price="$180"
-                    rating={4.5}
-                    beds={3}
-                    baths={2}
-                    parking={2}
-                    location="Kingdom Tower, Brazil"
-                    onPress={() => {
-                      /* handle navigation */
-                    }}
-                  />
+                  <View style={[styles.horizontalCardWrapper, { width: width * 0.78 }]}>
+                    <HotelCard
+                      image={item.images?.length > 0 ? item.images[0] : images.placeholder}
+                      hotelName={item.name}
+                      rentPerDay={item.rentPerDay}
+                      rentPerHour={item.rentPerHour}
+                      rating={4.5}
+                      beds={item.numberOfBeds}
+                      baths={item.numberOfBathrooms}
+                      parking={item.numberOfGuests}
+                      location="Kingdom Tower, Brazil"
+                      onPress={() => {
+                        // navigation.navigate('HotelDetails', { ...item });
+                      }}
+                    />
+                  </View>
                 )}
               />
             </View>
@@ -117,7 +149,8 @@ const Home = () => {
                     <HotelCard
                       image={images.apartment}
                       hotelName="Lux Hotel Casino"
-                      price="$180"
+                      rentPerDay={180}
+                      rentPerHour={10}
                       rating={4.5}
                       beds={3}
                       baths={2}
@@ -189,6 +222,16 @@ const styles = StyleSheet.create({
   },
   contentContainerStyles: {
     gap: 20,
+  },
+  myHotelsListContent: {
+    paddingHorizontal: 20,
+    paddingRight: 20,
+  },
+  horizontalCardWrapper: {
+    minHeight: 140,
+  },
+  cardGap: {
+    width: 16,
   },
   parentContainer: {
     paddingBottom: 120,

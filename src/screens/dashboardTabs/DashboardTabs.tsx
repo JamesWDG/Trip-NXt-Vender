@@ -17,8 +17,9 @@ import fonts from '../../config/fonts';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 import GeneralStyles from '../../utils/GeneralStyles';
-import { useAppDispatch } from '../../redux/store';
+import { RootState, useAppDispatch } from '../../redux/store';
 import { setActiveStack } from '../../redux/slices/navigationSlice';
+import { useSelector } from 'react-redux';
 const DashboardTabs: FC = () => {
   const navigation = useNavigation<NavigationPropType>();
   const dispatch = useAppDispatch();
@@ -30,7 +31,7 @@ const DashboardTabs: FC = () => {
   let forceResetLastButton: any = null;
   let forceCompleteCallback: any = null;
   const [finishSwipeAnimDuration, setFinishSwipeAnimDuration] = useState(400);
-
+  const user = useSelector((state: RootState) => state.auth.user);
   const forceCompleteButtonCallback = useCallback(() => {
     setFinishSwipeAnimDuration(0);
     forceCompleteCallback();

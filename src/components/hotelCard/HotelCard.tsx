@@ -1,6 +1,7 @@
 import {
   Image,
   ImageSourcePropType,
+  ImageURISource,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,9 +14,10 @@ import { width } from '../../config/constants';
 import GeneralStyles from '../../utils/GeneralStyles';
 
 interface HotelCardProps {
-  image: ImageSourcePropType;
+  image: ImageSourcePropType | string | ImageURISource;
   hotelName: string;
-  price: string;
+  rentPerDay: number;
+  rentPerHour: number;
   rating: number;
   beds: number;
   baths: number;
@@ -28,7 +30,8 @@ interface HotelCardProps {
 const HotelCard: React.FC<HotelCardProps> = ({
   image,
   hotelName,
-  price,
+  rentPerDay,
+  rentPerHour,
   rating,
   beds,
   baths,
@@ -43,27 +46,30 @@ const HotelCard: React.FC<HotelCardProps> = ({
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Image source={image} style={styles.hotelImage} resizeMode="cover" />
+      <Image source={typeof image === 'string' ? { uri: image } : image} style={styles.hotelImage} resizeMode="cover" />
       <View style={styles.contentContainer}>
         <Text style={styles.hotelName}>{hotelName}</Text>
         <View style={styles.priceRatingContainer}>
           <Text style={styles.priceRating}>
-            {price}/night ★ {rating}
+            Rent Per Day: ${rentPerDay}
+          </Text>
+          <Text style={styles.priceRating}>
+            Rent Per Hour: ${rentPerHour}
           </Text>
         </View>
         {
           show ? <View style={styles.featuresContainer}>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🛏️</Text>
-            <Text style={styles.featureText}>{beds} Bed</Text>
+            <Text style={styles.featureText}>{beds}</Text>
           </View>
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🛁</Text>
-            <Text style={styles.featureText}>{baths} Bath</Text>
+            <Text style={styles.featureText}>{baths}</Text>
           </View>
           <View style={styles.featureItem}>
-            <Text style={styles.featureIcon}>🚗</Text>
-            <Text style={styles.featureText}>{parking} Parking</Text>
+            <Text style={styles.featureIcon}>👥</Text>
+            <Text style={styles.featureText}>{parking}</Text>
           </View>
         </View>:null
         }
@@ -88,8 +94,8 @@ const styles = StyleSheet.create({
     // marginVertical: 14,
   },
   hotelImage: {
-    width: 120,
-    height: width * 0.3,
+    width: '40%',
+    height: '100%',
     borderRadius: 12,
   },
   contentContainer: {
@@ -114,7 +120,8 @@ const styles = StyleSheet.create({
   },
   featuresContainer: {
     flexDirection: 'row',
-    gap: 6,
+    alignItems: 'center',
+    // gap: 6,
     justifyContent: 'space-between',
     marginBottom: 16,
     flexWrap: 'wrap',
@@ -128,7 +135,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   featureText: {
-    fontSize: 12,
+    fontSize: 16,
     fontFamily: fonts.medium,
     color: colors.c_F59523,
   },

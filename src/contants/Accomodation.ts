@@ -36,6 +36,30 @@ export interface AccomodationCard {
     title: string
 }
 
+export interface Hotel {
+    hotelId: number,
+    ownerId: number,
+    name: string,
+    locationId: number,
+    status: string,
+    phoneNumber: string,
+    website: string,
+    description: string,
+    isActive: boolean,
+    rentPerDay: number,
+    rentPerHour: number,
+    hotelType: string,
+    numberOfRooms: number,
+    numberOfBathrooms: number,
+    numberOfGuests: number,
+    numberOfBeds: number,
+    checkInTime: string,
+    checkOutTime: string,
+    images: string[],
+    createdAt: string,
+    updatedAt: string
+}
+
 export const IconListArray: IconList[] = [
     {
         id: "1",

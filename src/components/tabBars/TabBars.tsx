@@ -1,6 +1,5 @@
 import {
   Image,
-  ImageSourcePropType,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -108,6 +107,7 @@ const TabBars = (props: BottomTabBarProps) => {
             const route = props.state.routes.find(r => r.name === routeName);
             const isFocused =
               route && props.state.index === props.state.routes.indexOf(route);
+              console.log("Tab: ", tab)
 
             return (
               <TouchableOpacity
@@ -187,8 +187,9 @@ const styles = StyleSheet.create({
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    flex: 1,
+    // backgroundColor: 'red',
+    // gap: 8,
+    // flex: 1,
   },
   tabText: {
     color: colors.white,

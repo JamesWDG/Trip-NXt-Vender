@@ -4,6 +4,7 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -20,6 +21,7 @@ import Loader from '../../../components/AppLoader/Loader';
 import { ShowToast } from '../../../config/constants';
 import moment from 'moment';
 import Slider from '@react-native-community/slider';
+import { useLazyStripeConnectQuery } from '../../../redux/services/authService';
 
 type DayStatus = 'open' | 'close' | null;
 
@@ -34,6 +36,7 @@ interface DaySchedule {
 const ScheduleAndBank = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [addRestaurant, { isLoading }] = useAddRestaurantMutation();
+  const [stripeConnect] = useLazyStripeConnectQuery();
   const [updateRestaurant, { isLoading: updateLoader }] =
     useUpdateRestaurantMutation();
   const [schedule, setSchedule] = useState<DaySchedule[]>([
@@ -331,14 +334,27 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       ShowToast(
         'error',
         (error as { data: { message: string } })?.data?.message ||
-          'Something went wrong',
+        'Something went wrong',
       );
       console.log('error while creating/updating the restaurant', error);
     }
   };
 
-  const handleConnectStripe = () => {
-    navigation.navigate('StripeConnection');
+  const handleConnectStripe = async () => {
+    try {
+      const res = await stripeConnect({}).unwrap();
+      console.log('stripe connect response ===>', res);
+      console.log('stripe connect response ===>', res.data.stripeVenderAccount.url);
+      if (res.success) {
+        Linking.openURL(res.data.stripeVenderAccount.url);
+        // navigation.navigate('Web', { url: res.data.stripeVenderAccount.url });
+      } else {
+        ShowToast('error', res.message);
+      }
+    } catch (error) {
+      ShowToast('error', 'Cannot connect to stripe.');
+      console.log('error while connecting stripe', error);
+    }
   };
 
   // const handleSliderLayout = (event: any) => {
@@ -360,6 +376,10 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
           contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={false}
         >
+          {/* <WebView
+            style={{ width: '100%', height: 500,flex: 1 }}
+            source={{ uri: stripeUrl || 'www.google.com'}}
+          /> */}
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Schedule & Bank Setup</Text>
@@ -380,7 +400,7 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
                       style={[
                         styles.statusButton,
                         daySchedule.status === 'open' &&
-                          styles.statusButtonActive,
+                        styles.statusButtonActive,
                       ]}
                       onPress={() => handleDayStatusChange(index, 'open')}
                       activeOpacity={0.7}
@@ -389,7 +409,7 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
                         style={[
                           styles.statusButtonText,
                           daySchedule.status === 'open' &&
-                            styles.statusButtonTextActive,
+                          styles.statusButtonTextActive,
                         ]}
                       >
                         Open
@@ -399,10 +419,10 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
                       style={[
                         styles.statusButton,
                         daySchedule.status === 'open' &&
-                          daySchedule.close &&
-                          styles.statusButtonActive,
+                        daySchedule.close &&
+                        styles.statusButtonActive,
                         daySchedule.status !== 'open' &&
-                          styles.statusButtonDisabled,
+                        styles.statusButtonDisabled,
                       ]}
                       onPress={() => handleDayStatusChange(index, 'close')}
                       activeOpacity={0.7}
@@ -412,10 +432,10 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
                         style={[
                           styles.statusButtonText,
                           daySchedule.status === 'open' &&
-                            daySchedule.close &&
-                            styles.statusButtonTextActive,
+                          daySchedule.close &&
+                          styles.statusButtonTextActive,
                           daySchedule.status !== 'open' &&
-                            styles.statusButtonTextDisabled,
+                          styles.statusButtonTextDisabled,
                         ]}
                       >
                         Close
@@ -547,9 +567,8 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
           initialDate={getInitialDate()}
           title={
             selectedDayIndex !== null
-              ? `Select ${
-                  selectedTimeType === 'open' ? 'Open' : 'Close'
-                } Time for ${schedule[selectedDayIndex]?.day}`
+              ? `Select ${selectedTimeType === 'open' ? 'Open' : 'Close'
+              } Time for ${schedule[selectedDayIndex]?.day}`
               : 'Select Time'
           }
         />
@@ -742,5 +761,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  stripeWebViewContainer: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    top: 0,
+    left: 0,
+    backgroundColor: 'red',
   },
 });

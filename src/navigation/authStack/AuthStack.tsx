@@ -10,6 +10,7 @@ import OtpVerify from '../../screens/Restaurant/otpVerify/OtpVerify';
 import Login from '../../screens/login/Login';
 import ForgotPassword from '../../screens/ForgotPassword/ForgotPassword';
 import ResetPassword from '../../screens/Password/ResetPassword';
+import ScheduleAndBank from '../../screens/Restaurant/scheduleAndBank/ScheduleAndBank';
 
 export type NavigationPropType = NativeStackNavigationProp<any>;
 

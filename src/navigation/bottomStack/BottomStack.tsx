@@ -12,6 +12,7 @@ import ContactUs from '../../screens/Accomodation/contactUs/ContactUs';
 import ProfileStack from '../profileStack/ProfileStack';
 import Notification from '../../screens/notification/Notification';
 import RideStack from '../rideStack/RideStack';
+import Web from '../../screens/Web/Web';
 
 const Tab = createBottomTabNavigator();
 
@@ -36,6 +37,7 @@ const BottomStack: FC = () => {
       <Tab.Screen name="Profile" component={ProfileStack} />
       <Tab.Screen name="Notification" component={Notification} />
       <Tab.Screen name="MyHotels" component={MyHotels} />
+      <Tab.Screen name="Web" component={Web} />
     </Tab.Navigator>
   );
 };

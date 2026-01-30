@@ -64,6 +64,12 @@ export const authApi = baseApi.injectEndpoints({
         body: data,
       }),
     }),
+    stripeConnect: builder.query({
+      query: () => ({
+        url: endpoint.STRIPE_CONNECT,
+        method: 'GET',
+      })
+    })
   }),
 });
 
@@ -77,4 +83,5 @@ export const {
   useLogoutMutation,
   useUpdateUserMutation,
   useLazyGetUserQuery,
+  useLazyStripeConnectQuery
 } = authApi;

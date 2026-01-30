@@ -16,11 +16,13 @@ import Navigation from './src/navigation';
 import { persistor, store } from './src/redux/store';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './src/config/Toast';
+import { StripeProvider } from '@stripe/stripe-react-native';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
 
   return (
+    <StripeProvider publishableKey='pk_test_51StyYHCKxuTZDLl10iiJm4FWIaAsnaMjxxl4d75AdNhQWhL6KyQJ70QvKG2s79ACsI4lx6Et4oe2rxH0cd9Sc90n00HwGOeOiB'>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <SafeAreaProvider>
@@ -30,6 +32,7 @@ const App = () => {
         </SafeAreaProvider>
       </PersistGate>
     </Provider>
+    </StripeProvider>
   );
 };
 
