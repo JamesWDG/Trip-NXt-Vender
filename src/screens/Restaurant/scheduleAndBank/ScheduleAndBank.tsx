@@ -346,8 +346,8 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       console.log('stripe connect response ===>', res);
       console.log('stripe connect response ===>', res.data.stripeVenderAccount.url);
       if (res.success) {
-        Linking.openURL(res.data.stripeVenderAccount.url);
-        // navigation.navigate('Web', { url: res.data.stripeVenderAccount.url });
+        // Linking.openURL(res.data.stripeVenderAccount.url);
+        navigation.navigate('Web', { url: res.data.stripeVenderAccount.url });
       } else {
         ShowToast('error', res.message);
       }
