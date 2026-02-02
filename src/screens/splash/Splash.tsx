@@ -1,21 +1,51 @@
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import React, { FC, useEffect, useRef } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import colors from '../../config/colors';
 import images from '../../config/images';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { navigationRef } from '../../config/constants';
+import { useLazyGetUserQuery } from '../../redux/services/authService';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
 const Splash: FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { token } = useSelector((state: RootState) => state.auth);
-  const { activeStack } = useSelector((state: RootState) => state.navigation);
-  // console.log(activeStack);
   const scaleAnimation = useRef(new Animated.Value(0.1)).current;
+  const [getUser] = useLazyGetUserQuery();
+
+  const fetchUser = async () => {
+    try {
+      const res = await getUser(undefined).unwrap();
+      console.log('user data ===>', res);
+      if (res.success) {
+        navigationRef.dispatch(CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'app',
+              state: {
+                routes: [
+                  {
+                    name: res.data.role && res.data.role.length > 0 ? res.data.role[0] === 'restaurant_owner' ? 'RestaurantStack' : res.data.role[0] === 'accommodation_owner' ? 'Accomodation' : 'CabStack' : 'RestaurantStack',
+                  },
+                ],
+                index: 0,
+              },
+            },
+          ],
+        }));
+      } else {
+        navigation.navigate('GetStarted');
+      }
+    } catch (error) {
+      navigation.navigate('GetStarted');
+      console.log('error ===>', error);
+    }
+  }
   useEffect(() => {
     Animated.timing(scaleAnimation, {
       toValue: 1,
@@ -28,12 +58,10 @@ const Splash: FC = () => {
     transform: [{ scale: scaleAnimation }],
   };
 
+
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.navigate('GetStarted');
-      // navigation.navigate('MyHotels');
-    }, 3000);
-    return () => clearTimeout(timer);
+    fetchUser();
   }, []);
   return (
     <View style={styles.container}>

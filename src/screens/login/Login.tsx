@@ -24,6 +24,7 @@ import {
   setRememberMe,
   saveCredentials,
   clearCredentials,
+  setUserRole,
 } from '../../redux/slices/authSlice';
 import { RootState } from '../../redux/store';
 import { CommonActions } from '@react-navigation/native';
@@ -39,7 +40,7 @@ interface stateTypes {
 
 const Login = ({ navigation }: { navigation: any }) => {
   const [state, setState] = useState<stateTypes>({
-    email:  '',//'wdgtest1@yopmail.com',
+    email: '',//'wdgtest1@yopmail.com',
     password: '',//'Abcd!234',
     errors: {
       email: '',
@@ -86,7 +87,6 @@ const Login = ({ navigation }: { navigation: any }) => {
         password: state.password,
       };
       const res = await login(data).unwrap();
-      console.log('login response ===>', res);
       ShowToast('success', res.message);
       if (res.success) {
         if (rememberMe) {
@@ -96,9 +96,9 @@ const Login = ({ navigation }: { navigation: any }) => {
         } else {
           dispatch(clearCredentials());
         }
-        console.log('activeStack', activeStack, res.data.role);
+        console.log('res.data.role', res.data.role === 'accommodation_owner');
+        dispatch(setUserRole([res.data.role]));
         if (navigationRef.isReady()) {
-          console.log('navigationRef.isReady()', navigationRef.isReady());
           navigationRef.dispatch(CommonActions.reset({
             index: 0,
             routes: [

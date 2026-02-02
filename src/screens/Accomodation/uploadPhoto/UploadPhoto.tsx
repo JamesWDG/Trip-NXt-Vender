@@ -32,6 +32,7 @@ interface UploadPhotoRouteParams {
   postalCode: string;
   website: string;
   phoneNumber: string;
+  serviceFee: string;
 }
 
 const UploadPhoto = ({route}: {route: RouteProp<{ UploadPhoto: UploadPhotoRouteParams }, 'UploadPhoto'> }) => {
@@ -79,6 +80,7 @@ const UploadPhoto = ({route}: {route: RouteProp<{ UploadPhoto: UploadPhotoRouteP
       data.append('numberOfBathrooms', route?.params?.bathrooms);
       data.append('features', route?.params?.features);
       data.append('category', route?.params?.category);
+      data.append('serviceCharge', route?.params?.serviceFee);
       uploadedImages.forEach((image, index) => {
         data.append('images', {
           name: image.filename || `image${index}.jpg`,

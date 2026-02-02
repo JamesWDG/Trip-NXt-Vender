@@ -14,20 +14,24 @@ import LinearGradient from 'react-native-linear-gradient';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import { TabStackArray } from '../../contants/tabsStack';
-import { useAppSelector } from '../../redux/store';
+import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { selectActiveStack } from '../../redux/slices/navigationSlice';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
+import { setUserRole } from '../../redux/slices/authSlice';
 
 const TabBars = (props: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
   const mainContainer = useMemo(() => mainContainerStyle(bottom), [bottom]);
   const activeStack = useAppSelector(selectActiveStack);
   const [getUser] = useLazyGetUserQuery();
+  const dispatch = useAppDispatch();
 
   const fetchUser = async () => {
     try {
       const res = await getUser(undefined).unwrap();
-      console.log('user data ===>', res);
+      if (res.success) {
+        dispatch(setUserRole(res.data.role));
+      }
     } catch (error) {
       console.log('error ===>', error);
     }

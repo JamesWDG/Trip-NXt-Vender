@@ -10,14 +10,14 @@ export interface IOption {
     stack: string;
 }
 export const options: IOption[] = [
-    {
-        id: 0,
-        title: "Create a Ride",
-        type: 'car_owner',
-        screenName: 'DriverRegistration',
-        stack: 'CabStack',
-        image: images.bookARide
-    },
+    // {
+    //     id: 0,
+    //     title: "Create a Ride",
+    //     type: 'car_owner',
+    //     screenName: 'DriverRegistration',
+    //     stack: 'CabStack',
+    //     image: images.bookARide
+    // },
     {
         id: 1,
         title: labels.manageRestaurant,

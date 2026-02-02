@@ -29,7 +29,7 @@ const AddHotel = () => {
   const [rentPerHour, setRentPerHour] = useState('');
   const [description, setDescription] = useState('');
   const [postalCode, setPostalCode] = useState('');
-  const [website, setWebsite] = useState('');
+  const [serviceFee, setServiceFee] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const categories = ['Budget', 'Standard', 'Luxury'];
 
@@ -44,7 +44,8 @@ const AddHotel = () => {
         category: selectedCategory,
         postalCode,
         website: 'www.google.com',
-        phoneNumber
+        phoneNumber,
+        serviceFee
       }
     });
   };
@@ -113,6 +114,12 @@ const AddHotel = () => {
               placeholder="$ Enter Rent per hour"
               value={rentPerHour}
               onChangeText={setRentPerHour}
+              keyboardType="numeric"
+            />
+            <CustomTextInput
+              placeholder="$ Enter Service Fee"
+              value={serviceFee}
+              onChangeText={setServiceFee}
               keyboardType="numeric"
             />
 

@@ -29,6 +29,7 @@ interface PeopleStaysRouteParams {
   postalCode: string;
   website: string;
   phoneNumber: string;
+  serviceFee: string;
 }
 
 const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }, 'PeopleStays'> }> = ({ route }) => {
@@ -89,7 +90,8 @@ const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }
         category: route.params.category,
         postalCode: route.params.postalCode,
         website: route.params.website,
-        phoneNumber: route.params.phoneNumber
+        phoneNumber: route.params.phoneNumber,
+        serviceFee: route.params.serviceFee
       }
     });
   }

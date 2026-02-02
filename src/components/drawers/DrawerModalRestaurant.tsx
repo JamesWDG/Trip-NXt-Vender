@@ -20,6 +20,8 @@ import { navigationRef } from '../../config/constants';
 import IconsWithTitle from '../iconsWithTitle/IconsWithTitle';
 import IconWithTitleAndDivider from '../iconWithTitleAndDivider/IconWithTitleAndDivider';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
+import { setLogout } from '../../redux/slices/authSlice';
+import { useAppDispatch } from '../../redux/store';
 
 const upperTabData = [
   {
@@ -154,6 +156,7 @@ const DrawerModalRestaurant = ({
 }: IDrawerModal) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationPropType>();
+  const dispatch = useAppDispatch();
   const renderHorizontalTabs = ({
     item,
   }: {
@@ -254,6 +257,7 @@ const DrawerModalRestaurant = ({
               style={styles.logoutButton}
               onPress={() => {
                 if (navigationRef.isReady()) {
+                  dispatch(setLogout())
                   navigationRef.dispatch(
                     CommonActions.reset({
                       index: 0,

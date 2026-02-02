@@ -5,6 +5,7 @@ interface User {
   id?: string;
   email?: string;
   password?: string;
+  role?: string[];
   [key: string]: any;
 }
 
@@ -49,6 +50,12 @@ const authSlice = createSlice({
       state.token = null;
       state.user = null;
     },
+    setUserRole: (state, action) => {
+      state.user = {
+        ...state.user,
+        role: action.payload,
+      };
+    },
   },
   extraReducers: builder => {
     builder.addMatcher(
@@ -78,7 +85,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRememberMe, saveCredentials, clearCredentials  , setLogout} =
+export const { setRememberMe, saveCredentials, clearCredentials  , setLogout, setUserRole} =
   authSlice.actions;
 
 export default authSlice.reducer;

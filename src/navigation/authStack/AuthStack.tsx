@@ -22,6 +22,7 @@ const AuthStack: FC = () => {
       screenOptions={{
         headerShown: false,
         animation: 'fade_from_bottom',
+        gestureEnabled: false,
       }}
     >
       <Stack.Screen name="Splash" component={Splash} />

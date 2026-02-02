@@ -44,6 +44,7 @@ interface FeaturesRouteParams {
   rentPerHour: string,
   description: string,
   features: number[];
+  serviceFee: string;
 }
 
 const Features = ({ route }: { route: RouteProp<{ Features: FeaturesRouteParams }, 'Features'> }) => {
@@ -91,7 +92,8 @@ const Features = ({ route }: { route: RouteProp<{ Features: FeaturesRouteParams 
         category: route.params.category,
         postalCode: route.params.postalCode,
         website: route.params.website,
-        phoneNumber: route.params.phoneNumber
+        phoneNumber: route.params.phoneNumber,
+        serviceFee: route.params.serviceFee
       }
     });
     console.log('Selected Features:');
