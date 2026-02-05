@@ -24,9 +24,14 @@ export const hotelApi = baseApi.injectEndpoints({
                     body: data,
                 })
             }),
-            
+            getBookingLogs: builder.query({
+                query: () => ({
+                    method: 'GET',
+                    url: endpoint.GET_BOOKING_LOGS,
+                })
+            })
         }
     }
 });
 
-export const { useLazyGetFeaturesItemsQuery, useCreateHotelMutation, useLazyGetMyHotelQuery } = hotelApi;
+export const { useLazyGetFeaturesItemsQuery, useCreateHotelMutation, useLazyGetMyHotelQuery, useLazyGetBookingLogsQuery } = hotelApi;

@@ -16,11 +16,14 @@ import GeneralStyles from '../../../utils/GeneralStyles';
 import RestaurantHomeHeader from '../../../components/restaurantHomeHeader/RestaurantHomeHeader';
 import SectionHeader from '../../../components/sectionHeader/SectionHeader';
 import OrderRequestCard from '../../../components/orderRequestCard/OrderRequestCard';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
 import { useLazyGetUserQuery } from '../../../redux/services/authService';
 import { useLazyGetOrdersQuery, useUpdateOrderStatusMutation } from '../../../redux/services/orderService';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store';
+import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -42,8 +45,9 @@ interface Order {
 
 
 const RestaurantHome = () => {
-  const navigation = useNavigation<NavigationPropType>();
+  const navigation = useNavigation<NavigationProp<ParamListBase, 'RestaurantHome'>>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const { needRestaurantVerification } = useSelector((state: RootState) => state.auth);
   const [userData, setUserData] = useState<{
     name: string;
     description: string;
@@ -67,7 +71,7 @@ const RestaurantHome = () => {
     try {
       const res = await getUser({}).unwrap();
       console.log('restaurant data ===>', res);
-      
+
       // Check if restaurant exists
       if (!res.data?.restaurant) {
         console.log('No restaurant data found');
@@ -81,14 +85,14 @@ const RestaurantHome = () => {
       }
 
       const restaurantIdValue = res.data?.restaurant?.id?.toString() || res.data?.restaurant?._id?.toString();
-      
+
       setUserData({
         name: res.data.restaurant.name || '',
         description: res.data.restaurant.description || '',
         logo: res.data.restaurant.logo || '',
         restaurantId: restaurantIdValue || undefined,
       });
-      
+
       // Store restaurant ID separately for easy access
       if (restaurantIdValue && restaurantIdValue.trim() !== '') {
         setRestaurantId(restaurantIdValue);
@@ -115,17 +119,17 @@ const RestaurantHome = () => {
     try {
       const res = await getOrders(restaurantId).unwrap();
       console.log('orders data ===>', res);
-      
+
       // Check if API call was successful
       if (!res.success && res.message) {
         console.log('Orders API error:', res.message);
         setOrders([]);
         return;
       }
-      
+
       // API returns array of order items, need to group by orderId
       const ordersData = res.data || [];
-      
+
       if (!Array.isArray(ordersData) || ordersData.length === 0) {
         setOrders([]);
         return;
@@ -172,7 +176,7 @@ const RestaurantHome = () => {
           name: item?.name || 'Item',
           price: item?.price || 0,
         });
-        
+
         // Add to full order data items array
         if (!orderData.fullOrderData.allItems.find((oi: any) => oi.id === orderItem.id)) {
           orderData.fullOrderData.allItems.push(orderItem);
@@ -183,7 +187,7 @@ const RestaurantHome = () => {
       const ordersWithDate = Array.from(ordersMap.entries()).map(([orderId, orderData]) => {
         const order = orderData.order;
         const date = order?.createdAt || new Date();
-        
+
         // Format time from createdAt
         const timeStr = new Date(date).toLocaleTimeString('en-US', {
           hour: '2-digit',
@@ -215,7 +219,7 @@ const RestaurantHome = () => {
       // Extract orders without createdAt and store full data
       const finalOrders: Order[] = ordersWithDate.map(item => item.order);
       const fullOrdersArray = Array.from(ordersMap.values()).map(orderData => orderData.fullOrderData);
-      
+
       setFullOrdersData(fullOrdersArray);
       setOrders(finalOrders);
     } catch (error: any) {
@@ -230,7 +234,7 @@ const RestaurantHome = () => {
 
   useEffect(() => {
     fetchRestaurant();
-  },[])
+  }, [])
 
   const handleAccept = async (orderId: string) => {
     if (!orderId || orderId.trim() === '') {
@@ -242,31 +246,31 @@ const RestaurantHome = () => {
       setLoadingOrderId(orderId);
       setLoadingAction('accept');
       console.log('Accepting order with ID:', orderId);
-      
+
       // Call updateOrderStatus API: PUT /order/update-order-status/:id
       // Body: { status: 'dispatched' }
-      const data = {status: 'dispatched',  restaurantId}
+      const data = { status: 'dispatched', restaurantId }
       const res = await updateOrderStatus({
         id: orderId,
         data
       }).unwrap();
       await fetchOrders(restaurantId);
-      
+
       console.log('Order accepted successfully:', res);
-      
+
       // Show success toast
       ShowToast('success', res?.message || 'Order accepted successfully');
-      
+
       // Find the full order data to pass to OrderDetails (before refresh)
       const currentOrderData = fullOrdersData.find(
         (order: any) => order.orderId?.toString() === orderId || order.order?.id?.toString() === orderId
       );
-      
+
       // Refresh orders list to get updated status
       if (restaurantId && restaurantId.trim() !== '') {
         await fetchOrders(restaurantId);
       }
-      
+
       // Navigate to OrderDetails with order data
       // Use current order data if available, otherwise it will be available after refresh
       if (currentOrderData) {
@@ -293,7 +297,7 @@ const RestaurantHome = () => {
     } catch (error: any) {
       console.log('Error accepting order:', error);
       console.log('Error details:', error?.data || error?.message);
-      
+
       // Show error toast
       const errorMessage = error?.data?.message || error?.message || 'Failed to accept order. Please try again.';
       ShowToast('error', errorMessage);
@@ -313,20 +317,20 @@ const RestaurantHome = () => {
       setLoadingOrderId(orderId);
       setLoadingAction('reject');
       console.log('Rejecting order with ID:', orderId);
-      
+
       // Call updateOrderStatus API: PUT /order/update-order-status/:id
       // Body: { status: 'cancelled' }
-      const data = {status: 'cancelled',  restaurantId}
+      const data = { status: 'cancelled', restaurantId }
       const res = await updateOrderStatus({
         id: orderId,
         data
       }).unwrap();
-      
+
       console.log('Order rejected successfully:', res);
-      
+
       // Show success toast
       ShowToast('success', res?.message || 'Order rejected successfully');
-      
+
       // Refresh orders list after successful update
       if (restaurantId && restaurantId.trim() !== '') {
         await fetchOrders(restaurantId);
@@ -334,7 +338,7 @@ const RestaurantHome = () => {
     } catch (error: any) {
       console.log('Error rejecting order:', error);
       console.log('Error details:', error?.data || error?.message);
-      
+
       // Show error toast
       const errorMessage = error?.data?.message || error?.message || 'Failed to reject order. Please try again.';
       ShowToast('error', errorMessage);
@@ -349,10 +353,6 @@ const RestaurantHome = () => {
     const isAccepting = isCurrentOrderLoading && loadingAction === 'accept';
     const isRejecting = isCurrentOrderLoading && loadingAction === 'reject';
 
-
-
-    console.log(item, "dfnceugeuygeufygugeyfugyefg")
-    console.log('isAcceptindshjfbejahg', item );
     return (
       <OrderRequestCard
         orderNumber={item.orderNumber}
@@ -382,7 +382,7 @@ const RestaurantHome = () => {
             isOnline={true}
             onMenuPress={() => setIsModalVisible(true)}
             onNotificationPress={() => navigation.navigate('Notification')}
-            onToggleChange={() => {}}
+            onToggleChange={() => { }}
             profileImage={images.avatar}
             notificationCount={3}
             title="Current Status"

@@ -36,6 +36,8 @@ export interface AccomodationCard {
     title: string
 }
 
+
+
 export interface Hotel {
     hotelId: number,
     ownerId: number,
@@ -204,3 +206,24 @@ export const RealtorProfileCard: RealtorProfileCardType[] = [
         title: "Identity verified",
     }
 ]
+
+export interface BookingLog {
+    id: number,
+    hotelId: number,
+    vendorId: number,
+    userId: number,
+    checkInDate: string,
+    checkOutDate: string,
+    totalAmount: number,
+    status: string,
+    emailSent: boolean,
+    paymentId: number,
+    numberOfGuests: number,
+    numberOfRooms: number,
+    numberOfBeds: number,
+    children: number,
+    adults: number,
+    createdAt: string,
+    updatedAt: string,
+    hotel: Hotel
+}

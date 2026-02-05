@@ -1,5 +1,5 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import AccomodationTabButtons from '../../../components/accomodationTabButtons/AccomodationTabButtons';
 import images from '../../../config/images';
@@ -8,9 +8,27 @@ import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
 import SearchWithFilters from '../../../components/searchWithFilters/SearchWithFilters';
 import labels from '../../../config/labels';
+import { useLazyGetBookingLogsQuery } from '../../../redux/services/hotelService';
+import { BookingLog, Hotel } from '../../../contants/Accomodation';
+import { ShowToast } from '../../../config/constants';
 
 const BookingLogs = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const [getBookingLogs, { isLoading }] = useLazyGetBookingLogsQuery();
+  const [bookingLogs, setBookingLogs] = useState<BookingLog[]>([]);
+  const fetchBookingLogs = async () => {
+    try {
+      const res = await getBookingLogs(1).unwrap();
+      console.log('booking logs: ', res);
+      setBookingLogs(res.data);
+    } catch (error) {
+      console.log('error fetching booking logs: ', error);
+      ShowToast('error', 'Failed to fetch booking logs');
+    }
+  }
+  useEffect(() => {
+    fetchBookingLogs();
+  }, []);
   return (
     <WrapperContainer title="Booking Logs" navigation={navigation}>
       <View style={styles.mainContainer}>
@@ -21,23 +39,24 @@ const BookingLogs = () => {
         <AccomodationTabButtons data={['Hotels', 'Foods', 'Ride']} />
       </View>
       <FlatList
-        data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+        data={bookingLogs}
         renderItem={({ item }) => (
           <HotelCard
-            image={images.apartment}
-            hotelName="Lux Hotel Casino"
-            price="$180"
+            image={item.hotel.images[0]}
+            hotelName={item.hotel.name}
+            rentPerDay={item.totalAmount}
+            rentPerHour={0}
             rating={4.5}
-            beds={3}
-            baths={2}
-            parking={2}
-            location="Kingdom Tower, Brazil"
+            beds={item.numberOfBeds}
+            baths={item?.hotel?.numberOfBathrooms}
+            parking={item?.numberOfGuests}
+            location={`${item?.hotel?.location?.city}, ${item?.hotel?.location?.country}`}
             onPress={() => {
               /* handle navigation */
             }}
           />
         )}
-        keyExtractor={item => item.toString()}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
       />

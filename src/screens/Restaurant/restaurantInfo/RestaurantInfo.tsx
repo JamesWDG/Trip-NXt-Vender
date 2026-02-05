@@ -217,6 +217,16 @@ const RestaurantInfo = () => {
               </View>
               <Text style={styles.actionButtonText}>Edit</Text>
             </TouchableOpacity>
+            {!restaurant && <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('RestaurantDetails')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.buttonIconContainer}>
+                <Edit size={22} color={colors.white} />
+              </View>
+              <Text style={styles.actionButtonText}>Add Restaurant</Text>
+            </TouchableOpacity>}
 
             <TouchableOpacity
               style={styles.actionButton}

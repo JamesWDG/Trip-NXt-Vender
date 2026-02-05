@@ -25,6 +25,7 @@ import {
   saveCredentials,
   clearCredentials,
   setUserRole,
+  setVerificationStatus,
 } from '../../redux/slices/authSlice';
 import { RootState } from '../../redux/store';
 import { CommonActions } from '@react-navigation/native';
@@ -88,6 +89,7 @@ const Login = ({ navigation }: { navigation: any }) => {
       };
       const res = await login(data).unwrap();
       ShowToast('success', res.message);
+      console.log('res ===>>>> ', res);
       if (res.success) {
         if (rememberMe) {
           dispatch(
@@ -98,6 +100,7 @@ const Login = ({ navigation }: { navigation: any }) => {
         }
         console.log('res.data.role', res.data.role === 'accommodation_owner');
         dispatch(setUserRole([res.data.role]));
+        dispatch(setVerificationStatus({ needAccommodationVerification: res.data.needAccommodationVerification, needRestaurantVerification: res.data.needRestaurantVerification }));
         if (navigationRef.isReady()) {
           navigationRef.dispatch(CommonActions.reset({
             index: 0,
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.normal,
   },
   dontHaveAnAccountContainer: {
-    marginTop: 76,
+    marginTop: 35,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

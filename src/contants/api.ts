@@ -22,6 +22,7 @@ type endpointTypes = {
     GET_ORDERS: (id:string)=>string;
     UPDATE_ORDER_STATUS: (id:string)=>string;
     STRIPE_CONNECT: string;
+    GET_BOOKING_LOGS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -53,5 +54,6 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_ORDERS: (id:string)=>'/order/get-orders-by-restaurant-id/'+id,
     UPDATE_ORDER_STATUS: (id:string)=>'/order/update-order-status/'+id,
     STRIPE_CONNECT: '/subscription/create-stripe-vender-account',
+    GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
     // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
 })

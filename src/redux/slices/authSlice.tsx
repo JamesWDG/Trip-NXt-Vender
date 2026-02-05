@@ -13,12 +13,16 @@ interface AuthState {
   user: User | null;
   token: string | null;
   rememberMe: boolean;
+  needAccommodationVerification: boolean;
+  needRestaurantVerification: boolean;
 }
 
 const initialState: AuthState = {
   user: null,
   token: null,
   rememberMe: false,
+  needAccommodationVerification: false,
+  needRestaurantVerification: false,
 };
 
 const authSlice = createSlice({
@@ -56,6 +60,16 @@ const authSlice = createSlice({
         role: action.payload,
       };
     },
+    setVerificationStatus: (state, action) => {
+      state.needAccommodationVerification = action.payload.needAccommodationVerification;
+      state.needRestaurantVerification = action.payload.needRestaurantVerification;
+    },
+    setRestaurantVerificationStatus: (state, action) => {
+      state.needRestaurantVerification = action.payload;
+    },
+    setAccommodationVerificationStatus: (state, action) => {
+      state.needAccommodationVerification = action.payload;
+    },
   },
   extraReducers: builder => {
     builder.addMatcher(
@@ -85,7 +99,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setRememberMe, saveCredentials, clearCredentials  , setLogout, setUserRole} =
+export const { setRememberMe, saveCredentials, clearCredentials, setLogout, setUserRole, setVerificationStatus, setRestaurantVerificationStatus, setAccommodationVerificationStatus } =
   authSlice.actions;
 
 export default authSlice.reducer;

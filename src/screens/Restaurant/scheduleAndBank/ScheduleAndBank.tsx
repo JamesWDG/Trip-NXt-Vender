@@ -22,6 +22,8 @@ import { ShowToast } from '../../../config/constants';
 import moment from 'moment';
 import Slider from '@react-native-community/slider';
 import { useLazyStripeConnectQuery } from '../../../redux/services/authService';
+import { useDispatch } from 'react-redux';
+import { setRestaurantVerificationStatus } from '../../../redux/slices/authSlice';
 
 type DayStatus = 'open' | 'close' | null;
 
@@ -37,6 +39,7 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
   const navigation = useNavigation<NavigationProp<any>>();
   const [addRestaurant, { isLoading }] = useAddRestaurantMutation();
   const [stripeConnect] = useLazyStripeConnectQuery();
+  const dispatch = useDispatch();
   const [updateRestaurant, { isLoading: updateLoader }] =
     useUpdateRestaurantMutation();
   const [schedule, setSchedule] = useState<DaySchedule[]>([
@@ -326,6 +329,7 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
           : 'Restaurant created successfully',
       );
       if (res.success) {
+        dispatch(setRestaurantVerificationStatus(true));
         navigation.navigate('RestaurantStack', {
           screen: 'RestaurantHome',
         });
@@ -346,8 +350,8 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
       console.log('stripe connect response ===>', res);
       console.log('stripe connect response ===>', res.data.stripeVenderAccount.url);
       if (res.success) {
-        Linking.openURL(res.data.stripeVenderAccount.url);
-        // navigation.navigate('Web', { url: res.data.stripeVenderAccount.url });
+        // Linking.openURL(res.data.stripeVenderAccount.url);
+        navigation.navigate('Web', { url: res.data.stripeVenderAccount.url });
       } else {
         ShowToast('error', res.message);
       }

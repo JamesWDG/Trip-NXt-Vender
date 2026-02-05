@@ -32,7 +32,7 @@ const Home = () => {
   const fetchMyHotels = async () => {
     try {
       setLoading(true);
-      const res = await getMyHotel({}).unwrap();
+      const res = await getMyHotel(1).unwrap();
       console.log('my hotels: ', res);
       setMyHotels(res.data);
     } catch (error) {
