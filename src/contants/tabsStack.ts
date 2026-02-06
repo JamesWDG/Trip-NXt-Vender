@@ -5,9 +5,74 @@ export interface ITabStack {
     name: string;
     image: ImageSourcePropType;
     navigation: string;
-    homeScreen?: string; // Optional: default home screen name for the stack
-    flow?: string; // Optional: default home screen name for the stack
+    screen?: string; // Nested screen name for stack (e.g. RestaurantHome, Orders)
+    homeScreen?: string;
+    flow?: string;
 }
+
+/** Restaurant stack: tab bar visible only on these screens */
+export const RESTAURANT_TABS: ITabStack[] = [
+    {
+        name: 'Home',
+        image: images.home_tab,
+        navigation: 'RestaurantStack',
+        screen: 'RestaurantHome',
+        flow: 'RestaurantStack',
+    },
+    {
+        name: 'Restaurant',
+        image: images.home_tab,
+        navigation: 'RestaurantStack',
+        screen: 'RestaurantInfo',
+        flow: 'RestaurantStack',
+    },
+    {
+        name: 'Orders',
+        image: images.food_tab,
+        navigation: 'RestaurantStack',
+        screen: 'Orders',
+        flow: 'RestaurantStack',
+    },
+    {
+        name: 'Profile',
+        image: images.user,
+        navigation: 'Profile',
+        homeScreen: 'Profile',
+        flow: 'mixed',
+    },
+];
+
+/** Accommodation stack: tab bar visible only on these screens */
+export const ACCOMMODATION_TABS: ITabStack[] = [
+    {
+        name: 'Home',
+        image: images.home_tab,
+        navigation: 'Accomodation',
+        screen: 'Home',
+        flow: 'Accomodation',
+    },
+    {
+        name: 'My Hotels',
+        image: images.car,
+        navigation: 'MyHotels',
+        homeScreen: 'Home',
+        flow: 'Accomodation',
+    },
+    {
+        name: 'My Bookings',
+        image: images.booking,
+        navigation: 'BookingLogs',
+        homeScreen: 'Home',
+        flow: 'Accomodation',
+    },
+    {
+        name: 'Profile',
+        image: images.user,
+        navigation: 'Profile',
+        homeScreen: 'Profile',
+        flow: 'mixed',
+    },
+];
 
 export const TabStackArray: ITabStack[] = [
     {

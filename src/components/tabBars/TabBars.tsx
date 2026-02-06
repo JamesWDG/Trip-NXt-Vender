@@ -8,11 +8,12 @@ import {
 import React, { useEffect, useMemo } from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
-import { TabStackArray } from '../../contants/tabsStack';
+import { ACCOMMODATION_TABS, RESTAURANT_TABS, ITabStack } from '../../contants/tabsStack';
 import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { selectActiveStack } from '../../redux/slices/navigationSlice';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
@@ -38,8 +39,40 @@ const TabBars = (props: BottomTabBarProps) => {
 
   useEffect(() => {
     fetchUser();
-  },[])
+  }, []);
 
+  // Restaurant: Home, Restaurant Info, Orders, Profile | Accommodation: Home, My Hotels, My Bookings, Profile
+  const tabs: ITabStack[] =
+    activeStack === 'RestaurantStack' ? RESTAURANT_TABS : ACCOMMODATION_TABS;
+
+  const currentRoute = props.state.routes[props.state.index];
+  const nestedRouteName = getFocusedRouteNameFromRoute(currentRoute);
+  const currentTabName = currentRoute.name;
+
+  // Tab bar visible only on allowed screens per stack; hide on all other screens
+  const shouldShowTabBar = useMemo(() => {
+    if (activeStack === 'RestaurantStack') {
+      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'RestaurantStack') {
+        const allowed = ['RestaurantHome', 'RestaurantInfo', 'Orders'];
+        return allowed.includes(nestedRouteName ?? 'RestaurantHome');
+      }
+      return false;
+    }
+    if (activeStack === 'Accomodation') {
+      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'MyHotels' || currentTabName === 'BookingLogs') return true;
+      if (currentTabName === 'Accomodation') {
+        return nestedRouteName === 'Home';
+      }
+      return false;
+    }
+    return false;
+  }, [activeStack, currentTabName, nestedRouteName]);
+
+  if (!shouldShowTabBar) {
+    return null;
+  }
 
   return (
     <View style={[mainContainer.container, styles.box]}>
@@ -50,35 +83,39 @@ const TabBars = (props: BottomTabBarProps) => {
         end={{ x: 1, y: 0 }}
       >
         <View style={styles.tabContainer}>
-          {TabStackArray.filter(
-            tab => tab.flow === 'mixed' || tab.flow === activeStack,
-          ).map(tab => {
-            // Handle case where RestaurantHome tab navigation doesn't match BottomStack tab name
+          {tabs.map(tab => {
             const routeName =
-              tab.navigation === 'RestaurantHome'
-                ? 'RestaurantStack'
-                : tab.navigation;
+              tab.navigation === 'RestaurantHome' ? 'RestaurantStack' : tab.navigation;
             const route = props.state.routes.find(r => r.name === routeName);
-            const isFocused =
+            const isTabFocused =
               route && props.state.index === props.state.routes.indexOf(route);
+            // For Orders/My Orders: focused when we're on RestaurantStack and nested screen matches
+            const isFocused = tab.screen
+              ? isTabFocused && nestedRouteName === tab.screen
+              : isTabFocused;
+
+            const onPress = () => {
+              if (tab.screen) {
+                props.navigation.navigate(tab.navigation, { screen: tab.screen });
+                return;
+              }
+              if (route) {
+                const event = props.navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!isFocused && !event.defaultPrevented) {
+                  props.navigation.navigate(routeName);
+                }
+              }
+            };
 
             return (
               <TouchableOpacity
-                key={tab.navigation}
+                key={tab.screen ? `${tab.navigation}-${tab.screen}` : tab.navigation}
                 style={styles.tab}
-                onPress={() => {
-                  if (route) {
-                    const event = props.navigation.emit({
-                      type: 'tabPress',
-                      target: route.key,
-                      canPreventDefault: true,
-                    });
-
-                    if (!isFocused && !event.defaultPrevented) {
-                      props.navigation.navigate(routeName);
-                    }
-                  }
-                }}
+                onPress={onPress}
               >
                 <Image
                   source={tab.image}

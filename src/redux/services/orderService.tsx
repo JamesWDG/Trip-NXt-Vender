@@ -4,8 +4,8 @@ import { baseApi } from './api';
 export const authApi = baseApi.injectEndpoints({
  endpoints: builder => ({
   getOrders: builder.query({
-    query: (id: string) => ({
-      url: endpoint.GET_ORDERS(id),
+    query: ({ restaurantId, status }: { restaurantId: string; status?: 'processing' | 'all' }) => ({
+      url: status === 'all' ? `${endpoint.GET_ORDERS(restaurantId)}?status=all` : endpoint.GET_ORDERS(restaurantId),
       method: 'GET',
     }),
   }),

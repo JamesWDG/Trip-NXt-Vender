@@ -27,6 +27,7 @@ import {
   setUserRole,
   setVerificationStatus,
 } from '../../redux/slices/authSlice';
+import { setActiveStack } from '../../redux/slices/navigationSlice';
 import { RootState } from '../../redux/store';
 import { CommonActions } from '@react-navigation/native';
 
@@ -101,6 +102,8 @@ const Login = ({ navigation }: { navigation: any }) => {
         console.log('res.data.role', res.data.role === 'accommodation_owner');
         dispatch(setUserRole([res.data.role]));
         dispatch(setVerificationStatus({ needAccommodationVerification: res.data.needAccommodationVerification, needRestaurantVerification: res.data.needRestaurantVerification }));
+        const stackName = res.data.role === 'restaurant_owner' ? 'RestaurantStack' : res.data.role === 'accommodation_owner' ? 'Accomodation' : 'CabStack';
+        dispatch(setActiveStack({ stack: stackName }));
         if (navigationRef.isReady()) {
           navigationRef.dispatch(CommonActions.reset({
             index: 0,
@@ -110,7 +113,7 @@ const Login = ({ navigation }: { navigation: any }) => {
                 state: {
                   routes: [
                     {
-                      name: res.data.role === 'restaurant_owner' ? 'RestaurantStack' : res.data.role === 'accommodation_owner' ? 'Accomodation' : 'CabStack',
+                      name: stackName,
                     },
                   ],
                   index: 0,

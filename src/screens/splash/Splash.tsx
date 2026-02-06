@@ -4,15 +4,17 @@ import { CommonActions, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import colors from '../../config/colors';
 import images from '../../config/images';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { navigationRef } from '../../config/constants';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
+import { setActiveStack } from '../../redux/slices/navigationSlice';
 
 type NavigationProp = NativeStackNavigationProp<any>;
 
 const Splash: FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const dispatch = useDispatch();
   const { token } = useSelector((state: RootState) => state.auth);
   const scaleAnimation = useRef(new Animated.Value(0.1)).current;
   const [getUser] = useLazyGetUserQuery();
@@ -22,17 +24,21 @@ const Splash: FC = () => {
       const res = await getUser(undefined).unwrap();
       console.log('user data ===>', res);
       if (res.success) {
+        const stackName = res.data.role && res.data.role.length > 0
+          ? res.data.role[0] === 'restaurant_owner'
+            ? 'RestaurantStack'
+            : res.data.role[0] === 'accommodation_owner'
+              ? 'Accomodation'
+              : 'CabStack'
+          : 'RestaurantStack';
+        dispatch(setActiveStack({ stack: stackName }));
         navigationRef.dispatch(CommonActions.reset({
           index: 0,
           routes: [
             {
               name: 'app',
               state: {
-                routes: [
-                  {
-                    name: res.data.role && res.data.role.length > 0 ? res.data.role[0] === 'restaurant_owner' ? 'RestaurantStack' : res.data.role[0] === 'accommodation_owner' ? 'Accomodation' : 'CabStack' : 'RestaurantStack',
-                  },
-                ],
+                routes: [{ name: stackName }],
                 index: 0,
               },
             },

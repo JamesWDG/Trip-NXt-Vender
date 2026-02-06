@@ -10,8 +10,19 @@ interface OrderCardProps {
   customerName: string;
   amount: string;
   paymentMethod: string;
+  status?: string;
   onViewDetails?: () => void;
 }
+
+const formatStatus = (s: string) => {
+  const lower = (s || '').toLowerCase();
+  if (lower === 'pending') return 'Pending';
+  if (lower === 'processing') return 'Processing';
+  if (lower === 'dispatched') return 'Dispatched';
+  if (lower === 'completed' || lower === 'delivered') return 'Completed';
+  if (lower === 'cancelled') return 'Cancelled';
+  return (s || '').charAt(0).toUpperCase() + (s || '').slice(1).toLowerCase();
+};
 
 const OrderCard: React.FC<OrderCardProps> = ({
   orderId,
@@ -19,6 +30,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   customerName,
   amount,
   paymentMethod,
+  status,
   onViewDetails,
 }) => {
   return (
@@ -30,6 +42,11 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <Text style={styles.orderId}>{orderId}</Text>
             <View style={styles.separator} />
             <Text style={styles.time}>{time}</Text>
+            {status ? (
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>{formatStatus(status)}</Text>
+              </View>
+            ) : null}
           </View>
           <View style={styles.customerNameContainer}>
             <Text style={styles.customerName}>{customerName}</Text>
@@ -85,6 +102,18 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 14,
     fontFamily: fonts.bold,
+    color: colors.c_2B2B2B,
+  },
+  statusBadge: {
+    marginLeft: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 100,
+    backgroundColor: colors.c_F3F3F3,
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: fonts.semibold,
     color: colors.c_2B2B2B,
   },
   separator: {

@@ -1,4 +1,5 @@
 import {
+  Animated,
   ImageBackground,
   StyleSheet,
   Text,
@@ -7,7 +8,7 @@ import {
   Image,
   FlatList,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import images from '../../../config/images';
 import { width, ShowToast } from '../../../config/constants';
 import colors from '../../../config/colors';
@@ -41,8 +42,66 @@ interface Order {
   items: OrderItem[];
   totalBill: number;
   paymentMethod: PaymentMethod;
+  status?: string;
 }
 
+const SkeletonBox = ({ style }: { style?: object }) => {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, {
+          toValue: 0.6,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacity, {
+          toValue: 0.3,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return (
+    <Animated.View style={[skeletonStyles.box, style, { opacity }]} />
+  );
+};
+
+const skeletonStyles = StyleSheet.create({
+  box: {
+    backgroundColor: colors.c_F3F3F3,
+  },
+  title: { width: 180, height: 22, borderRadius: 6 },
+  avatar: { width: 60, height: 60, borderRadius: 30 },
+  line: { width: 200, height: 18, borderRadius: 6 },
+  lineShort: { width: 120, height: 14, borderRadius: 6 },
+  statsCard: { width: '100%', height: 90, borderRadius: 12 },
+  orderCard: { width: '100%', height: 100, borderRadius: 12 },
+});
+
+const RestaurantHomeSkeleton = () => (
+  <View style={styles.summarySection}>
+    <SkeletonBox style={[skeletonStyles.title, { marginBottom: 16 }]} />
+    <View style={styles.skeletonRestaurantRow}>
+      <SkeletonBox style={skeletonStyles.avatar} />
+      <View style={styles.skeletonRestaurantText}>
+        <SkeletonBox style={[skeletonStyles.line, { marginBottom: 10 }]} />
+        <SkeletonBox style={skeletonStyles.lineShort} />
+      </View>
+    </View>
+    <SkeletonBox style={[skeletonStyles.statsCard, { marginTop: 16, marginBottom: 24 }]} />
+    <View style={styles.skeletonOrdersHeader}>
+      <SkeletonBox style={skeletonStyles.line} />
+      <SkeletonBox style={[skeletonStyles.line, { width: 60 }]} />
+    </View>
+    {[1, 2, 3].map(i => (
+      <SkeletonBox key={i} style={[skeletonStyles.orderCard, { marginTop: 12 }]} />
+    ))}
+  </View>
+);
 
 const RestaurantHome = () => {
   const navigation = useNavigation<NavigationProp<ParamListBase, 'RestaurantHome'>>();
@@ -61,6 +120,8 @@ const RestaurantHome = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [fullOrdersData, setFullOrdersData] = useState<any[]>([]); // Store full order data from API
   const [restaurantId, setRestaurantId] = useState<string>('');
+  const [hasNoRestaurant, setHasNoRestaurant] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingOrderId, setLoadingOrderId] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<'accept' | 'reject' | null>(null);
   const [getUser] = useLazyGetUserQuery();
@@ -68,6 +129,7 @@ const RestaurantHome = () => {
   const [updateOrderStatus] = useUpdateOrderStatusMutation();
 
   const fetchRestaurant = async () => {
+    setIsLoading(true);
     try {
       const res = await getUser({}).unwrap();
       console.log('restaurant data ===>', res);
@@ -75,14 +137,18 @@ const RestaurantHome = () => {
       // Check if restaurant exists
       if (!res.data?.restaurant) {
         console.log('No restaurant data found');
+        setHasNoRestaurant(true);
         setUserData({
           name: '',
           description: '',
           logo: '',
         });
+        setRestaurantId('');
         setOrders([]);
         return;
       }
+
+      setHasNoRestaurant(false);
 
       const restaurantIdValue = res.data?.restaurant?.id?.toString() || res.data?.restaurant?._id?.toString();
 
@@ -105,6 +171,8 @@ const RestaurantHome = () => {
     } catch (error) {
       console.log('error ===>', error);
       setOrders([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -117,25 +185,20 @@ const RestaurantHome = () => {
     }
 
     try {
-      const res = await getOrders(restaurantId).unwrap();
+      const res = await getOrders({ restaurantId, status: 'processing' }).unwrap();
       console.log('orders data ===>', res);
 
       // Check if API call was successful
-      if (!res.success && res.message) {
-        console.log('Orders API error:', res.message);
-        setOrders([]);
-        return;
-      }
+      
 
-      // API returns array of order items, need to group by orderId
+      // API shape: { success, message, data: [{ id, orderId, restaurantId, itemId, quantity, status, order: { id, totalAmount, subTotal, user: { name }, createdAt, status }, item: { name, price }, restaurant }, ...] }
       const ordersData = res.data || [];
 
-      if (!Array.isArray(ordersData) || ordersData.length === 0) {
-        setOrders([]);
-        return;
-      }
+  
 
-      // Group order items by orderId
+      console.log(ordersData , "ordersData ===>", res)
+
+      // Group order items by orderId (one order can have multiple items)
       const ordersMap = new Map<number, {
         order: any;
         items: OrderItem[];
@@ -195,15 +258,19 @@ const RestaurantHome = () => {
           hour12: true,
         });
 
+        const orderStatus = (order as any)?.status ?? orderData.fullOrderData?.status ?? 'pending';
+        const totalAmount = Number(order?.totalAmount ?? order?.subTotal ?? 0);
+        const customerName = (order as any)?.user?.name ?? (order as any)?.user?.email ?? `Customer #${order?.userId ?? 'N/A'}`;
         return {
           order: {
             id: order?.id?.toString() || `order-${orderId}`,
-            orderNumber: order?.id?.toString() || `ORD-${orderId}`,
+            orderNumber: `#${order?.id ?? orderId}`,
             time: timeStr,
-            customerName: `Customer #${order?.userId || 'N/A'}`,
+            customerName,
             items: orderData.items,
-            totalBill: order?.totalAmount || order?.subTotal || 0,
-            paymentMethod: (order?.paymentMethod || 'Cash') as PaymentMethod,
+            totalBill: totalAmount,
+            paymentMethod: ((order as any)?.paymentMethod || 'Cash') as PaymentMethod,
+            status: orderStatus,
           },
           createdAt: date,
         };
@@ -224,11 +291,11 @@ const RestaurantHome = () => {
       setOrders(finalOrders);
     } catch (error: any) {
       console.log('error fetching orders ===>', error);
-      // If error is due to missing restaurant ID, just set empty array
       if (error?.data?.message?.includes('restaurantId') || error?.message?.includes('restaurantId')) {
         console.log('Restaurant ID related error, setting empty orders');
       }
       setOrders([]);
+      setFullOrdersData([]);
     }
   };
 
@@ -396,35 +463,50 @@ const RestaurantHome = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {isLoading ? (
+            <RestaurantHomeSkeleton />
+          ) : (
+          <>
           {/* Today's Summary Section */}
           <View style={styles.summarySection}>
             <Text style={styles.sectionTitle}>Restaurant Summary</Text>
 
-            {/* Restaurant Information Card */}
-            <View style={[styles.restaurantCard]}>
-              <View style={styles.restaurantInfo}>
-                <Image
-                  source={{ uri: userData.logo }}
-                  style={styles.restaurantImage}
-                  resizeMode="cover"
+            {hasNoRestaurant ? (
+              <View style={styles.noRestaurantCard}>
+                <Text style={styles.noRestaurantTitle}>No restaurant linked</Text>
+                <Text style={styles.noRestaurantText}>
+                  Add your restaurant details to start receiving orders and view your summary.
+                </Text>
+                <GradientButtonForAccomodation
+                  title="Add Restaurant"
+                  onPress={() => navigation.navigate('RestaurantDetails')}
+                  otherStyles={styles.addRestaurantButton}
                 />
-                <View style={styles.restaurantDetails}>
-                  <View style={styles.restaurantHeader}>
-                    <Text style={styles.restaurantName}>{userData.name}</Text>
-
-                    <Text style={styles.restaurantDescription}>
-                      {userData.description}
-                    </Text>
-                  </View>
-                  {/* <View style={styles.vegTag}>
-                    <Text style={styles.vegTagText}>VEG</Text>
-                  </View> */}
-                </View>
               </View>
-            </View>
+            ) : (
+              <>
+                {/* Restaurant Information Card */}
+                <View style={[styles.restaurantCard]}>
+                  <View style={styles.restaurantInfo}>
+                    <Image
+                      source={{ uri: userData.logo }}
+                      style={styles.restaurantImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.restaurantDetails}>
+                      <View style={styles.restaurantHeader}>
+                        <Text style={styles.restaurantName}>{userData.name}</Text>
 
-            {/* Summary Statistics Card */}
-            <View style={[styles.statsCard, GeneralStyles.shadow]}>
+                        <Text style={styles.restaurantDescription}>
+                          {userData.description}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Summary Statistics Card */}
+                <View style={[styles.statsCard, GeneralStyles.shadow]}>
               <View style={styles.statColumn}>
                 <Text style={styles.statValue}>{orders.length}</Text>
                 <Text style={styles.statLabel}>Orders</Text>
@@ -444,22 +526,23 @@ const RestaurantHome = () => {
                 <Text style={styles.statLabel}>Cash</Text>
               </View>
             </View>
+              </>
+            )}
           </View>
 
-          {/* Current Orders Section */}
+          {/* Current Orders Section - pending & processing (API uses "pending" for new orders) */}
           <View style={styles.ordersSection}>
             <View style={styles.ordersHeader}>
               <SectionHeader
                 title="Current Orders"
                 seeAllText="See All"
                 onSeeAllPress={() => {
-                  // Navigate to orders screen
-                  navigation.navigate('Orders');
+                  navigation.navigate('Orders', { restaurantId });
                 }}
               />
             </View>
             <FlatList
-              data={orders}
+              data={orders.filter(o => ['pending', 'processing'].includes((o.status || '').toLowerCase()))}
               renderItem={renderOrderCard}
               keyExtractor={item => item.id}
               scrollEnabled={false}
@@ -471,6 +554,8 @@ const RestaurantHome = () => {
               )}
             />
           </View>
+          </>
+          )}
         </ScrollView>
       </View>
 
@@ -514,11 +599,50 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 20,
   },
+  skeletonRestaurantRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  skeletonRestaurantText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  skeletonOrdersHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontSize: 20,
     fontFamily: fonts.semibold,
     color: colors.c_2B2B2B,
     marginBottom: 10,
+  },
+  noRestaurantCard: {
+    backgroundColor: colors.c_F3F3F3,
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  noRestaurantTitle: {
+    fontSize: 18,
+    fontFamily: fonts.semibold,
+    color: colors.c_2B2B2B,
+    marginBottom: 8,
+  },
+  noRestaurantText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  addRestaurantButton: {
+    minWidth: 180,
+    alignSelf: 'center',
   },
   restaurantCard: {
     // backgroundColor: colors.white,
