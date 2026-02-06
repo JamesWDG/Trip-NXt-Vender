@@ -385,7 +385,7 @@ const RestaurantHome = () => {
             onToggleChange={() => { }}
             profileImage={images.avatar}
             notificationCount={3}
-            title="Current Status"
+            // title="Current Status"
           />
         </View>
       </ImageBackground>
@@ -398,7 +398,7 @@ const RestaurantHome = () => {
         >
           {/* Today's Summary Section */}
           <View style={styles.summarySection}>
-            <Text style={styles.sectionTitle}>Today's Summary</Text>
+            <Text style={styles.sectionTitle}>Restaurant Summary</Text>
 
             {/* Restaurant Information Card */}
             <View style={[styles.restaurantCard]}>

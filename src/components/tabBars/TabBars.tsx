@@ -8,7 +8,6 @@ import {
 import React, { useEffect, useMemo } from 'react';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import colors from '../../config/colors';
@@ -42,55 +41,6 @@ const TabBars = (props: BottomTabBarProps) => {
   },[])
 
 
-  // Get current route and nested route name
-  const currentRoute = props.state.routes[props.state.index];
-  // console.log('currentRoute', currentRoute);
-  const tabName = currentRoute?.name;
-  const nestedRouteName = getFocusedRouteNameFromRoute(currentRoute);
-  // console.log('currentRoute', currentRoute);
-
-  console.log('nestedRouteName', nestedRouteName, tabName);
-  // Dynamically get all navigation names from TabStackArray
-  const MAIN_TABS = TabStackArray.map(tab => tab.navigation);
-
-  // Dynamically get all home screens from TabStackArray
-  const SHOW_TAB_BAR_ROUTES = TabStackArray.map(tab => tab.homeScreen).filter(
-    (screen): screen is string => screen !== undefined,
-  );
-
-  // Check if current screen (nestedRouteName) exists in tabsArray as homeScreen
-  const isHomeScreen =
-    nestedRouteName && SHOW_TAB_BAR_ROUTES.includes(nestedRouteName);
-
-  // Check if current screen (nestedRouteName) exists in tabsArray as navigation
-  const isScreenInTabsArray =
-    nestedRouteName && MAIN_TABS.includes(nestedRouteName);
-
-  // Check if current tab is one of the main tabs (dynamically from TabStackArray)
-  const isMainTab = tabName && MAIN_TABS.includes(tabName);
-
-  // Check if current tab's navigation matches any tab in array (handle RestaurantHome -> RestaurantStack mapping)
-  const isTabInArray = TabStackArray.some(tab => {
-    const routeName =
-      tab.navigation === 'RestaurantHome' ? 'RestaurantStack' : tab.navigation;
-    return routeName === tabName;
-  });
-
-  // Show tab bar if:
-  // 1. Current screen is a home screen in tabsArray
-  // 2. OR current screen is a navigation name in tabsArray
-  // 3. OR current tab is in tabsArray and nested route is not set (initial screen = home)
-  // 4. OR current tab matches any tab in tabsArray
-  const shouldShow = TabStackArray.some(
-    tab => tab.navigation === nestedRouteName || tab.navigation === tabName,
-  );
-
-  // console.log('shouldShow ===>', shouldShow);
-  // Hide tab bar if none of the conditions are met
-  if (!shouldShow) {
-    return null;
-  }
-
   return (
     <View style={[mainContainer.container, styles.box]}>
       <LinearGradient
@@ -102,7 +52,7 @@ const TabBars = (props: BottomTabBarProps) => {
         <View style={styles.tabContainer}>
           {TabStackArray.filter(
             tab => tab.flow === 'mixed' || tab.flow === activeStack,
-          ).map((tab, index) => {
+          ).map(tab => {
             // Handle case where RestaurantHome tab navigation doesn't match BottomStack tab name
             const routeName =
               tab.navigation === 'RestaurantHome'
@@ -111,7 +61,6 @@ const TabBars = (props: BottomTabBarProps) => {
             const route = props.state.routes.find(r => r.name === routeName);
             const isFocused =
               route && props.state.index === props.state.routes.indexOf(route);
-              console.log("Tab: ", tab)
 
             return (
               <TouchableOpacity

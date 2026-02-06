@@ -28,7 +28,7 @@ const RestaurantHomeHeader: React.FC<RestaurantHomeHeaderProps> = ({
   onToggleChange,
   profileImage = images.avatar,
   notificationCount = 0,
-  title = 'Current Status',
+  title = '',
 }) => {
   const { top } = useSafeAreaInsets();
   const styles = useMemo(() => makeStyles(top), [top]);

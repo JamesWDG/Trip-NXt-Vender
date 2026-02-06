@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.normal,
   },
   dontHaveAnAccountContainer: {
-    marginTop: 35,
+    marginTop: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -307,7 +307,9 @@ const styles = StyleSheet.create({
   boldText: {
     fontFamily: fonts.bold,
   },
-  scrollViewContentContainer: {},
+  scrollViewContentContainer: {
+    paddingBottom: 60,
+  },
 });
 
 
