@@ -17,7 +17,7 @@ import GeneralStyles from '../../../utils/GeneralStyles';
 import RestaurantHomeHeader from '../../../components/restaurantHomeHeader/RestaurantHomeHeader';
 import SectionHeader from '../../../components/sectionHeader/SectionHeader';
 import OrderRequestCard from '../../../components/orderRequestCard/OrderRequestCard';
-import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
+import { NavigationProp, ParamListBase, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import DrawerModalRestaurant from '../../../components/drawers/DrawerModalRestaurant';
 import { useLazyGetUserQuery } from '../../../redux/services/authService';
@@ -299,9 +299,12 @@ const RestaurantHome = () => {
     }
   };
 
-  useEffect(() => {
-    fetchRestaurant();
-  }, [])
+  // Har baar home pe aane par data fetch + skeleton (focus pe refetch)
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRestaurant();
+    }, [])
+  );
 
   const handleAccept = async (orderId: string) => {
     if (!orderId || orderId.trim() === '') {
