@@ -1,64 +1,85 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import AccomodationTabButtons from '../../../components/accomodationTabButtons/AccomodationTabButtons';
 import images from '../../../config/images';
 import HotelCard from '../../../components/hotelCard/HotelCard';
+import SectionHeader from '../../../components/sectionHeader/SectionHeader';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
-import SearchWithFilters from '../../../components/searchWithFilters/SearchWithFilters';
-import labels from '../../../config/labels';
 import { useLazyGetBookingLogsQuery } from '../../../redux/services/hotelService';
-import { BookingLog, Hotel } from '../../../contants/Accomodation';
+import { BookingLog } from '../../../contants/Accomodation';
 import { ShowToast } from '../../../config/constants';
 
 const BookingLogs = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const [getBookingLogs, { isLoading }] = useLazyGetBookingLogsQuery();
-  const [bookingLogs, setBookingLogs] = useState<BookingLog[]>([]);
-  const fetchBookingLogs = async () => {
+  const [getAllVendorBookings, { isLoading }] = useLazyGetBookingLogsQuery();
+  const [allBookings, setAllBookings] = useState<BookingLog[]>([]);
+
+  const fetchAllBookings = async () => {
     try {
-      const res = await getBookingLogs(1).unwrap();
-      console.log('booking logs: ', res);
-      setBookingLogs(res.data);
+      // No status = fetch all (pending, confirmed, cancelled) for this vendor
+      const res = await getAllVendorBookings(undefined).unwrap();
+      setAllBookings(Array.isArray(res?.data) ? res.data : []);
     } catch (error) {
-      console.log('error fetching booking logs: ', error);
       ShowToast('error', 'Failed to fetch booking logs');
+      setAllBookings([]);
     }
-  }
+  };
+
   useEffect(() => {
-    fetchBookingLogs();
+    fetchAllBookings();
+    const sub = navigation.addListener('focus', () => {
+      fetchAllBookings();
+    });
+    return () => sub();
   }, []);
+
+  const locationStr = (item: BookingLog) => {
+    const loc = (item?.hotel as any)?.location;
+    const parts = [loc?.city, loc?.country].filter(Boolean);
+    return parts.length ? parts.join(', ') : '—';
+  };
+
   return (
     <WrapperContainer title="Booking Logs" navigation={navigation}>
       <View style={styles.mainContainer}>
-        <SearchWithFilters
-          placeholder={labels.whatareYouLookingFor}
-          navigation={navigation}
-        />
-        <AccomodationTabButtons data={['Hotels', 'Foods', 'Ride']} />
+        <SectionHeader title="All Bookings" />
       </View>
       <FlatList
-        data={bookingLogs}
+        data={allBookings}
         renderItem={({ item }) => (
           <HotelCard
-            image={item.hotel.images[0]}
-            hotelName={item.hotel.name}
+            image={
+              item.hotel?.images?.length
+                ? item.hotel.images[0]
+                : images.placeholder
+            }
+            hotelName={item.hotel?.name ?? 'Hotel'}
             rentPerDay={item.totalAmount}
-            rentPerHour={0}
+            rentPerHour={item.hotel?.rentPerHour ?? 0}
             rating={4.5}
             beds={item.numberOfBeds}
-            baths={item?.hotel?.numberOfBathrooms}
+            baths={item?.hotel?.numberOfBathrooms ?? 0}
             parking={item?.numberOfGuests}
-            location={`${item?.hotel?.location?.city}, ${item?.hotel?.location?.country}`}
+            location={locationStr(item)}
             onPress={() => {
-              /* handle navigation */
+              navigation.navigate('Accomodation', {
+                screen: 'BookingDetails',
+                params: { booking: item },
+              });
             }}
           />
         )}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          !isLoading && allBookings.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No bookings yet</Text>
+            </View>
+          ) : null
+        }
       />
     </WrapperContainer>
   );
@@ -68,16 +89,23 @@ export default BookingLogs;
 
 const styles = StyleSheet.create({
   mainContainer: {
-    paddingTop: 30,
+    paddingTop: 20,
     paddingHorizontal: 20,
-    // marginBottom: 20,
-    gap: 16,
-    // backgroundColor: 'red',
+    paddingBottom: 8,
   },
   listContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 0,
     paddingBottom: 120,
     gap: 16,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });

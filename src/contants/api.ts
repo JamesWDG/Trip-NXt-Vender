@@ -18,11 +18,14 @@ type endpointTypes = {
     DELETE_MENU_ITEM: (id: number) => string;
     GET_FEATURES_ITEMS: string;
     GET_MY_HOTEL: string;
+    GET_HOTEL_BY_ID: (id: number) => string;
     CREATE_HOTEL: string;
     GET_ORDERS: (id:string)=>string;
     UPDATE_ORDER_STATUS: (id:string)=>string;
     STRIPE_CONNECT: string;
     GET_BOOKING_LOGS: string;
+    GET_BOOKING_BY_ID: (id: number) => string;
+    UPDATE_HOTEL_BOOKING_STATUS: (id: number) => string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -51,9 +54,11 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_FEATURES_ITEMS: '/feature',
     CREATE_HOTEL: '/hotel',
     GET_MY_HOTEL: '/hotel/get-auth-user-hotels',
+    GET_HOTEL_BY_ID: (id: number) => `/hotel/get/${id}`,
     GET_ORDERS: (id:string)=>'/order/get-orders-by-restaurant-id/'+id,
     UPDATE_ORDER_STATUS: (id:string)=>'/order/update-order-status/'+id,
     STRIPE_CONNECT: '/subscription/create-stripe-vender-account',
     GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
-    // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
+    GET_BOOKING_BY_ID: (id: number) => `/booking/get-single-hotel-booking/${id}`,
+    UPDATE_HOTEL_BOOKING_STATUS: (id: number) => `/booking/update-hotel-booking-status/${id}`,
 })

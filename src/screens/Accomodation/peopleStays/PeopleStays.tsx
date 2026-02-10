@@ -1,23 +1,49 @@
 import {
   KeyboardAvoidingView,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import React, { FC, useState } from 'react';
+import React, { FC, useCallback, useState } from 'react';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import Counter from '../../../components/counter/Counter';
 import DateInput from '../../../components/dateInput/DateInput';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
-import TimePicker from '../../../components/timePicker/TimePicker';
+import { DateTimePicker } from '../../../components/dateTimePicker';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
+
+/** Parse "2:30 PM" / "11:00 AM" to Date (today at that time) */
+const parseTimeToDate = (timeStr: string): Date => {
+  if (!timeStr || !timeStr.trim()) {
+    return new Date(new Date().setHours(15, 0, 0, 0)); // default 3:00 PM
+  }
+  const match = timeStr.trim().match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (match) {
+    let hour = parseInt(match[1], 10);
+    const minute = parseInt(match[2], 10);
+    const period = (match[3] || '').toUpperCase();
+    if (period === 'PM' && hour !== 12) hour += 12;
+    if (period === 'AM' && hour === 12) hour = 0;
+    const d = new Date();
+    d.setHours(hour, minute, 0, 0);
+    return d;
+  }
+  return new Date(new Date().setHours(15, 0, 0, 0));
+};
+
+/** Format Date to "2:30 PM" */
+const formatDateToTime = (date: Date): string => {
+  let hours = date.getHours();
+  const minutes = date.getMinutes();
+  const period = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+};
 
 interface PeopleStaysRouteParams {
   hotelName: string;
@@ -41,18 +67,31 @@ const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }
   const [checkInTime, setCheckInTime] = useState<string>('');
   const [checkOutTime, setCheckOutTime] = useState<string>('');
   const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
-  const [selectedTimeType, setSelectedTimeType] = useState<
-    'checkIn' | 'checkOut' | null
-  >(null);
+  const [selectedTimeType, setSelectedTimeType] = useState<'checkIn' | 'checkOut' | null>(null);
 
-  const handleTimeSelect = (time: string) => {
-    const fTime = time.split(' ')[0];
+  const getInitialTimeDate = useCallback((): Date => {
     if (selectedTimeType === 'checkIn') {
-      setCheckInTime(fTime);
-    } else if (selectedTimeType === 'checkOut') {
-      setCheckOutTime(fTime);
+      return parseTimeToDate(checkInTime || '3:00 PM');
     }
-  };
+    if (selectedTimeType === 'checkOut') {
+      return parseTimeToDate(checkOutTime || '11:00 AM');
+    }
+    return new Date(new Date().setHours(15, 0, 0, 0));
+  }, [selectedTimeType, checkInTime, checkOutTime]);
+
+  const handleTimeConfirm = useCallback(
+    (date: Date) => {
+      const formatted = formatDateToTime(date);
+      if (selectedTimeType === 'checkIn') {
+        setCheckInTime(formatted);
+      } else if (selectedTimeType === 'checkOut') {
+        setCheckOutTime(formatted);
+      }
+      setShowTimePicker(false);
+      setSelectedTimeType(null);
+    },
+    [selectedTimeType]
+  );
 
   const handleCheckInPress = () => {
     setSelectedTimeType('checkIn');
@@ -62,6 +101,11 @@ const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }
   const handleCheckOutPress = () => {
     setSelectedTimeType('checkOut');
     setShowTimePicker(true);
+  };
+
+  const handleTimePickerClose = () => {
+    setShowTimePicker(false);
+    setSelectedTimeType(null);
   };
 
   const handleNext = () => {
@@ -167,38 +211,22 @@ const PeopleStays: FC<{ route: RouteProp<{ PeopleStays: PeopleStaysRouteParams }
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Time Picker Modal */}
-      <Modal
+      {/* Native-style Time Picker Modal (react-native-date-picker) */}
+      <DateTimePicker
         visible={showTimePicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowTimePicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                Select{' '}
-                {selectedTimeType === 'checkIn' ? 'Check-In' : 'Check-Out'} Time
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowTimePicker(false)}
-                style={styles.closeButton}
-              >
-                <Text style={styles.closeButtonText}>Done</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.timePickerContainer}>
-              <TimePicker
-                onTimeSelect={handleTimeSelect}
-                initialTime={
-                  selectedTimeType === 'checkIn' ? checkInTime : checkOutTime
-                }
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
+        onClose={handleTimePickerClose}
+        onConfirm={handleTimeConfirm}
+        mode="time"
+        initialDate={getInitialTimeDate()}
+        title={
+          selectedTimeType === 'checkIn'
+            ? 'Select Check-In Time'
+            : selectedTimeType === 'checkOut'
+              ? 'Select Check-Out Time'
+              : 'Select Time'
+        }
+        confirmText="Done"
+      />
     </WrapperContainer>
   );
 };
@@ -240,46 +268,5 @@ const styles = StyleSheet.create({
   },
   dateInput: {
     marginBottom: 0,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
-    paddingTop: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.c_F3F3F3,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
-    color: colors.c_2B2B2B,
-  },
-  closeButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    fontFamily: fonts.bold,
-    color: colors.c_0162C0,
-  },
-  timePickerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
-    alignItems: 'center',
   },
 });

@@ -1,9 +1,10 @@
 import {
+  ActivityIndicator,
   FlatList,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -19,11 +20,11 @@ import {
 } from 'lucide-react-native';
 import StarRating from 'react-native-star-rating-widget';
 
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import PrimaryHeader from '../../components/primaryHeader/PrimaryHeader';
 import MainCarousel from '../../components/mainCarousel/MainCarousel';
 import DetailsCard from '../../components/detailsCard/DetailsCard';
-import { CarouselData } from '../../contants/Accomodation';
+import { CarouselData, Hotel } from '../../contants/Accomodation';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
@@ -33,25 +34,68 @@ import GradientButtonForAccomodation from '../../components/gradientButtonForAcc
 import ReviewCard from '../Accomodation/reviewCard/ReviewCard';
 import { width } from '../../config/constants';
 import FastImage from 'react-native-fast-image';
+import { useGetHotelByIdQuery } from '../../redux/services/hotelService';
+
+const DEFAULT_DESCRIPTION =
+  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.";
+
+const defaultCarouselData: CarouselData[] = [{ id: '0', image: '', title: 'Hotel', description: '' }];
 
 const HotelDetails = ({ navigation }: { navigation?: any }) => {
   const { top } = useSafeAreaInsets();
-  const [wishlist, setWishlist] = useState(false);
-  const nav = useNavigation<any>();
+  const route = useRoute<any>();
+  const paramsHotel = route.params?.hotel as Hotel | undefined;
+  const hotelId = paramsHotel?.hotelId ?? route.params?.hotelId as number | undefined;
+
+  const { data: fetchedHotel, isLoading: isHotelLoading } = useGetHotelByIdQuery(hotelId!, {
+    skip: hotelId == null || hotelId === undefined,
+  });
+
+  const hotel: Hotel | undefined = (fetchedHotel as Hotel) ?? paramsHotel;
 
   const wishlistButtonStyles = useMemo(() => {
-    return wishlistButton(wishlist, top);
-  }, [wishlist]);
+    return wishlistButton(top);
+  }, [top]);
+
+  const locationStr = hotel
+    ? `${(hotel as any)?.location?.city ?? ''}, ${(hotel as any)?.location?.state ?? ''} ${(hotel as any)?.location?.country ?? ''}`.trim() || '—'
+    : 'Las Vegas, NV, USA';
+
+  if (hotelId != null && isHotelLoading && !paramsHotel) {
+    return (
+      <View style={GeneralStyles.flex as ViewStyle}>
+        <View style={styles.headerContainer}>
+          <PrimaryHeader title="Hotel Details" onBackPress={() => navigation?.goBack?.()} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={GeneralStyles.flex as ViewStyle}>
       <View style={styles.headerContainer}>
         <PrimaryHeader
           title="Hotel Details"
-          onBackPress={() => navigation.goBack()}
+          onBackPress={() => navigation?.goBack?.()}
         />
       </View>
       <View style={wishlistButtonStyles.carouselContainer}>
-        <MainCarousel data={CarouselData} />
+        {hotel?.images?.length ? (
+          <FlatList
+            data={hotel.images}
+            horizontal
+            pagingEnabled
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item }) => (
+              <Image source={{ uri: item }} style={styles.carouselImage} resizeMode="cover" />
+            )}
+          />
+        ) : (
+          <MainCarousel data={defaultCarouselData} />
+        )}
       </View>
 
       <View style={styles.lowerContainer}>
@@ -61,12 +105,12 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
           showsVerticalScrollIndicator={false}
         >
           <DetailsCard
-            title="Lux Hotel Casino"
+            title={hotel?.name ?? 'Lux Hotel Casino'}
             reviews={11}
             rating={4}
-            price={23456}
-            location="Las Vegas, NV, USA"
-            description="Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries."
+            price={hotel?.rentPerDay ?? 23456}
+            location={locationStr}
+            description={hotel?.description ?? DEFAULT_DESCRIPTION}
             amenities={[
               {
                 name: 'WiFi',
@@ -174,19 +218,8 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
 
 export default HotelDetails;
 
-const wishlistButton = (wishlist: boolean, top: number) =>
+const wishlistButton = (top: number) =>
   StyleSheet.create({
-    container: {
-      backgroundColor: wishlist ? colors.c_F47E20 : colors.transparent,
-      padding: 10,
-      borderRadius: 100,
-      borderWidth: 1,
-      borderColor: wishlist ? colors.c_F47E20 : colors.transparent,
-      width: 50,
-      height: 50,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     scrollViewContent: { flexGrow: 1, paddingBottom: top + 20 + 100 },
     carouselContainer: {
       zIndex: 10,
@@ -239,6 +272,11 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 100,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   reviewTitle: {
     fontSize: 16,
     fontFamily: fonts.semibold,
@@ -257,5 +295,9 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 10,
     marginTop: 20,
+  },
+  carouselImage: {
+    width: width,
+    height: 220,
   },
 });

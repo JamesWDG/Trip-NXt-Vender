@@ -1,12 +1,12 @@
 import {
+  Animated,
   FlatList,
   ImageBackground,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import images from '../../../config/images';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import { useNavigation } from '@react-navigation/native';
@@ -22,34 +22,96 @@ import HomeCard from '../../../components/Accomodation/homecard/HomeCard';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 import HotelCard from '../../../components/hotelCard/HotelCard';
 import DrawerModal from '../../../components/drawers/DrawerModal';
-import { useLazyGetMyHotelQuery } from '../../../redux/services/hotelService';
+import { useLazyGetMyHotelQuery, useLazyGetVendorPendingBookingsQuery } from '../../../redux/services/hotelService';
+
+export type HotelBookingItem = {
+  id: number;
+  hotelId: number;
+  status: string;
+  checkInDate: string;
+  checkOutDate: string;
+  totalAmount: number;
+  hotel?: {
+    id: number;
+    name: string;
+    images?: string[];
+    rentPerDay?: number;
+    rentPerHour?: number;
+    numberOfBeds?: number;
+    numberOfBathrooms?: number;
+    numberOfGuests?: number;
+    location?: { city?: string; address?: string };
+  };
+};
+
+const SkeletonBox = ({ style }: { style?: object }) => {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.6, duration: 600, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 600, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [opacity]);
+  return <Animated.View style={[styles.skeletonBox, style, { opacity }]} />;
+};
+
+const PendingBookingsSkeleton = () => (
+  <View style={styles.pendingSkeletonWrap}>
+    {[1, 2, 3].map((i) => (
+      <View key={i} style={styles.skeletonCard}>
+        <SkeletonBox style={styles.skeletonImage} />
+        <View style={styles.skeletonContent}>
+          <SkeletonBox style={[styles.skeletonLine, { width: '70%', marginBottom: 8 }]} />
+          <SkeletonBox style={[styles.skeletonLine, { width: '50%', height: 14 }]} />
+        </View>
+      </View>
+    ))}
+  </View>
+);
+
 const Home = () => {
   const navigation = useNavigation<NavigationPropType>();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [getMyHotel, { isLoading }] = useLazyGetMyHotelQuery();
+  const [getPendingBookings, { isLoading: loadingPending }] = useLazyGetVendorPendingBookingsQuery();
   const [myHotels, setMyHotels] = useState<Hotel[]>([]);
+  const [pendingBookings, setPendingBookings] = useState<HotelBookingItem[]>([]);
   const [loading, setLoading] = useState(false);
+
   const fetchMyHotels = async () => {
     try {
       setLoading(true);
       const res = await getMyHotel(1).unwrap();
-      console.log('my hotels: ', res);
-      setMyHotels(res.data);
+      setMyHotels(res?.data ?? []);
     } catch (error) {
-      console.log('error fetching my hotels: ', error);
       ShowToast('error', 'Failed to fetch my hotels');
     } finally {
       setLoading(false);
     }
-  }
+  };
+
+  const fetchPendingBookings = async () => {
+    try {
+      const res = await getPendingBookings().unwrap();
+      const list = Array.isArray(res?.data) ? res.data : [];
+      setPendingBookings(list);
+    } catch (error) {
+      ShowToast('error', 'Failed to fetch pending bookings');
+      setPendingBookings([]);
+    }
+  };
+
   useEffect(() => {
     const subscribe = navigation.addListener('focus', () => {
       fetchMyHotels();
+      fetchPendingBookings();
     });
-    return () => {
-      subscribe();
-    };
-  }, [])
+    return () => subscribe();
+  }, []);
   return (
     <View style={[GeneralStyles.flex, styles.container]}>
       <ImageBackground
@@ -128,7 +190,10 @@ const Home = () => {
                       parking={item.numberOfGuests}
                       location="Kingdom Tower, Brazil"
                       onPress={() => {
-                        // navigation.navigate('HotelDetails', { ...item });
+                        navigation.navigate('Accomodation', {
+                          screen: 'HotelDetails',
+                          params: { hotel: item },
+                        });
                       }}
                     />
                   </View>
@@ -136,33 +201,54 @@ const Home = () => {
               />
             </View>
 
-            {/* Third Section */}
+            {/* Third Section - Pending Bookings */}
             <View style={styles.sectionStyles}>
               <Text style={styles.secondSectionTitle}>Pending Bookings</Text>
-              <FlatList
-                contentContainerStyle={styles.contentContainerStyles}
-                style={styles.contentContainerStyles}
-                showsVerticalScrollIndicator={false}
-                data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-                renderItem={({ item }) => (
-                  <View style={styles.hotelCardContainer}>
-                    <HotelCard
-                      image={images.apartment}
-                      hotelName="Lux Hotel Casino"
-                      rentPerDay={180}
-                      rentPerHour={10}
-                      rating={4.5}
-                      beds={3}
-                      baths={2}
-                      parking={2}
-                      location="Kingdom Tower, Brazil"
-                      onPress={() => {
-                        /* handle navigation */
-                      }}
-                    />
-                  </View>
-                )}
-              />
+              {loadingPending ? (
+                <PendingBookingsSkeleton />
+              ) : pendingBookings.length === 0 ? (
+                <View style={styles.emptyPendingWrap}>
+                  <Text style={styles.emptyPendingText}>No pending bookings</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={pendingBookings}
+                  keyExtractor={(item) => String(item.id)}
+                  contentContainerStyle={styles.contentContainerStyles}
+                  style={styles.contentContainerStyles}
+                  showsVerticalScrollIndicator={false}
+                  renderItem={({ item }) => {
+                    const hotel = item.hotel;
+                    const locationStr =
+                      hotel?.location?.city || hotel?.location?.address || '—';
+                    return (
+                      <View style={styles.hotelCardContainer}>
+                        <HotelCard
+                          image={
+                            hotel?.images?.length
+                              ? hotel.images[0]
+                              : images.placeholder
+                          }
+                          hotelName={hotel?.name ?? 'Hotel'}
+                          rentPerDay={hotel?.rentPerDay ?? 0}
+                          rentPerHour={hotel?.rentPerHour ?? 0}
+                          rating={4.5}
+                          beds={hotel?.numberOfBeds ?? 0}
+                          baths={hotel?.numberOfBathrooms ?? 0}
+                          parking={hotel?.numberOfGuests ?? 0}
+                          location={locationStr}
+                          onPress={() => {
+                            navigation.navigate('Accomodation', {
+                              screen: 'BookingDetails',
+                              params: { booking: item },
+                            });
+                          }}
+                        />
+                      </View>
+                    );
+                  }}
+                />
+              )}
             </View>
           </>
         )}
@@ -235,5 +321,43 @@ const styles = StyleSheet.create({
   },
   parentContainer: {
     paddingBottom: 120,
+  },
+  skeletonBox: {
+    backgroundColor: colors.c_F3F3F3 || '#f3f3f3',
+  },
+  pendingSkeletonWrap: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  skeletonCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    overflow: 'hidden',
+    padding: 12,
+  },
+  skeletonImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+  },
+  skeletonContent: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  skeletonLine: {
+    height: 16,
+    borderRadius: 6,
+  },
+  emptyPendingWrap: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    alignItems: 'center',
+  },
+  emptyPendingText: {
+    fontSize: 15,
+    fontFamily: fonts.regular,
+    color: colors.gray,
   },
 });
