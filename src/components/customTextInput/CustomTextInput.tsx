@@ -30,6 +30,7 @@ const CustomTextInput: React.FC<CustomTextInputProps> = ({
           styles.input,
           style,
           errorBorder && { borderWidth: 1.5, borderColor: colors.red },
+          props.editable === false && { backgroundColor: colors.c_DDDDDD, opacity: 0.7 },
         ]}
         placeholderTextColor={colors.c_666666}
         {...props}

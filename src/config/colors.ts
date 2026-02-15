@@ -1,5 +1,5 @@
 const colors = Object.freeze({
-    red: 'red',
+
     transparent: "transparent",
     black: "#000000",
     white: "#FFFFFF",
@@ -27,6 +27,9 @@ const colors = Object.freeze({
     c_007DFC: "#007DFC",
     c_079D48: "#079D48",
     c_B40000: "#B40000",
+    c_C4C4C4: "#C4C4C4",
+    c_999999: "#999999",
+    c_484848: "#484848",
 });
 
 export default colors;

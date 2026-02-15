@@ -10,6 +10,8 @@ interface DateInputProps {
   value?: string;
   onPress: () => void;
   otherStyles?: any;
+  error?: string;
+  errorBorder?: boolean;
 }
 
 const DateInput = ({
@@ -17,18 +19,26 @@ const DateInput = ({
   value,
   onPress,
   otherStyles,
+  error,
+  errorBorder,
 }: DateInputProps) => {
   return (
-    <TouchableOpacity
-      style={[styles.container, otherStyles]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.text, value && styles.textWithValue]}>
-        {value || placeholder}
-      </Text>
-      <Calendar size={20} color={colors.c_666666} />
-    </TouchableOpacity>
+    <View style={otherStyles}>
+      <TouchableOpacity
+        style={[
+          styles.container,
+          errorBorder && { borderWidth: 1.5, borderColor: colors.red },
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.text, value && styles.textWithValue]}>
+          {value || placeholder}
+        </Text>
+        <Calendar size={20} color={colors.c_666666} />
+      </TouchableOpacity>
+      {error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
   );
 };
 
@@ -53,5 +63,12 @@ const styles = StyleSheet.create({
   },
   textWithValue: {
     color: colors.black,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    marginTop: 5,
+    marginLeft: 4,
   },
 });

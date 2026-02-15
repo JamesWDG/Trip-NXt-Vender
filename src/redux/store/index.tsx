@@ -6,11 +6,13 @@ import authReducer from '../slices/authSlice';
 import navigationReducer from '../slices/navigationSlice';
 import { baseApi } from '../services/api';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import registrationReducer from '../slices/registrationSlice';
 
 const rootReducer = combineReducers({
   [baseApi.reducerPath]: baseApi.reducer,
   auth: authReducer,
   navigation: navigationReducer,
+  registration: registrationReducer,
 });
 
 type RootReducerState = ReturnType<typeof rootReducer>;

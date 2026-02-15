@@ -15,13 +15,21 @@ import GradientButtonForAccomodation from '../../../components/gradientButtonFor
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import images from '../../../config/images';
+import { useAppDispatch, useAppSelector } from '../../../redux/store';
+import { updateRegistrationData, resetRegistrationData } from '../../../redux/slices/registrationSlice';
+import { useCreateCabVendorMutation } from '../../../redux/services/cabService';
+import Toast from 'react-native-toast-message';
 
 const VehicleDocuments = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const [insuranceImage, setInsuranceImage] = useState<string | null>(null);
-  const [registrationImage, setRegistrationImage] = useState<string | null>(
-    null,
-  );
+  const dispatch = useAppDispatch();
+  const registrationData = useAppSelector(state => state.registration);
+  const user = useAppSelector(state => state.auth.user);
+  const [createCabVendor, { isLoading }] = useCreateCabVendorMutation();
+
+  const [insuranceImage, setInsuranceImage] = useState<string | null>(registrationData.vehicleInsuranceFront);
+  const [registrationImage, setRegistrationImage] = useState<string | null>(registrationData.vehicleInsuranceBack);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const handleInsuranceImageChange = (imageUri: string | null) => {
     setInsuranceImage(imageUri);
@@ -31,10 +39,82 @@ const VehicleDocuments = () => {
     setRegistrationImage(imageUri);
   };
 
-  const handleSubmit = () => {
+  const validate = () => {
+    let newErrors: { [key: string]: string } = {};
+    if (!insuranceImage) newErrors.insuranceImage = 'Vehicle Insurance is required';
+    if (!registrationImage) newErrors.registrationImage = 'Vehicle Registration is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) {
+      return;
+    }
     // Handle submit logic
     console.log('Submit vehicle documents');
-    navigation.navigate('VehicleRegistration');
+
+    const updatedData = {
+      ...registrationData,
+      vehicleInsuranceFront: insuranceImage,
+      vehicleInsuranceBack: registrationImage,
+    };
+
+    try {
+      const formData = new FormData();
+
+      // Append technical fields
+      formData.append('userId', String(user?.id || '1'));
+      formData.append('dob', updatedData.dob);
+      formData.append('location', updatedData.address || ''); // Sending string address
+      formData.append('status', 'pending');
+      formData.append('vehicleType', updatedData.vehicleType);
+      formData.append('vehicleModal', updatedData.vehicleModal);
+      formData.append('vehicleYear', String(updatedData.vehicleYear));
+      formData.append('vehicleColor', updatedData.vehicleColor);
+      formData.append('vehicleNumber', updatedData.vehicleNumber);
+
+      // Helper function to append file
+      const appendFile = (key: string, uri: string | null, defaultName: string) => {
+        if (uri) {
+          const fileName = uri.split('/').pop() || defaultName;
+          formData.append(key, {
+            uri: uri,
+            name: fileName,
+            type: 'image/jpeg',
+          } as any);
+        }
+      };
+
+      // Append files
+      appendFile('passportPhoto', updatedData.passportPhoto, 'passport.jpg');
+      appendFile('driverLicenseFront', updatedData.driverLicenseFront, 'license_front.jpg');
+      appendFile('driverLicenseBack', updatedData.driverLicenseBack, 'license_back.jpg');
+      appendFile('vehicleInsuranceFront', updatedData.vehicleInsuranceFront, 'insurance_front.jpg');
+      appendFile('vehicleInsuranceBack', updatedData.vehicleInsuranceBack, 'insurance_back.jpg');
+      appendFile('vehicleImage', updatedData.vehicleImage, 'vehicle_image.jpg');
+
+      console.log('Final FormData structure before sending:');
+      // Note: We can't log FormData contents easily in React Native, but this is the structure
+
+      const response = await createCabVendor(formData).unwrap();
+      console.log('Registration success:', response);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Registration Successful',
+        text2: 'Your vehicle has been registered and is pending approval.',
+      });
+
+      dispatch(resetRegistrationData());
+
+      setTimeout(() => {
+        navigation.navigate('MyVehicle');
+      }, 2000);
+    } catch (error) {
+      console.error('Registration failed:', error);
+    }
   };
 
   return (
@@ -48,8 +128,13 @@ const VehicleDocuments = () => {
           <Text style={styles.sectionTitle}>Vehicle Insurance Paper</Text>
           <SinglePhotoUpload
             placeholder="Click to Upload Insurance"
-            onImageChange={handleInsuranceImageChange}
+            initialImage={insuranceImage}
+            onImageChange={imageUri => {
+              handleInsuranceImageChange(imageUri);
+              if (errors.insuranceImage) setErrors({ ...errors, insuranceImage: '' });
+            }}
           />
+          {errors.insuranceImage && <Text style={styles.errorText}>{errors.insuranceImage}</Text>}
         </View>
 
         {/* Vehicle Reg Document Section */}
@@ -57,8 +142,13 @@ const VehicleDocuments = () => {
           <Text style={styles.sectionTitle}>Vehicle Reg Document</Text>
           <SinglePhotoUpload
             placeholder="Click to Upload Registration Document"
-            onImageChange={handleRegistrationImageChange}
+            initialImage={registrationImage}
+            onImageChange={imageUri => {
+              handleRegistrationImageChange(imageUri);
+              if (errors.registrationImage) setErrors({ ...errors, registrationImage: '' });
+            }}
           />
+          {errors.registrationImage && <Text style={styles.errorText}>{errors.registrationImage}</Text>}
         </View>
 
         {/* Document Previews */}
@@ -158,5 +248,12 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 8,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.bold,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

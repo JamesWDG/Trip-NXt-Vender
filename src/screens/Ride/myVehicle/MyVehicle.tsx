@@ -17,6 +17,8 @@ import fonts from '../../../config/fonts';
 import { width, height } from '../../../config/constants';
 import { Plus } from 'lucide-react-native';
 import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
+import { useAppDispatch, useAppSelector } from '../../../redux/store';
+import { useGetCabVendorByUserIdQuery } from '../../../redux/services/cabService';
 
 // Sample data - replace with actual data from API/state
 const sampleVehicles: Array<{
@@ -26,30 +28,52 @@ const sampleVehicles: Array<{
   licensePlate: string;
   description: string;
 }> = [
-  // Uncomment below to see vehicle cards
-  // {
-  //   id: '1',
-  //   image: images.car,
-  //   vehicleName: 'Volkswagen Golf',
-  //   licensePlate: 'UP16CC1234',
-  //   description: 'Lorem Ipsum is simply dummy text of the printing and typesetting.',
-  // },
-];
+    // Uncomment below to see vehicle cards
+    // {
+    //   id: '1',
+    //   image: images.car,
+    //   vehicleName: 'Volkswagen Golf',
+    //   licensePlate: 'UP16CC1234',
+    //   description: 'Lorem Ipsum is simply dummy text of the printing and typesetting.',
+    // },
+  ];
 
 const MyVehicle = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const [vehicles] = useState(sampleVehicles); // Replace with actual state management
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(state => state.auth.user);
+
+  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(Number(user?.id) || 0, {
+    skip: !user?.id
+  });
+
+  console.log("responseeeeee", response);
+
+  const cabVendor = response?.data;
+  const vehicles = cabVendor ? [{
+    id: String(cabVendor.id),
+    image: cabVendor.vehicleImage ? { uri: cabVendor.vehicleImage } : images.car,
+    vehicleName: `${cabVendor.vehicleModal} (${cabVendor.vehicleType})`,
+    licensePlate: cabVendor.vehicleNumber,
+    description: `Year: ${cabVendor.vehicleYear}, Color: ${cabVendor.vehicleColor}`,
+  }] : [];
 
   const [showMenu, setShowMenu] = useState(false);
+
   const onPressAddVehicle = () => {
-    // Navigate to Add Vehicle screen
-    // navigation.navigate('AddVehicle');
+    navigation.navigate('DriverRegistration');
   };
 
-  const onPressVehicle = (vehicle: any) => {
-    // Navigate to vehicle details or update screen
-    // navigation.navigate('VehicleDetails', { vehicle });
+  const onPressFindARide = () => {
+    navigation.navigate('RideRequest');
   };
+
+  const InfoRow = ({ label, value }: { label: string; value: string | number | undefined }) => (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}:</Text>
+      <Text style={styles.infoValue}>{value || 'N/A'}</Text>
+    </View>
+  );
 
   return (
     <WrapperContainer
@@ -61,6 +85,7 @@ const MyVehicle = () => {
       <FlatList
         data={vehicles}
         ListEmptyComponent={() => {
+          if (isLoading) return null;
           return (
             <>
               {/* Blue Banner */}
@@ -85,26 +110,103 @@ const MyVehicle = () => {
           );
         }}
         renderItem={({ item }) => (
-          <VehicleCard
-            image={item.image}
-            vehicleName={item.vehicleName}
-            licensePlate={item.licensePlate}
-            description={item.description}
-            onPress={() => onPressVehicle(item)}
-          />
+          <View>
+            <VehicleCard
+              image={item.image}
+              vehicleName={item.vehicleName}
+              licensePlate={item.licensePlate}
+              description={item.description}
+            />
+
+            {/* Detailed Info Section */}
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Driver Details</Text>
+              <InfoRow label="Full Name" value={cabVendor?.user?.name} />
+              <InfoRow label="Email" value={cabVendor?.user?.email} />
+              <InfoRow label="Phone" value={cabVendor?.user?.phoneNumber} />
+              <InfoRow label="Date of Birth" value={cabVendor?.dob} />
+              <InfoRow label="Status" value={cabVendor?.status?.toUpperCase()} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Vehicle Specifications</Text>
+              <InfoRow label="Type" value={cabVendor?.vehicleType} />
+              <InfoRow label="Model" value={cabVendor?.vehicleModal} />
+              <InfoRow label="Year" value={cabVendor?.vehicleYear} />
+              <InfoRow label="Color" value={cabVendor?.vehicleColor} />
+              <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Location Info</Text>
+              <InfoRow label="City" value={cabVendor?.location?.city} />
+              <InfoRow label="Street" value={cabVendor?.location?.street} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Documents</Text>
+              <View style={styles.docsGrid}>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>Passport</Text>
+                  {cabVendor?.passportPhoto ? (
+                    <Image source={{ uri: cabVendor.passportPhoto }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>License Front</Text>
+                  {cabVendor?.driverLicenseFront ? (
+                    <Image source={{ uri: cabVendor.driverLicenseFront }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>License Back</Text>
+                  {cabVendor?.driverLicenseBack ? (
+                    <Image source={{ uri: cabVendor.driverLicenseBack }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>Insurance Front</Text>
+                  {cabVendor?.vehicleInsuranceFront ? (
+                    <Image source={{ uri: cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.findARideContainer}>
+              <TouchableOpacity
+                style={styles.findARideButton}
+                onPress={onPressFindARide}
+              >
+                <Text style={styles.findARideText}>Find a Ride</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading}
+        onRefresh={refetch}
       />
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={onPressAddVehicle}
-        activeOpacity={0.8}
-      >
-        <Plus color={colors.white} size={24} />
-      </TouchableOpacity>
+      {!cabVendor && !isLoading && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={onPressAddVehicle}
+          activeOpacity={0.8}
+        >
+          <Plus color={colors.white} size={24} />
+        </TouchableOpacity>
+      )}
 
       <DrawerModalCab visible={showMenu} setIsModalVisible={setShowMenu} />
     </WrapperContainer>
@@ -169,5 +271,97 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     // Shadow for Android
     elevation: 5,
+  },
+  findARideContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  findARideButton: {
+    backgroundColor: colors.c_0162C0,
+    borderRadius: 100,
+    width: '100%',
+    height: 54,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  findARideText: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.white,
+  },
+  detailsSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.c_F3F3F3,
+    marginTop: 10,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.c_0162C0,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_2B2B2B,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 10,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.c_F3F3F3,
+    marginVertical: 12,
+  },
+  docsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  docItem: {
+    width: '48%',
+    marginBottom: 10,
+  },
+  docLabel: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    marginBottom: 4,
+  },
+  docImage: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.c_F3F3F3,
+  },
+  emptyDoc: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.c_F3F3F3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    borderStyle: 'dashed',
+  },
+  emptyDocText: {
+    fontSize: 12,
+    color: colors.c_666666,
   },
 });
