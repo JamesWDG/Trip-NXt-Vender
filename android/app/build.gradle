@@ -117,4 +117,6 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+    // Force play-services-location version to avoid IncompatibleClassChangeError (FusedLocationProviderClient interface vs class)
+    implementation "com.google.android.gms:play-services-location:21.0.1"
 }

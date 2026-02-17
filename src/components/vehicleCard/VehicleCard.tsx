@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
+import React, { useState } from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import { width } from '../../config/constants';
 import GeneralStyles from '../../utils/GeneralStyles';
+import images from '../../config/images';
 
 interface VehicleCardProps {
   image: ImageSourcePropType;
@@ -27,6 +28,9 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
   description,
   onPress,
 }) => {
+  const [imageError, setImageError] = useState(false);
+  const source = imageError ? images.car : image;
+
   return (
     <TouchableOpacity
       style={[styles.card, GeneralStyles.shadow]}
@@ -35,9 +39,10 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
     >
       <View style={styles.imageContainer}>
         <Image
-          source={image}
+          source={source}
           style={styles.vehicleImage}
           resizeMode="contain"
+          onError={() => setImageError(true)}
         />
       </View>
       <View style={styles.contentContainer}>

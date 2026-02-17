@@ -7,14 +7,26 @@ export const cabService = baseApi.injectEndpoints({
                 url: '/cab/cab-vendor',
                 method: 'POST',
                 body: formData,
-                // FormData requires specific headers which fetchBaseQuery usually handles 
-                // if body is FormData, it automatically sets the Content-Type to multipart/form-data
             }),
         }),
         getCabVendorByUserId: builder.query<any, number>({
             query: (userId) => `/cab/cab-vendor/user/${userId}`,
         }),
+        setCabVendorStatus: builder.mutation<
+            any,
+            { cabId: number; status: 'online' | 'offline'; latitude: number; longitude: number }
+        >({
+            query: (body) => ({
+                url: '/cab/cab-vendor-status/set',
+                method: 'PUT',
+                body,
+            }),
+        }),
     }),
 });
 
-export const { useCreateCabVendorMutation, useGetCabVendorByUserIdQuery } = cabService;
+export const {
+    useCreateCabVendorMutation,
+    useGetCabVendorByUserIdQuery,
+    useSetCabVendorStatusMutation,
+} = cabService;

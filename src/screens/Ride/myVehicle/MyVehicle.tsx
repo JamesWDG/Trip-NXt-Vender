@@ -1,12 +1,15 @@
 import {
+  ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  PermissionsAndroid,
 } from 'react-native';
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
@@ -14,11 +17,69 @@ import VehicleCard from '../../../components/vehicleCard/VehicleCard';
 import images from '../../../config/images';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import { width, height } from '../../../config/constants';
+import { width, height, ShowToast } from '../../../config/constants';
 import { Plus } from 'lucide-react-native';
 import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
-import { useAppDispatch, useAppSelector } from '../../../redux/store';
-import { useGetCabVendorByUserIdQuery } from '../../../redux/services/cabService';
+import { useAppSelector } from '../../../redux/store';
+import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
+import { BASE_URL } from '../../../contants/api';
+// Package exports default at runtime; types only declare named exports
+import * as RNGeolocation from 'react-native-geolocation-service';
+const Geolocation = (RNGeolocation as { default?: typeof RNGeolocation }).default ?? RNGeolocation;
+
+const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // https://api.trip-nxt.com
+
+const resolveVehicleImageSource = (vehicleImage: string | { uri: string } | null | undefined): { uri: string } | number => {
+  if (!vehicleImage) return images.car;
+  const uri = typeof vehicleImage === 'string' ? vehicleImage : vehicleImage?.uri;
+  if (!uri) return images.car;
+  const absoluteUri = uri.startsWith('http') ? uri : `${ASSETS_BASE}/${uri.replace(/^\//, '')}`;
+  return { uri: absoluteUri };
+};
+
+const requestLocationPermission = async (): Promise<boolean> => {
+  if (Platform.OS === 'ios') return true;
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'Location permission',
+      message: 'Trip-NXt needs your location to mark you as online for rides.',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    }
+  );
+  return granted === PermissionsAndroid.RESULTS.GRANTED;
+};
+
+const getCurrentLocationHelper = async (): Promise<{ latitude: number; longitude: number }> => {
+  const hasPermission = await requestLocationPermission();
+
+  if (!hasPermission) {
+    throw new Error('Location permission denied');
+  }
+
+  return new Promise((resolve, reject) => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        reject(error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+        forceRequestLocation: true,
+        showLocationDialog: true,
+      },
+    );
+  });
+};
 
 // Sample data - replace with actual data from API/state
 const sampleVehicles: Array<{
@@ -40,19 +101,18 @@ const sampleVehicles: Array<{
 
 const MyVehicle = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.user);
 
   const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(Number(user?.id) || 0, {
     skip: !user?.id
   });
-
-  console.log("responseeeeee", response);
+  const [setCabVendorStatus, { isLoading: isUpdatingStatus }] = useSetCabVendorStatusMutation();
+  const [isOnline, setIsOnline] = useState(false);
 
   const cabVendor = response?.data;
   const vehicles = cabVendor ? [{
     id: String(cabVendor.id),
-    image: cabVendor.vehicleImage ? { uri: cabVendor.vehicleImage } : images.car,
+    image: resolveVehicleImageSource(cabVendor.vehicleImage),
     vehicleName: `${cabVendor.vehicleModal} (${cabVendor.vehicleType})`,
     licensePlate: cabVendor.vehicleNumber,
     description: `Year: ${cabVendor.vehicleYear}, Color: ${cabVendor.vehicleColor}`,
@@ -68,6 +128,55 @@ const MyVehicle = () => {
     navigation.navigate('RideRequest');
   };
 
+  const onPressMarkAsOnline = async () => {
+    if (!cabVendor?.id) {
+      ShowToast('error', 'Vehicle not found');
+      return;
+    }
+    try {
+      
+      const { latitude, longitude } = await getCurrentLocationHelper();
+      console.log("latitude", latitude);
+      console.log("longitude", longitude);
+      await setCabVendorStatus({
+        cabId: cabVendor.id,
+        status: 'online',
+        latitude,
+        longitude,
+      }).unwrap();
+      setIsOnline(true);
+      ShowToast('success', 'You are now online');
+    } catch (e: any) {
+      console.log(e , "Eeeeeeeeeeeee")
+      ShowToast('error', e?.data?.message || e?.message || 'Failed to go online');
+    }
+  };
+
+  const onPressMarkAsOffline = async () => {
+    if (!cabVendor?.id) return;
+    try {
+      let latitude = 0;
+      let longitude = 0;
+      try {
+        const loc = await getCurrentLocationHelper();
+        latitude = loc.latitude;
+        longitude = loc.longitude;
+      } catch {
+        // use 0,0 if location unavailable
+      }
+      await setCabVendorStatus({
+        cabId: cabVendor.id,
+        status: 'offline',
+        latitude,
+        longitude,
+      }).unwrap();
+      setIsOnline(false);
+      ShowToast('success', 'You are now offline');
+    } catch (e: any) {
+      ShowToast('error', e?.data?.message || e?.message || 'Failed to go offline');
+    }
+  };
+
   const InfoRow = ({ label, value }: { label: string; value: string | number | undefined }) => (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}:</Text>
@@ -75,6 +184,7 @@ const MyVehicle = () => {
     </View>
   );
 
+  console.log(":::::::::::::::::::", vehicles)
   return (
     <WrapperContainer
       title="My Vehicle"
@@ -181,6 +291,36 @@ const MyVehicle = () => {
               </View>
             </View>
 
+            <View style={styles.statusSection}>
+              <Text style={styles.detailsTitle}>Driver status</Text>
+              <Text style={styles.statusLabel}>{isOnline ? 'You are online' : 'You are offline'}</Text>
+              {isOnline ? (
+                <TouchableOpacity
+                  style={[styles.findARideButton, styles.offlineButton]}
+                  onPress={onPressMarkAsOffline}
+                  disabled={isUpdatingStatus}
+                >
+                  {isUpdatingStatus ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.findARideText}>Mark as offline</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.findARideButton}
+                  onPress={onPressMarkAsOnline}
+                  disabled={isUpdatingStatus}
+                >
+                  {isUpdatingStatus ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.findARideText}>Mark as online</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
             <View style={styles.findARideContainer}>
               <TouchableOpacity
                 style={styles.findARideButton}
@@ -271,6 +411,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     // Shadow for Android
     elevation: 5,
+  },
+  statusSection: {
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    marginBottom: 10,
+  },
+  offlineButton: {
+    backgroundColor: colors.c_666666,
   },
   findARideContainer: {
     marginTop: 20,
