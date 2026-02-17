@@ -27,13 +27,23 @@ import { BASE_URL } from '../../../contants/api';
 import * as RNGeolocation from 'react-native-geolocation-service';
 const Geolocation = (RNGeolocation as { default?: typeof RNGeolocation }).default ?? RNGeolocation;
 
-const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // https://api.trip-nxt.com
+const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
+
+/** Rewrite localhost/127.0.0.1 image URLs so device/emulator can load them (localhost on device is not your machine). */
+const resolveImageUri = (uri: string | null | undefined): string | null => {
+  if (!uri || typeof uri !== 'string') return null;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(uri)) {
+    return uri.replace(/^(https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?)/, ASSETS_BASE.replace(/\/$/, ''));
+  }
+  if (!uri.startsWith('http')) return `${ASSETS_BASE}/${uri.replace(/^\//, '')}`;
+  return uri;
+};
 
 const resolveVehicleImageSource = (vehicleImage: string | { uri: string } | null | undefined): { uri: string } | number => {
   if (!vehicleImage) return images.car;
   const uri = typeof vehicleImage === 'string' ? vehicleImage : vehicleImage?.uri;
   if (!uri) return images.car;
-  const absoluteUri = uri.startsWith('http') ? uri : `${ASSETS_BASE}/${uri.replace(/^\//, '')}`;
+  const absoluteUri = resolveImageUri(uri) ?? uri;
   return { uri: absoluteUri };
 };
 
@@ -184,7 +194,6 @@ const MyVehicle = () => {
     </View>
   );
 
-  console.log(":::::::::::::::::::", vehicles)
   return (
     <WrapperContainer
       title="My Vehicle"
@@ -259,7 +268,7 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Passport</Text>
                   {cabVendor?.passportPhoto ? (
-                    <Image source={{ uri: cabVendor.passportPhoto }} style={styles.docImage} />
+                    <Image source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }} style={styles.docImage} />
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -267,7 +276,7 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Front</Text>
                   {cabVendor?.driverLicenseFront ? (
-                    <Image source={{ uri: cabVendor.driverLicenseFront }} style={styles.docImage} />
+                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }} style={styles.docImage} />
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -275,7 +284,7 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Back</Text>
                   {cabVendor?.driverLicenseBack ? (
-                    <Image source={{ uri: cabVendor.driverLicenseBack }} style={styles.docImage} />
+                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }} style={styles.docImage} />
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -283,7 +292,7 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Insurance Front</Text>
                   {cabVendor?.vehicleInsuranceFront ? (
-                    <Image source={{ uri: cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
+                    <Image source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
