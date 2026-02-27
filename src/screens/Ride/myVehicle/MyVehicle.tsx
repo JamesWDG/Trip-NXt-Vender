@@ -9,7 +9,7 @@ import {
   View,
   PermissionsAndroid,
 } from 'react-native';
-import  { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
@@ -23,9 +23,6 @@ import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
 import { useAppSelector } from '../../../redux/store';
 import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
 import { BASE_URL } from '../../../contants/api';
-// Package exports default at runtime; types only declare named exports
-import * as RNGeolocation from 'react-native-geolocation-service';
-const Geolocation = (RNGeolocation as { default?: typeof RNGeolocation }).default ?? RNGeolocation;
 
 const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
 
@@ -67,6 +64,16 @@ const getCurrentLocationHelper = async (): Promise<{ latitude: number; longitude
 
   if (!hasPermission) {
     throw new Error('Location permission denied');
+  }
+
+  let Geolocation: { getCurrentPosition: (s: (p: any) => void, e: (err: any) => void, o: object) => void };
+  try {
+    const RNGeolocation = require('react-native-geolocation-service');
+    Geolocation = (RNGeolocation as { default?: typeof RNGeolocation }).default ?? RNGeolocation;
+  } catch (_) {
+    throw new Error(
+      'Location service unavailable. Please clean and rebuild the app (see console for steps).'
+    );
   }
 
   return new Promise((resolve, reject) => {
@@ -187,6 +194,39 @@ const MyVehicle = () => {
     }
   };
 
+  // Continuous location tracking when online so backend can track cab vendor
+  const LOCATION_UPDATE_INTERVAL_MS = 12 * 1000;
+  const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!isOnline || !cabVendor?.id) {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+      return;
+    }
+    const updateLocation = () => {
+      getCurrentLocationHelper()
+        .then(({ latitude, longitude }) => {
+          setCabVendorStatus({
+            cabId: cabVendor.id,
+            status: 'online',
+            latitude,
+            longitude,
+          }).unwrap().catch(() => {});
+        })
+        .catch(() => {});
+    };
+    locationIntervalRef.current = setInterval(updateLocation, LOCATION_UPDATE_INTERVAL_MS);
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [isOnline, cabVendor?.id]);
+
   const InfoRow = ({ label, value }: { label: string; value: string | number | undefined }) => (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}:</Text>
@@ -302,7 +342,10 @@ const MyVehicle = () => {
 
             <View style={styles.statusSection}>
               <Text style={styles.detailsTitle}>Driver status</Text>
-              <Text style={styles.statusLabel}>{isOnline ? 'You are online' : 'You are offline'}</Text>
+              <Text style={styles.statusLabel}>{isOnline ? 'You are online (location shared with app)' : 'You are offline'}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('FcmToken')} style={styles.fcmLink}>
+                <Text style={styles.fcmLinkText}>View FCM Token</Text>
+              </TouchableOpacity>
               {isOnline ? (
                 <TouchableOpacity
                   style={[styles.findARideButton, styles.offlineButton]}
@@ -430,6 +473,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.c_666666,
     marginBottom: 10,
+  },
+  fcmLink: {
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  fcmLinkText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.c_0162C0,
   },
   offlineButton: {
     backgroundColor: colors.c_666666,
