@@ -77,6 +77,7 @@ const authSlice = createSlice({
       (state, action) => {
         if (action.payload?.data && action.payload?.data?.type !== 'reset') {
           state.token = action.payload.data?.accessToken;
+          state.user = action.payload.data?.user;
         }
       },
     );
@@ -85,6 +86,7 @@ const authSlice = createSlice({
       (state, action) => {
         if (action.payload?.data) {
           state.token = action.payload.data?.accessToken;
+          state.user = action.payload.data?.user;
         }
       },
     );

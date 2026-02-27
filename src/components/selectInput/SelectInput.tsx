@@ -9,6 +9,8 @@ interface SelectInputProps {
   value?: string;
   onPress: () => void;
   containerStyle?: any;
+  error?: string;
+  errorBorder?: boolean;
 }
 
 const SelectInput: React.FC<SelectInputProps> = ({
@@ -16,18 +18,26 @@ const SelectInput: React.FC<SelectInputProps> = ({
   value,
   onPress,
   containerStyle,
+  error,
+  errorBorder,
 }) => {
   return (
-    <TouchableOpacity
-      style={[styles.container, containerStyle]}
-      onPress={onPress}
-      activeOpacity={0.7}
-    >
-      <Text style={[styles.text, value && styles.textWithValue]}>
-        {value || placeholder}
-      </Text>
-      <ChevronDown size={20} color={colors.c_666666} />
-    </TouchableOpacity>
+    <View style={containerStyle}>
+      <TouchableOpacity
+        style={[
+          styles.container,
+          errorBorder && { borderWidth: 1.5, borderColor: colors.red },
+        ]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.text, value && styles.textWithValue]}>
+          {value || placeholder}
+        </Text>
+        <ChevronDown size={20} color={colors.c_666666} />
+      </TouchableOpacity>
+      {error && <Text style={styles.errorText}>{error}</Text>}
+    </View>
   );
 };
 
@@ -51,5 +61,12 @@ const styles = StyleSheet.create({
   },
   textWithValue: {
     color: colors.c_2B2B2B,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    marginTop: 5,
+    marginLeft: 4,
   },
 });

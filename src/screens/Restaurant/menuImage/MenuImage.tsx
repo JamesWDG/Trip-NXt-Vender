@@ -275,7 +275,7 @@ const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
             </View>
 
             {/* Add Category Input */}
-            <View style={styles.addCategoryContainer}>
+            {/* <View style={styles.addCategoryContainer}>
               <View style={styles.addCategoryInputWrapper}>
                 <Plus size={20} color={colors.c_666666} />
                 <TextInput
@@ -288,7 +288,7 @@ const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
                 />
               </View>
               {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-            </View>
+            </View> */}
           </View>
 
           {/* Existing Item Card */}

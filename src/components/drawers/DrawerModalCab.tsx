@@ -20,6 +20,10 @@ import { navigationRef } from '../../config/constants';
 import IconsWithTitle from '../iconsWithTitle/IconsWithTitle';
 import IconWithTitleAndDivider from '../iconWithTitleAndDivider/IconWithTitleAndDivider';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
+import { useAppDispatch } from '../../redux/store';
+import { setLogout } from '../../redux/slices/authSlice';
+import { resetRegistrationData } from '../../redux/slices/registrationSlice';
+
 
 const upperTabData = [
   {
@@ -139,6 +143,8 @@ interface IDrawerModal {
 const DrawerModalCab = ({ visible, setIsModalVisible }: IDrawerModal) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationPropType>();
+  const dispatch = useAppDispatch();
+
   const renderHorizontalTabs = ({
     item,
   }: {
@@ -231,6 +237,8 @@ const DrawerModalCab = ({ visible, setIsModalVisible }: IDrawerModal) => {
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={() => {
+                dispatch(setLogout());
+                dispatch(resetRegistrationData());
                 if (navigationRef.isReady()) {
                   navigationRef.dispatch(
                     CommonActions.reset({
@@ -248,6 +256,7 @@ const DrawerModalCab = ({ visible, setIsModalVisible }: IDrawerModal) => {
                   );
                 }
               }}
+
             >
               <LinearGradient
                 colors={['#F47E20', '#EE4026']}

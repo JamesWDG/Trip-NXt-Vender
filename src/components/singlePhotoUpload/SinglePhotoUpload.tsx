@@ -16,14 +16,22 @@ interface SinglePhotoUploadProps {
   placeholder: string;
   onImageChange?: (imageUri: string | null) => void;
   containerStyle?: any;
+  initialImage?: string | null;
 }
 
 const SinglePhotoUpload: React.FC<SinglePhotoUploadProps> = ({
   placeholder,
   onImageChange,
   containerStyle,
+  initialImage,
 }) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(initialImage || null);
+
+  React.useEffect(() => {
+    if (initialImage) {
+      setSelectedImage(initialImage);
+    }
+  }, [initialImage]);
 
   const openImagePicker = () => {
     ImagePicker.openPicker({

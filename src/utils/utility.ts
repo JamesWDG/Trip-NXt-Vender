@@ -1,5 +1,22 @@
 import { GOOGLE_API_KEY } from "../contants/api";
 
+/**
+ * Convert 12h time string to 24h for API (MySQL TIME expects HH:mm or HH:mm:ss).
+ * e.g. "3:00 PM" -> "15:00:00", "11:00 AM" -> "11:00:00"
+ */
+export const time12hTo24h = (time12: string): string => {
+  if (!time12 || !time12.trim()) return '15:00:00';
+  const match = time12.trim().match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return '15:00:00';
+  let hour = parseInt(match[1], 10);
+  const minute = match[2].padStart(2, '0');
+  const period = (match[3] || '').toUpperCase();
+  if (period === 'PM' && hour !== 12) hour += 12;
+  if (period === 'AM' && hour === 12) hour = 0;
+  const h = hour.toString().padStart(2, '0');
+  return `${h}:${minute}:00`;
+};
+
 export const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const monthNames = [

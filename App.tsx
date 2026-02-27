@@ -14,6 +14,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { Provider } from 'react-redux';
 import Navigation from './src/navigation';
 import { persistor, store } from './src/redux/store';
+import { NotificationSetup } from './src/components/NotificationSetup';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './src/config/Toast';
 import { StripeProvider } from '@stripe/stripe-react-native';
@@ -27,6 +28,7 @@ const App = () => {
       <PersistGate loading={null} persistor={persistor}>
         <SafeAreaProvider>
           <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+          <NotificationSetup />
           <AppContent />
           <Toast config={ToastConfig} position="top" bottomOffset={40} />
         </SafeAreaProvider>

@@ -2,7 +2,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import React, { useState } from 'react';
@@ -14,38 +13,89 @@ import DateInput from '../../../components/dateInput/DateInput';
 import SelectInput from '../../../components/selectInput/SelectInput';
 import SinglePhotoUpload from '../../../components/singlePhotoUpload/SinglePhotoUpload';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
+import DateTimePicker from '../../../components/dateTimePicker/DateTimePicker';
+import DestinationSearch, { SearchHistoryItem } from '../../../components/destinationSearch/DestinationSearch';
+import moment from 'moment';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
+import { useAppDispatch, useAppSelector } from '../../../redux/store';
+import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
 
 const DriverRegistration = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const dispatch = useAppDispatch();
+  const registrationData = useAppSelector(state => state.registration);
+  const user = useAppSelector(state => state.auth.user);
+
   const [formData, setFormData] = useState({
-    fullName: '',
-    dateOfBirth: '',
-    nationalId: '',
-    phoneNumber: '',
-    email: '',
-    address: '',
-    profilePhoto: null as string | null,
+    fullName: registrationData.fullName || '',
+    dob: registrationData.dob || '',
+    phoneNumber: registrationData.phoneNumber || user?.phoneNumber || '',
+    email: registrationData.email || user?.email || '',
+    address: registrationData.address || '',
+    profilePhoto: registrationData.passportPhoto || null,
   });
 
-  const handleDateSelect = () => {
-    // Handle date picker
-    console.log('Open date picker');
-    // You can use a date picker library here
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+  const handleLocationSelect = (item: SearchHistoryItem) => {
+    setFormData(prev => ({ ...prev, address: item.destination }));
+    if (errors.address) setErrors(prev => ({ ...prev, address: '' }));
   };
 
-  const handleNationalIdSelect = () => {
-    // Handle national ID selection
-    console.log('Open national ID selection');
-    // You can use a bottom sheet or modal here
+  const handleDateSelect = () => {
+    setIsDatePickerVisible(true);
+  };
+
+  const onDateConfirm = (date: Date) => {
+    const formattedDate = moment(date).format('YYYY-MM-DD');
+    setFormData({ ...formData, dob: formattedDate });
+    setIsDatePickerVisible(false);
+    if (errors.dob) {
+      setErrors({ ...errors, dob: '' });
+    }
+  };
+
+  const onDateCancel = () => {
+    setIsDatePickerVisible(false);
+  };
+
+  const validate = () => {
+    let newErrors: { [key: string]: string } = {};
+    if (!formData.fullName) newErrors.fullName = 'Full Name is required';
+    if (!formData.dob) newErrors.dob = 'Date of Birth is required';
+    if (!formData.phoneNumber) newErrors.phoneNumber = 'Phone Number is required';
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.address) newErrors.address = 'Address is required';
+    if (!formData.profilePhoto) newErrors.profilePhoto = 'Profile Photo is required';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {
+    if (!validate()) {
+      return;
+    }
+
     // Handle next button
     console.log('Next pressed', formData);
-    // navigation.navigate('DriverDocuments');
+
+    dispatch(updateRegistrationData({
+      fullName: formData.fullName,
+      dob: formData.dob,
+      phoneNumber: formData.phoneNumber,
+      email: formData.email,
+      address: formData.address,
+      passportPhoto: formData.profilePhoto,
+    }));
+
     navigation.navigate('DriverDocuments');
   };
 
@@ -63,27 +113,23 @@ const DriverRegistration = () => {
             <CustomTextInput
               placeholder="Full Name"
               value={formData.fullName}
-              onChangeText={text =>
-                setFormData({ ...formData, fullName: text })
-              }
+              onChangeText={text => {
+                setFormData({ ...formData, fullName: text });
+                if (errors.fullName) setErrors({ ...errors, fullName: '' });
+              }}
+              errorText={errors.fullName}
+              errorBorder={!!errors.fullName}
             />
           </View>
 
           <View style={styles.inputContainer}>
             <DateInput
               placeholder="Date of Birth"
-              value={formData.dateOfBirth}
+              value={formData.dob}
               onPress={handleDateSelect}
               otherStyles={GeneralStyles.rounded}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <SelectInput
-              containerStyle={GeneralStyles.rounded}
-              placeholder="National ID"
-              value={formData.nationalId}
-              onPress={handleNationalIdSelect}
+              error={errors.dob}
+              errorBorder={!!errors.dob}
             />
           </View>
 
@@ -91,10 +137,14 @@ const DriverRegistration = () => {
             <CustomTextInput
               placeholder="Phone Number"
               value={formData.phoneNumber}
-              onChangeText={text =>
-                setFormData({ ...formData, phoneNumber: text })
-              }
+              onChangeText={text => {
+                setFormData({ ...formData, phoneNumber: text });
+                if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: '' });
+              }}
               keyboardType="phone-pad"
+              errorText={errors.phoneNumber}
+              errorBorder={!!errors.phoneNumber}
+              editable={!user?.phoneNumber}
             />
           </View>
 
@@ -102,20 +152,26 @@ const DriverRegistration = () => {
             <CustomTextInput
               placeholder="Email"
               value={formData.email}
-              onChangeText={text => setFormData({ ...formData, email: text })}
+              onChangeText={text => {
+                setFormData({ ...formData, email: text });
+                if (errors.email) setErrors({ ...errors, email: '' });
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
+              errorText={errors.email}
+              errorBorder={!!errors.email}
+              editable={!user?.email}
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <CustomTextInput
-              placeholder="Address"
-              value={formData.address}
-              onChangeText={text => setFormData({ ...formData, address: text })}
-              multiline
-              numberOfLines={3}
-              style={styles.addressInput}
+            <Text style={styles.label}>Address</Text>
+            <DestinationSearch
+              placeholder="Search for your address"
+              onItemPress={handleLocationSelect}
+              inputValue={formData.address}
+              errorBorder={!!errors.address}
+              errorText={errors.address}
             />
           </View>
         </View>
@@ -127,10 +183,13 @@ const DriverRegistration = () => {
           </Text>
           <SinglePhotoUpload
             placeholder="Click to Upload Profile Photo"
-            onImageChange={imageUri =>
-              setFormData({ ...formData, profilePhoto: imageUri })
-            }
+            initialImage={formData.profilePhoto}
+            onImageChange={imageUri => {
+              setFormData({ ...formData, profilePhoto: imageUri });
+              if (errors.profilePhoto) setErrors({ ...errors, profilePhoto: '' });
+            }}
           />
+          {errors.profilePhoto && <Text style={styles.errorText}>{errors.profilePhoto}</Text>}
         </View>
 
         {/* Status Indicator */}
@@ -147,6 +206,16 @@ const DriverRegistration = () => {
             fontFamily={fonts.semibold}
           />
         </View>
+
+        <DateTimePicker
+          visible={isDatePickerVisible}
+          mode="date"
+          initialDate={formData.dob ? new Date(formData.dob) : moment().subtract(18, 'years').toDate()}
+          maximumDate={moment().subtract(18, 'years').toDate()}
+          onConfirm={onDateConfirm}
+          onClose={onDateCancel}
+          title="Select Date of Birth"
+        />
       </ScrollView>
     </WrapperContainer>
   );
@@ -178,6 +247,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     textAlignVertical: 'top',
   },
+  label: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+    marginBottom: 8,
+  },
   statusContainer: {
     backgroundColor: '#FFF9E6', // Light yellow
     borderRadius: 100,
@@ -192,5 +267,12 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     marginTop: 8,
+  },
+  errorText: {
+    color: colors.red,
+    fontSize: 12,
+    fontFamily: fonts.semibold,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

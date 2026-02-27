@@ -15,11 +15,16 @@ import GradientButtonForAccomodation from '../../../components/gradientButtonFor
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import images from '../../../config/images';
+import { useAppDispatch, useAppSelector } from '../../../redux/store';
+import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
 
 const DriverDocuments = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const [frontImage, setFrontImage] = useState<string | null>(null);
-  const [backImage, setBackImage] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const registrationData = useAppSelector(state => state.registration);
+
+  const [frontImage, setFrontImage] = useState<string | null>(registrationData.driverLicenseFront);
+  const [backImage, setBackImage] = useState<string | null>(registrationData.driverLicenseBack);
 
   const handleFrontImageChange = (imageUri: string | null) => {
     setFrontImage(imageUri);
@@ -32,7 +37,13 @@ const DriverDocuments = () => {
   const handleSubmit = () => {
     // Handle submit logic
     console.log('Submit driver documents');
-    navigation.navigate('VehicleDocuments');
+
+    dispatch(updateRegistrationData({
+      driverLicenseFront: frontImage,
+      driverLicenseBack: backImage,
+    }));
+
+    navigation.navigate('VehicleRegistration');
   };
 
   return (
@@ -48,6 +59,7 @@ const DriverDocuments = () => {
           </Text>
           <SinglePhotoUpload
             placeholder="Click to Upload Front Side"
+            initialImage={frontImage}
             onImageChange={handleFrontImageChange}
           />
         </View>
@@ -57,6 +69,7 @@ const DriverDocuments = () => {
           <Text style={styles.sectionTitle}>Driver's License Photo (Back)</Text>
           <SinglePhotoUpload
             placeholder="Click to Upload Back Side"
+            initialImage={backImage}
             onImageChange={handleBackImageChange}
           />
         </View>

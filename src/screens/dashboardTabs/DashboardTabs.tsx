@@ -90,7 +90,7 @@ const DashboardTabs: FC = () => {
                       });
                     } else {
                       // Store navigation stack in Redux and navigate
-                      if (index === -1) {
+                      if (index === 0) {
                         dispatch(
                           setActiveStack({
                             stack: 'CabStack',
@@ -106,7 +106,10 @@ const DashboardTabs: FC = () => {
                                   {
                                     name: 'CabStack',
                                     params: {
-                                      screen: 'DriverRegistration',
+                                      screen:
+
+                                        !token ? 'MyVehicle' :
+                                          'DriverRegistration',
                                     },
                                   },
                                 ],
@@ -116,7 +119,7 @@ const DashboardTabs: FC = () => {
                           ],
                         });
                         // Book a Ride - reset to RestaurantStack (Ride functionality)
-                      } else if (index === 0) {
+                      } else if (index === 1) {
                         // Order Food - reset to RestaurantStack with RestaurantHome screen
                         dispatch(
                           setActiveStack({
@@ -147,7 +150,7 @@ const DashboardTabs: FC = () => {
                             },
                           ],
                         });
-                      } else if (index === 1) {
+                      } else if (index === 2) {
                         dispatch(
                           setActiveStack({
                             stack: 'Accomodation',

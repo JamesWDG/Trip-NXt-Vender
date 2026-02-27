@@ -1,12 +1,15 @@
 import {
+  ActivityIndicator,
   FlatList,
   Image,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  PermissionsAndroid,
 } from 'react-native';
-import React, { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
@@ -14,9 +17,86 @@ import VehicleCard from '../../../components/vehicleCard/VehicleCard';
 import images from '../../../config/images';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import { width, height } from '../../../config/constants';
+import { width, height, ShowToast } from '../../../config/constants';
 import { Plus } from 'lucide-react-native';
 import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
+import { useAppSelector } from '../../../redux/store';
+import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
+import { BASE_URL } from '../../../contants/api';
+
+const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
+
+/** Rewrite localhost/127.0.0.1 image URLs so device/emulator can load them (localhost on device is not your machine). */
+const resolveImageUri = (uri: string | null | undefined): string | null => {
+  if (!uri || typeof uri !== 'string') return null;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(uri)) {
+    return uri.replace(/^(https?:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?)/, ASSETS_BASE.replace(/\/$/, ''));
+  }
+  if (!uri.startsWith('http')) return `${ASSETS_BASE}/${uri.replace(/^\//, '')}`;
+  return uri;
+};
+
+const resolveVehicleImageSource = (vehicleImage: string | { uri: string } | null | undefined): { uri: string } | number => {
+  if (!vehicleImage) return images.car;
+  const uri = typeof vehicleImage === 'string' ? vehicleImage : vehicleImage?.uri;
+  if (!uri) return images.car;
+  const absoluteUri = resolveImageUri(uri) ?? uri;
+  return { uri: absoluteUri };
+};
+
+const requestLocationPermission = async (): Promise<boolean> => {
+  if (Platform.OS === 'ios') return true;
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+    {
+      title: 'Location permission',
+      message: 'Trip-NXt needs your location to mark you as online for rides.',
+      buttonNeutral: 'Ask Me Later',
+      buttonNegative: 'Cancel',
+      buttonPositive: 'OK',
+    }
+  );
+  return granted === PermissionsAndroid.RESULTS.GRANTED;
+};
+
+const getCurrentLocationHelper = async (): Promise<{ latitude: number; longitude: number }> => {
+  const hasPermission = await requestLocationPermission();
+
+  if (!hasPermission) {
+    throw new Error('Location permission denied');
+  }
+
+  let Geolocation: { getCurrentPosition: (s: (p: any) => void, e: (err: any) => void, o: object) => void };
+  try {
+    const RNGeolocation = require('react-native-geolocation-service');
+    Geolocation = (RNGeolocation as { default?: typeof RNGeolocation }).default ?? RNGeolocation;
+  } catch (_) {
+    throw new Error(
+      'Location service unavailable. Please clean and rebuild the app (see console for steps).'
+    );
+  }
+
+  return new Promise((resolve, reject) => {
+    Geolocation.getCurrentPosition(
+      (position) => {
+        resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        reject(error);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 10000,
+        forceRequestLocation: true,
+        showLocationDialog: true,
+      },
+    );
+  });
+};
 
 // Sample data - replace with actual data from API/state
 const sampleVehicles: Array<{
@@ -26,30 +106,133 @@ const sampleVehicles: Array<{
   licensePlate: string;
   description: string;
 }> = [
-  // Uncomment below to see vehicle cards
-  // {
-  //   id: '1',
-  //   image: images.car,
-  //   vehicleName: 'Volkswagen Golf',
-  //   licensePlate: 'UP16CC1234',
-  //   description: 'Lorem Ipsum is simply dummy text of the printing and typesetting.',
-  // },
-];
+    // Uncomment below to see vehicle cards
+    // {
+    //   id: '1',
+    //   image: images.car,
+    //   vehicleName: 'Volkswagen Golf',
+    //   licensePlate: 'UP16CC1234',
+    //   description: 'Lorem Ipsum is simply dummy text of the printing and typesetting.',
+    // },
+  ];
 
 const MyVehicle = () => {
   const navigation = useNavigation<NavigationPropType>();
-  const [vehicles] = useState(sampleVehicles); // Replace with actual state management
+  const user = useAppSelector(state => state.auth.user);
+
+  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(Number(user?.id) || 0, {
+    skip: !user?.id
+  });
+  const [setCabVendorStatus, { isLoading: isUpdatingStatus }] = useSetCabVendorStatusMutation();
+  const [isOnline, setIsOnline] = useState(false);
+
+  const cabVendor = response?.data;
+  const vehicles = cabVendor ? [{
+    id: String(cabVendor.id),
+    image: resolveVehicleImageSource(cabVendor.vehicleImage),
+    vehicleName: `${cabVendor.vehicleModal} (${cabVendor.vehicleType})`,
+    licensePlate: cabVendor.vehicleNumber,
+    description: `Year: ${cabVendor.vehicleYear}, Color: ${cabVendor.vehicleColor}`,
+  }] : [];
 
   const [showMenu, setShowMenu] = useState(false);
+
   const onPressAddVehicle = () => {
-    // Navigate to Add Vehicle screen
-    // navigation.navigate('AddVehicle');
+    navigation.navigate('DriverRegistration');
   };
 
-  const onPressVehicle = (vehicle: any) => {
-    // Navigate to vehicle details or update screen
-    // navigation.navigate('VehicleDetails', { vehicle });
+  const onPressFindARide = () => {
+    navigation.navigate('RideRequest');
   };
+
+  const onPressMarkAsOnline = async () => {
+    if (!cabVendor?.id) {
+      ShowToast('error', 'Vehicle not found');
+      return;
+    }
+    try {
+      
+      const { latitude, longitude } = await getCurrentLocationHelper();
+      console.log("latitude", latitude);
+      console.log("longitude", longitude);
+      await setCabVendorStatus({
+        cabId: cabVendor.id,
+        status: 'online',
+        latitude,
+        longitude,
+      }).unwrap();
+      setIsOnline(true);
+      ShowToast('success', 'You are now online');
+    } catch (e: any) {
+      console.log(e , "Eeeeeeeeeeeee")
+      ShowToast('error', e?.data?.message || e?.message || 'Failed to go online');
+    }
+  };
+
+  const onPressMarkAsOffline = async () => {
+    if (!cabVendor?.id) return;
+    try {
+      let latitude = 0;
+      let longitude = 0;
+      try {
+        const loc = await getCurrentLocationHelper();
+        latitude = loc.latitude;
+        longitude = loc.longitude;
+      } catch {
+        // use 0,0 if location unavailable
+      }
+      await setCabVendorStatus({
+        cabId: cabVendor.id,
+        status: 'offline',
+        latitude,
+        longitude,
+      }).unwrap();
+      setIsOnline(false);
+      ShowToast('success', 'You are now offline');
+    } catch (e: any) {
+      ShowToast('error', e?.data?.message || e?.message || 'Failed to go offline');
+    }
+  };
+
+  // Continuous location tracking when online so backend can track cab vendor
+  const LOCATION_UPDATE_INTERVAL_MS = 12 * 1000;
+  const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!isOnline || !cabVendor?.id) {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+      return;
+    }
+    const updateLocation = () => {
+      getCurrentLocationHelper()
+        .then(({ latitude, longitude }) => {
+          setCabVendorStatus({
+            cabId: cabVendor.id,
+            status: 'online',
+            latitude,
+            longitude,
+          }).unwrap().catch(() => {});
+        })
+        .catch(() => {});
+    };
+    locationIntervalRef.current = setInterval(updateLocation, LOCATION_UPDATE_INTERVAL_MS);
+    return () => {
+      if (locationIntervalRef.current) {
+        clearInterval(locationIntervalRef.current);
+        locationIntervalRef.current = null;
+      }
+    };
+  }, [isOnline, cabVendor?.id]);
+
+  const InfoRow = ({ label, value }: { label: string; value: string | number | undefined }) => (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}:</Text>
+      <Text style={styles.infoValue}>{value || 'N/A'}</Text>
+    </View>
+  );
 
   return (
     <WrapperContainer
@@ -61,6 +244,7 @@ const MyVehicle = () => {
       <FlatList
         data={vehicles}
         ListEmptyComponent={() => {
+          if (isLoading) return null;
           return (
             <>
               {/* Blue Banner */}
@@ -85,26 +269,136 @@ const MyVehicle = () => {
           );
         }}
         renderItem={({ item }) => (
-          <VehicleCard
-            image={item.image}
-            vehicleName={item.vehicleName}
-            licensePlate={item.licensePlate}
-            description={item.description}
-            onPress={() => onPressVehicle(item)}
-          />
+          <View>
+            <VehicleCard
+              image={item.image}
+              vehicleName={item.vehicleName}
+              licensePlate={item.licensePlate}
+              description={item.description}
+            />
+
+            {/* Detailed Info Section */}
+            <View style={styles.detailsSection}>
+              <Text style={styles.detailsTitle}>Driver Details</Text>
+              <InfoRow label="Full Name" value={cabVendor?.user?.name} />
+              <InfoRow label="Email" value={cabVendor?.user?.email} />
+              <InfoRow label="Phone" value={cabVendor?.user?.phoneNumber} />
+              <InfoRow label="Date of Birth" value={cabVendor?.dob} />
+              <InfoRow label="Status" value={cabVendor?.status?.toUpperCase()} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Vehicle Specifications</Text>
+              <InfoRow label="Type" value={cabVendor?.vehicleType} />
+              <InfoRow label="Model" value={cabVendor?.vehicleModal} />
+              <InfoRow label="Year" value={cabVendor?.vehicleYear} />
+              <InfoRow label="Color" value={cabVendor?.vehicleColor} />
+              <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Location Info</Text>
+              <InfoRow label="City" value={cabVendor?.location?.city} />
+              <InfoRow label="Street" value={cabVendor?.location?.street} />
+
+              <View style={styles.divider} />
+
+              <Text style={styles.detailsTitle}>Documents</Text>
+              <View style={styles.docsGrid}>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>Passport</Text>
+                  {cabVendor?.passportPhoto ? (
+                    <Image source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>License Front</Text>
+                  {cabVendor?.driverLicenseFront ? (
+                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>License Back</Text>
+                  {cabVendor?.driverLicenseBack ? (
+                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+                <View style={styles.docItem}>
+                  <Text style={styles.docLabel}>Insurance Front</Text>
+                  {cabVendor?.vehicleInsuranceFront ? (
+                    <Image source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
+                  ) : (
+                    <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
+                  )}
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.statusSection}>
+              <Text style={styles.detailsTitle}>Driver status</Text>
+              <Text style={styles.statusLabel}>{isOnline ? 'You are online (location shared with app)' : 'You are offline'}</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('FcmToken')} style={styles.fcmLink}>
+                <Text style={styles.fcmLinkText}>View FCM Token</Text>
+              </TouchableOpacity>
+              {isOnline ? (
+                <TouchableOpacity
+                  style={[styles.findARideButton, styles.offlineButton]}
+                  onPress={onPressMarkAsOffline}
+                  disabled={isUpdatingStatus}
+                >
+                  {isUpdatingStatus ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.findARideText}>Mark as offline</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.findARideButton}
+                  onPress={onPressMarkAsOnline}
+                  disabled={isUpdatingStatus}
+                >
+                  {isUpdatingStatus ? (
+                    <ActivityIndicator color={colors.white} size="small" />
+                  ) : (
+                    <Text style={styles.findARideText}>Mark as online</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View style={styles.findARideContainer}>
+              <TouchableOpacity
+                style={styles.findARideButton}
+                onPress={onPressFindARide}
+              >
+                <Text style={styles.findARideText}>Find a Ride</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading}
+        onRefresh={refetch}
       />
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={onPressAddVehicle}
-        activeOpacity={0.8}
-      >
-        <Plus color={colors.white} size={24} />
-      </TouchableOpacity>
+      {!cabVendor && !isLoading && (
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={onPressAddVehicle}
+          activeOpacity={0.8}
+        >
+          <Plus color={colors.white} size={24} />
+        </TouchableOpacity>
+      )}
 
       <DrawerModalCab visible={showMenu} setIsModalVisible={setShowMenu} />
     </WrapperContainer>
@@ -169,5 +463,119 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     // Shadow for Android
     elevation: 5,
+  },
+  statusSection: {
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    marginBottom: 10,
+  },
+  fcmLink: {
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  fcmLinkText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.c_0162C0,
+  },
+  offlineButton: {
+    backgroundColor: colors.c_666666,
+  },
+  findARideContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  findARideButton: {
+    backgroundColor: colors.c_0162C0,
+    borderRadius: 100,
+    width: '100%',
+    height: 54,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  findARideText: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.white,
+  },
+  detailsSection: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.c_F3F3F3,
+    marginTop: 10,
+  },
+  detailsTitle: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.c_0162C0,
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+  },
+  infoValue: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_2B2B2B,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: 10,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.c_F3F3F3,
+    marginVertical: 12,
+  },
+  docsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  docItem: {
+    width: '48%',
+    marginBottom: 10,
+  },
+  docLabel: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.c_666666,
+    marginBottom: 4,
+  },
+  docImage: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.c_F3F3F3,
+  },
+  emptyDoc: {
+    width: '100%',
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.c_F3F3F3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    borderStyle: 'dashed',
+  },
+  emptyDocText: {
+    fontSize: 12,
+    color: colors.c_666666,
   },
 });

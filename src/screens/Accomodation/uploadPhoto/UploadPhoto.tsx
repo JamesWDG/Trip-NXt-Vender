@@ -8,6 +8,7 @@ import fonts from '../../../config/fonts';
 import UploadPhotoComp from '../../../components/uploadPhoto/UploadPhoto';
 import { useCreateHotelMutation } from '../../../redux/services/hotelService';
 import { ShowToast } from '../../../config/constants';
+import { time12hTo24h } from '../../../utils/utility';
 
 interface UploadPhotoRouteParams {
   bathrooms: number;
@@ -73,8 +74,9 @@ const UploadPhoto = ({route}: {route: RouteProp<{ UploadPhoto: UploadPhotoRouteP
       data.append('longitude', route?.params?.hotelAddress?.longitude);
       data.append('latitude', route?.params?.hotelAddress?.latitude);
       data.append('numberOfRooms', route?.params?.bedrooms);
-      data.append('checkOutTime',  route?.params?.checkOutTime);
-      data.append('checkInTime',  route?.params?.checkInTime);
+      // Backend expects TIME in 24h (HH:mm:ss), e.g. "15:00:00"
+      data.append('checkOutTime', time12hTo24h(route?.params?.checkOutTime ?? '11:00 AM'));
+      data.append('checkInTime', time12hTo24h(route?.params?.checkInTime ?? '3:00 PM'));
       data.append('numberOfBeds', route?.params.beds);
       data.append('numberOfGuests', route?.params.guests);
       data.append('numberOfBathrooms', route?.params?.bathrooms);

@@ -13,7 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
-import { TabStackArray } from '../../contants/tabsStack';
+import { ACCOMMODATION_TABS, RESTAURANT_TABS, ITabStack } from '../../contants/tabsStack';
 import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { selectActiveStack } from '../../redux/slices/navigationSlice';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
@@ -39,55 +39,38 @@ const TabBars = (props: BottomTabBarProps) => {
 
   useEffect(() => {
     fetchUser();
-  },[])
+  }, []);
 
+  // Restaurant: Home, Restaurant Info, Orders, Profile | Accommodation: Home, My Hotels, My Bookings, Profile
+  const tabs: ITabStack[] =
+    activeStack === 'RestaurantStack' ? RESTAURANT_TABS : ACCOMMODATION_TABS;
 
-  // Get current route and nested route name
   const currentRoute = props.state.routes[props.state.index];
-  // console.log('currentRoute', currentRoute);
-  const tabName = currentRoute?.name;
   const nestedRouteName = getFocusedRouteNameFromRoute(currentRoute);
-  // console.log('currentRoute', currentRoute);
+  const currentTabName = currentRoute.name;
 
-  console.log('nestedRouteName', nestedRouteName, tabName);
-  // Dynamically get all navigation names from TabStackArray
-  const MAIN_TABS = TabStackArray.map(tab => tab.navigation);
+  // Tab bar visible only on allowed screens per stack; hide on all other screens
+  const shouldShowTabBar = useMemo(() => {
+    if (activeStack === 'RestaurantStack') {
+      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'RestaurantStack') {
+        const allowed = ['RestaurantHome', 'RestaurantInfo', 'Orders'];
+        return allowed.includes(nestedRouteName ?? 'RestaurantHome');
+      }
+      return false;
+    }
+    if (activeStack === 'Accomodation') {
+      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'MyHotels' || currentTabName === 'BookingLogs') return true;
+      if (currentTabName === 'Accomodation') {
+        return nestedRouteName === 'Home';
+      }
+      return false;
+    }
+    return false;
+  }, [activeStack, currentTabName, nestedRouteName]);
 
-  // Dynamically get all home screens from TabStackArray
-  const SHOW_TAB_BAR_ROUTES = TabStackArray.map(tab => tab.homeScreen).filter(
-    (screen): screen is string => screen !== undefined,
-  );
-
-  // Check if current screen (nestedRouteName) exists in tabsArray as homeScreen
-  const isHomeScreen =
-    nestedRouteName && SHOW_TAB_BAR_ROUTES.includes(nestedRouteName);
-
-  // Check if current screen (nestedRouteName) exists in tabsArray as navigation
-  const isScreenInTabsArray =
-    nestedRouteName && MAIN_TABS.includes(nestedRouteName);
-
-  // Check if current tab is one of the main tabs (dynamically from TabStackArray)
-  const isMainTab = tabName && MAIN_TABS.includes(tabName);
-
-  // Check if current tab's navigation matches any tab in array (handle RestaurantHome -> RestaurantStack mapping)
-  const isTabInArray = TabStackArray.some(tab => {
-    const routeName =
-      tab.navigation === 'RestaurantHome' ? 'RestaurantStack' : tab.navigation;
-    return routeName === tabName;
-  });
-
-  // Show tab bar if:
-  // 1. Current screen is a home screen in tabsArray
-  // 2. OR current screen is a navigation name in tabsArray
-  // 3. OR current tab is in tabsArray and nested route is not set (initial screen = home)
-  // 4. OR current tab matches any tab in tabsArray
-  const shouldShow = TabStackArray.some(
-    tab => tab.navigation === nestedRouteName || tab.navigation === tabName,
-  );
-
-  // console.log('shouldShow ===>', shouldShow);
-  // Hide tab bar if none of the conditions are met
-  if (!shouldShow) {
+  if (!shouldShowTabBar) {
     return null;
   }
 
@@ -100,36 +83,39 @@ const TabBars = (props: BottomTabBarProps) => {
         end={{ x: 1, y: 0 }}
       >
         <View style={styles.tabContainer}>
-          {TabStackArray.filter(
-            tab => tab.flow === 'mixed' || tab.flow === activeStack,
-          ).map((tab, index) => {
-            // Handle case where RestaurantHome tab navigation doesn't match BottomStack tab name
+          {tabs.map(tab => {
             const routeName =
-              tab.navigation === 'RestaurantHome'
-                ? 'RestaurantStack'
-                : tab.navigation;
+              tab.navigation === 'RestaurantHome' ? 'RestaurantStack' : tab.navigation;
             const route = props.state.routes.find(r => r.name === routeName);
-            const isFocused =
+            const isTabFocused =
               route && props.state.index === props.state.routes.indexOf(route);
-              console.log("Tab: ", tab)
+            // For Orders/My Orders: focused when we're on RestaurantStack and nested screen matches
+            const isFocused = tab.screen
+              ? isTabFocused && nestedRouteName === tab.screen
+              : isTabFocused;
+
+            const onPress = () => {
+              if (tab.screen) {
+                props.navigation.navigate(tab.navigation, { screen: tab.screen });
+                return;
+              }
+              if (route) {
+                const event = props.navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
+                if (!isFocused && !event.defaultPrevented) {
+                  props.navigation.navigate(routeName);
+                }
+              }
+            };
 
             return (
               <TouchableOpacity
-                key={tab.navigation}
+                key={tab.screen ? `${tab.navigation}-${tab.screen}` : tab.navigation}
                 style={styles.tab}
-                onPress={() => {
-                  if (route) {
-                    const event = props.navigation.emit({
-                      type: 'tabPress',
-                      target: route.key,
-                      canPreventDefault: true,
-                    });
-
-                    if (!isFocused && !event.defaultPrevented) {
-                      props.navigation.navigate(routeName);
-                    }
-                  }
-                }}
+                onPress={onPress}
               >
                 <Image
                   source={tab.image}

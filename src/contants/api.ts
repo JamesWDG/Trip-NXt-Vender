@@ -18,17 +18,21 @@ type endpointTypes = {
     DELETE_MENU_ITEM: (id: number) => string;
     GET_FEATURES_ITEMS: string;
     GET_MY_HOTEL: string;
+    GET_HOTEL_BY_ID: (id: number) => string;
     CREATE_HOTEL: string;
-    GET_ORDERS: (id:string)=>string;
-    UPDATE_ORDER_STATUS: (id:string)=>string;
+    GET_ORDERS: (id: string) => string;
+    UPDATE_ORDER_STATUS: (id: string) => string;
     STRIPE_CONNECT: string;
     GET_BOOKING_LOGS: string;
+    GET_BOOKING_BY_ID: (id: number) => string;
+    UPDATE_HOTEL_BOOKING_STATUS: (id: number) => string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
 export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
-// export const BASE_URL: string = 'http://192.168.0.108:5003/api/v1' //local
+// export const BASE_URL: string = 'http://192.168.0.108:5003/api/v1' //localdr
 // export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1' //ngrok 
+// export const BASE_URL: string = 'http://192.168.1.171:5003/api/v1' //ngrok 
 
 export const endpoint: endpointTypes = Object.freeze({
     LOGIN: '/user/login',
@@ -51,9 +55,11 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_FEATURES_ITEMS: '/feature',
     CREATE_HOTEL: '/hotel',
     GET_MY_HOTEL: '/hotel/get-auth-user-hotels',
-    GET_ORDERS: (id:string)=>'/order/get-orders-by-restaurant-id/'+id,
-    UPDATE_ORDER_STATUS: (id:string)=>'/order/update-order-status/'+id,
+    GET_HOTEL_BY_ID: (id: number) => `/hotel/get/${id}`,
+    GET_ORDERS: (id: string) => '/order/get-orders-by-restaurant-id/' + id,
+    UPDATE_ORDER_STATUS: (id: string) => '/order/update-order-status/' + id,
     STRIPE_CONNECT: '/subscription/create-stripe-vender-account',
     GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
-    // UPDATE_USER_PROFILE: (data: any) => `update-user/${data?.id}?profilePicture=${data?.profilePicture}&name=${data?.name}&phoneNumber=${data?.phoneNumber}`,
+    GET_BOOKING_BY_ID: (id: number) => `/booking/get-single-hotel-booking/${id}`,
+    UPDATE_HOTEL_BOOKING_STATUS: (id: number) => `/booking/update-hotel-booking-status/${id}`,
 })
