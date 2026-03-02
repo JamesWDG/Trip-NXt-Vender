@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
   PermissionsAndroid,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -20,8 +22,9 @@ import fonts from '../../../config/fonts';
 import { width, height, ShowToast } from '../../../config/constants';
 import { Plus } from 'lucide-react-native';
 import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
-import { useAppSelector } from '../../../redux/store';
-import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
+import { useAppSelector, useAppDispatch } from '../../../redux/store';
+import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
+import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation, useUpdateCabVendorMutation } from '../../../redux/services/cabService';
 import { BASE_URL } from '../../../contants/api';
 
 const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
@@ -118,12 +121,19 @@ const sampleVehicles: Array<{
 
 const MyVehicle = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.user);
 
-  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(Number(user?.id) || 0, {
-    skip: !user?.id
-  });
+  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(
+    Number(user?.id) || 0,
+    {
+      skip: !user?.id,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    }
+  );
   const [setCabVendorStatus, { isLoading: isUpdatingStatus }] = useSetCabVendorStatusMutation();
+  const [updateCabVendor, { isLoading: isUpdatingCab }] = useUpdateCabVendorMutation();
   const [isOnline, setIsOnline] = useState(false);
 
   const cabVendor = response?.data;
@@ -136,6 +146,24 @@ const MyVehicle = () => {
   }] : [];
 
   const [showMenu, setShowMenu] = useState(false);
+  const [isEditingVehicle, setIsEditingVehicle] = useState(false);
+  const [editForm, setEditForm] = useState({
+    vehicleModal: cabVendor?.vehicleModal || '',
+    vehicleYear: cabVendor?.vehicleYear ? String(cabVendor.vehicleYear) : '',
+    vehicleColor: cabVendor?.vehicleColor || '',
+    vehicleNumber: cabVendor?.vehicleNumber || '',
+  });
+
+  useEffect(() => {
+    if (cabVendor) {
+      setEditForm({
+        vehicleModal: cabVendor.vehicleModal || '',
+        vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+        vehicleColor: cabVendor.vehicleColor || '',
+        vehicleNumber: cabVendor.vehicleNumber || '',
+      });
+    }
+  }, [cabVendor?.vehicleModal, cabVendor?.vehicleYear, cabVendor?.vehicleColor, cabVendor?.vehicleNumber]);
 
   const onPressAddVehicle = () => {
     navigation.navigate('DriverRegistration');
@@ -143,6 +171,39 @@ const MyVehicle = () => {
 
   const onPressFindARide = () => {
     navigation.navigate('RideRequest');
+  };
+
+  const prefillRegistrationFromCab = () => {
+    if (!cabVendor) return;
+    dispatch(updateRegistrationData({
+      cabVendorId: cabVendor.id,
+      // Driver
+      fullName: cabVendor.user?.name ?? '',
+      dob: cabVendor.dob ?? '',
+      phoneNumber: cabVendor.user?.phoneNumber ?? '',
+      email: cabVendor.user?.email ?? '',
+      address: cabVendor.location?.street ?? '',
+      passportPhoto: cabVendor.passportPhoto ?? null,
+      // Driver docs
+      driverLicenseFront: cabVendor.driverLicenseFront ?? null,
+      driverLicenseBack: cabVendor.driverLicenseBack ?? null,
+      // Vehicle docs
+      vehicleInsuranceFront: cabVendor.vehicleInsuranceFront ?? null,
+      vehicleInsuranceBack: cabVendor.vehicleInsuranceBack ?? null,
+      // Vehicle
+      vehicleType: cabVendor.vehicleType ?? '',
+      vehicleModal: cabVendor.vehicleModal ?? '',
+      vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+      vehicleNumber: cabVendor.vehicleNumber ?? '',
+      vehicleColor: cabVendor.vehicleColor ?? '',
+      vehicleImage: cabVendor.vehicleImage ?? null,
+    }));
+  };
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const openPreview = (uri: string | null | undefined) => {
+    const resolved = resolveImageUri(uri);
+    if (resolved) setPreviewImage(resolved);
   };
 
   const onPressMarkAsOnline = async () => {
@@ -234,6 +295,8 @@ const MyVehicle = () => {
     </View>
   );
 
+  console.log(cabVendor ,vehicles, "cabVendorcabVendorcabVendor")
+
   return (
     <WrapperContainer
       title="My Vehicle"
@@ -257,17 +320,12 @@ const MyVehicle = () => {
                   here
                 </Text>
               </View>
-              {/* Illustration */}
-              <View style={styles.illustrationContainer}>
-                <Image
-                  source={images.empty_car}
-                  style={styles.illustration}
-                  resizeMode="contain"
-                />
-              </View>
+          
             </>
           );
         }}
+
+        
         renderItem={({ item }) => (
           <View>
             <VehicleCard
@@ -275,6 +333,7 @@ const MyVehicle = () => {
               vehicleName={item.vehicleName}
               licensePlate={item.licensePlate}
               description={item.description}
+              onPress={() => openPreview(cabVendor?.vehicleImage)}
             />
 
             {/* Detailed Info Section */}
@@ -289,11 +348,102 @@ const MyVehicle = () => {
               <View style={styles.divider} />
 
               <Text style={styles.detailsTitle}>Vehicle Specifications</Text>
-              <InfoRow label="Type" value={cabVendor?.vehicleType} />
-              <InfoRow label="Model" value={cabVendor?.vehicleModal} />
-              <InfoRow label="Year" value={cabVendor?.vehicleYear} />
-              <InfoRow label="Color" value={cabVendor?.vehicleColor} />
-              <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+              {isEditingVehicle ? (
+                <>
+                  <InfoRow label="Type" value={cabVendor?.vehicleType} />
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Model:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleModal}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleModal: text })}
+                      placeholder="Vehicle model"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Year:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleYear}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleYear: text })}
+                      keyboardType="numeric"
+                      placeholder="Year"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Color:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleColor}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleColor: text })}
+                      placeholder="Color"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Plate Number:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleNumber}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleNumber: text })}
+                      placeholder="Plate number"
+                    />
+                  </View>
+                  <View style={styles.editActionsRow}>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.editCancelButton]}
+                      onPress={() => {
+                        setIsEditingVehicle(false);
+                        if (cabVendor) {
+                          setEditForm({
+                            vehicleModal: cabVendor.vehicleModal || '',
+                            vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+                            vehicleColor: cabVendor.vehicleColor || '',
+                            vehicleNumber: cabVendor.vehicleNumber || '',
+                          });
+                        }
+                      }}
+                    >
+                      <Text style={styles.editCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.editSaveButton]}
+                      disabled={isUpdatingCab}
+                      onPress={async () => {
+                        if (!cabVendor?.id) return;
+                        const yearNum = parseInt(editForm.vehicleYear, 10);
+                        const formData = new FormData();
+                        formData.append('vehicleModal', editForm.vehicleModal);
+                        formData.append('vehicleYear', !Number.isNaN(yearNum) ? String(yearNum) : '');
+                        formData.append('vehicleColor', editForm.vehicleColor);
+                        formData.append('vehicleNumber', editForm.vehicleNumber);
+                        try {
+                          await updateCabVendor({ id: cabVendor.id, formData } as any).unwrap();
+                          ShowToast('success', 'Vehicle details updated');
+                          setIsEditingVehicle(false);
+                          refetch();
+                        } catch (e: any) {
+                          ShowToast('error', e?.data?.message || e?.message || 'Failed to update vehicle');
+                        }
+                      }}
+                    >
+                      {isUpdatingCab ? (
+                        <ActivityIndicator color={colors.white} size="small" />
+                      ) : (
+                        <Text style={styles.editSaveText}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <InfoRow label="Type" value={cabVendor?.vehicleType} />
+                  <InfoRow label="Model" value={cabVendor?.vehicleModal} />
+                  <InfoRow label="Year" value={cabVendor?.vehicleYear} />
+                  <InfoRow label="Color" value={cabVendor?.vehicleColor} />
+                  <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+               
+                </>
+              )}
 
               <View style={styles.divider} />
 
@@ -308,7 +458,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Passport</Text>
                   {cabVendor?.passportPhoto ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.passportPhoto)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -316,7 +471,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Front</Text>
                   {cabVendor?.driverLicenseFront ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.driverLicenseFront)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -324,7 +484,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Back</Text>
                   {cabVendor?.driverLicenseBack ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.driverLicenseBack)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -332,7 +497,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Insurance Front</Text>
                   {cabVendor?.vehicleInsuranceFront ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.vehicleInsuranceFront)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -344,7 +514,7 @@ const MyVehicle = () => {
               <Text style={styles.detailsTitle}>Driver status</Text>
               <Text style={styles.statusLabel}>{isOnline ? 'You are online (location shared with app)' : 'You are offline'}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('FcmToken')} style={styles.fcmLink}>
-                <Text style={styles.fcmLinkText}>View FCM Token</Text>
+               
               </TouchableOpacity>
               {isOnline ? (
                 <TouchableOpacity
@@ -374,6 +544,20 @@ const MyVehicle = () => {
             </View>
 
             <View style={styles.findARideContainer}>
+              {!!cabVendor && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.findARideButton, styles.editVehicleButton]}
+                    onPress={() => {
+                      prefillRegistrationFromCab();
+                      navigation.navigate('DriverRegistration');
+                    }}
+                  >
+                    <Text style={styles.findARideText}>Edit Driver</Text>
+                  </TouchableOpacity>
+              
+                </>
+              )}
               <TouchableOpacity
                 style={styles.findARideButton}
                 onPress={onPressFindARide}
@@ -401,6 +585,26 @@ const MyVehicle = () => {
       )}
 
       <DrawerModalCab visible={showMenu} setIsModalVisible={setShowMenu} />
+
+      {previewImage && (
+        <Modal
+          visible={true}
+          transparent
+          onRequestClose={() => setPreviewImage(null)}
+        >
+          <TouchableOpacity
+            style={styles.previewOverlay}
+            activeOpacity={1}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </Modal>
+      )}
     </WrapperContainer>
   );
 };
@@ -503,6 +707,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     color: colors.white,
   },
+  editVehicleButton: {
+    backgroundColor: colors.c_666666,
+    marginBottom: 10,
+  },
   detailsSection: {
     backgroundColor: colors.white,
     borderRadius: 12,
@@ -577,5 +785,68 @@ const styles = StyleSheet.create({
   emptyDocText: {
     fontSize: 12,
     color: colors.c_666666,
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: width * 0.9,
+    height: height * 0.8,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  editInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_2B2B2B,
+    marginLeft: 10,
+  },
+  inlineEditButton: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  inlineEditText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.c_0162C0,
+  },
+  editActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    gap: 8,
+  },
+  editButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  editCancelButton: {
+    backgroundColor: colors.c_F3F3F3,
+  },
+  editSaveButton: {
+    backgroundColor: colors.c_0162C0,
+  },
+  editCancelText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.c_666666,
+  },
+  editSaveText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.white,
   },
 });

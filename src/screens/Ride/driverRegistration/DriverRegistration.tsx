@@ -4,8 +4,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
@@ -22,14 +22,19 @@ import GeneralStyles from '../../../utils/GeneralStyles';
 import { useAppDispatch, useAppSelector } from '../../../redux/store';
 import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
 
+type DriverRegistrationRouteParams = {
+  cabVendor?: any;
+};
+
 const DriverRegistration = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const route = useRoute<RouteProp<{ params: DriverRegistrationRouteParams }, 'params'>>();
   const dispatch = useAppDispatch();
   const registrationData = useAppSelector(state => state.registration);
   const user = useAppSelector(state => state.auth.user);
 
   const [formData, setFormData] = useState({
-    fullName: registrationData.fullName || '',
+    fullName: registrationData.fullName || user?.name || '',
     dob: registrationData.dob || '',
     phoneNumber: registrationData.phoneNumber || user?.phoneNumber || '',
     email: registrationData.email || user?.email || '',
@@ -39,6 +44,29 @@ const DriverRegistration = () => {
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+
+  // Prefill when coming from MyVehicle with existing cabVendor
+  useEffect(() => {
+    const cabVendor = route.params?.cabVendor;
+    if (!cabVendor) return;
+    const fullName = cabVendor.user?.name || formData.fullName;
+    const dob = cabVendor.dob || formData.dob;
+    const phoneNumber = cabVendor.user?.phoneNumber || formData.phoneNumber;
+    const email = cabVendor.user?.email || formData.email;
+    const address = cabVendor.location?.street || formData.address;
+    const profilePhoto = cabVendor.passportPhoto || formData.profilePhoto;
+    const next = { fullName, dob, phoneNumber, email, address, profilePhoto };
+    setFormData(prev => ({ ...prev, ...next }));
+    dispatch(updateRegistrationData({
+      fullName,
+      dob,
+      phoneNumber,
+      email,
+      address,
+      passportPhoto: profilePhoto,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.cabVendor]);
 
   const handleLocationSelect = (item: SearchHistoryItem) => {
     setFormData(prev => ({ ...prev, address: item.destination }));

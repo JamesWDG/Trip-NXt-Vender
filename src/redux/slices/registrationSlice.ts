@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface RegistrationState {
+    cabVendorId: number | null;
     // Driver Details
     fullName: string;
     dob: string;
@@ -27,6 +28,7 @@ interface RegistrationState {
 }
 
 const initialState: RegistrationState = {
+    cabVendorId: null,
     fullName: '',
     dob: '',
     phoneNumber: '',

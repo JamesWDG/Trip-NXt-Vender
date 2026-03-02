@@ -7,7 +7,7 @@ import {
   View,
 } from 'react-native';
 import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import SinglePhotoUpload from '../../../components/singlePhotoUpload/SinglePhotoUpload';
@@ -17,15 +17,21 @@ import fonts from '../../../config/fonts';
 import images from '../../../config/images';
 import { useAppDispatch, useAppSelector } from '../../../redux/store';
 import { updateRegistrationData, resetRegistrationData } from '../../../redux/slices/registrationSlice';
-import { useCreateCabVendorMutation } from '../../../redux/services/cabService';
+import { useCreateCabVendorMutation, useUpdateCabVendorMutation } from '../../../redux/services/cabService';
 import Toast from 'react-native-toast-message';
+
+type VehicleDocumentsRouteParams = {
+  cabVendor?: any;
+};
 
 const VehicleDocuments = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const route = useRoute<RouteProp<{ params: VehicleDocumentsRouteParams }, 'params'>>();
   const dispatch = useAppDispatch();
   const registrationData = useAppSelector(state => state.registration);
   const user = useAppSelector(state => state.auth.user);
   const [createCabVendor, { isLoading }] = useCreateCabVendorMutation();
+  const [updateCabVendor] = useUpdateCabVendorMutation();
 
   const [insuranceImage, setInsuranceImage] = useState<string | null>(registrationData.vehicleInsuranceFront);
   const [registrationImage, setRegistrationImage] = useState<string | null>(registrationData.vehicleInsuranceBack);
@@ -98,14 +104,22 @@ const VehicleDocuments = () => {
       console.log('Final FormData structure before sending:');
       // Note: We can't log FormData contents easily in React Native, but this is the structure
 
-      const response = await createCabVendor(formData).unwrap();
-      console.log('Registration success:', response);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Registration Successful',
-        text2: 'Your vehicle has been registered and is pending approval.',
-      });
+      const editCabId = registrationData.cabVendorId;
+      if (editCabId) {
+        await updateCabVendor({ id: editCabId, formData } as any).unwrap();
+        Toast.show({
+          type: 'success',
+          text1: 'Vehicle updated',
+          text2: 'Your vehicle details have been updated.',
+        });
+      } else {
+        await createCabVendor(formData).unwrap();
+        Toast.show({
+          type: 'success',
+          text1: 'Registration Successful',
+          text2: 'Your vehicle has been registered and is pending approval.',
+        });
+      }
 
       dispatch(resetRegistrationData());
 

@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import SinglePhotoUpload from '../../../components/singlePhotoUpload/SinglePhotoUpload';
@@ -18,13 +18,33 @@ import images from '../../../config/images';
 import { useAppDispatch, useAppSelector } from '../../../redux/store';
 import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
 
+type DriverDocumentsRouteParams = {
+  cabVendor?: any;
+};
+
 const DriverDocuments = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const route = useRoute<RouteProp<{ params: DriverDocumentsRouteParams }, 'params'>>();
   const dispatch = useAppDispatch();
   const registrationData = useAppSelector(state => state.registration);
 
   const [frontImage, setFrontImage] = useState<string | null>(registrationData.driverLicenseFront);
   const [backImage, setBackImage] = useState<string | null>(registrationData.driverLicenseBack);
+
+  // Prefill when editing existing driver (coming from MyVehicle)
+  useEffect(() => {
+    const cabVendor = route.params?.cabVendor;
+    if (!cabVendor) return;
+    const front = cabVendor.driverLicenseFront || frontImage;
+    const back = cabVendor.driverLicenseBack || backImage;
+    setFrontImage(front);
+    setBackImage(back);
+    dispatch(updateRegistrationData({
+      driverLicenseFront: front,
+      driverLicenseBack: back,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.cabVendor]);
 
   const handleFrontImageChange = (imageUri: string | null) => {
     setFrontImage(imageUri);
@@ -43,7 +63,12 @@ const DriverDocuments = () => {
       driverLicenseBack: backImage,
     }));
 
-    navigation.navigate('VehicleRegistration');
+    const cabVendor = route.params?.cabVendor;
+    if (cabVendor) {
+      navigation.navigate('VehicleRegistration', { cabVendor });
+    } else {
+      navigation.navigate('VehicleRegistration');
+    }
   };
 
   return (
