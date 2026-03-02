@@ -6,7 +6,7 @@ import WebView from 'react-native-webview';
 const Web = ({route}: {route: RouteProp<{Web: {url: string}}, 'Web'>}) => {
   return (
     <View style={styles.container}>
-      {route.params.url && <WebView startInLoadingState={true} style={styles.webView} source={{uri: route.params.url}} />}
+      {route.params.url && <WebView startInLoadingState={true} originWhitelist={['*']} style={styles.webView} source={{uri: route.params.url}} />}
     </View>
   );
 };
