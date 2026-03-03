@@ -38,7 +38,10 @@ export function NotificationSetup() {
       if (!fcmToken || cancelled || fcmToken === lastRegisteredToken.current) return;
       console.log('[FCM Vendor] Registering token with backend');
       const ok = await registerTokenWithBackend(fcmToken);
-      if (ok) lastRegisteredToken.current = fcmToken;
+      if (ok) {
+        lastRegisteredToken.current = fcmToken;
+        console.log('[FCM Vendor] FCM token registered and saved.');
+      }
     })();
     return () => { cancelled = true; };
   }, [token]);

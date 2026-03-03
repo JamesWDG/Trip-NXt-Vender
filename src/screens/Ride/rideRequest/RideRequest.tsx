@@ -180,13 +180,14 @@ const RideRequest = () => {
 
 
 
-    // Initial map region
-    const initialRegion = {
-        latitude: 40.7128,
-        longitude: -74.0060,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-    };
+
+    // Map region state – start with default, update when we get user location so map shows "my location"
+    const [mapRegion, setMapRegion] = useState({
+        latitude: 24.86,
+        longitude: 67.01,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+    });
 
     // Load rides: from FCM (single rideId) or available list (vendor location)
     useEffect(() => {
@@ -202,7 +203,14 @@ const RideRequest = () => {
                             if (cancelled) return;
                             const lat = pos.coords.latitude;
                             const lng = pos.coords.longitude;
-                            setDriverLocation({ latitude: lat, longitude: lng });
+                            const newLoc = { latitude: lat, longitude: lng };
+                            setDriverLocation(newLoc);
+                            setMapRegion({
+                                latitude: lat,
+                                longitude: lng,
+                                latitudeDelta: 0.02,
+                                longitudeDelta: 0.02,
+                            });
                             getAvailableRides({ latitude: lat, longitude: lng });
                         },
                         () => {
@@ -260,6 +268,16 @@ const RideRequest = () => {
 
     const handleDeclineRide = (id: string) => {
         setRides(prev => prev.filter(r => r.id !== id));
+    };
+
+    const centerOnMyLocation = () => {
+        setMapRegion(prev => ({
+            ...prev,
+            latitude: driverLocation.latitude,
+            longitude: driverLocation.longitude,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+        }));
     };
 
     const handleCounterOffer = (ride: any) => {
@@ -386,7 +404,8 @@ const RideRequest = () => {
                 ref={mapRef}
                 provider={PROVIDER_GOOGLE}
                 style={styles.map}
-                initialRegion={initialRegion}
+                region={mapRegion}
+                onRegionChangeComplete={setMapRegion}
             >
                 {/* Driver Marker */}
                 <Marker
@@ -433,6 +452,11 @@ const RideRequest = () => {
 
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                 <ChevronLeft color={colors.black} size={28} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.myLocationButton} onPress={centerOnMyLocation}>
+                <MapPin color={colors.c_0162C0} size={24} />
+                <Text style={styles.myLocationText}>My location</Text>
             </TouchableOpacity>
 
             {status === 'searching' && (
@@ -532,6 +556,28 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 5,
+    },
+    myLocationButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.white,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    myLocationText: {
+        fontSize: 14,
+        fontFamily: fonts.medium,
+        color: colors.c_0162C0,
     },
     listContainer: {
         position: 'absolute',

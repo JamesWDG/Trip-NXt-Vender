@@ -25,6 +25,7 @@ import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
 import { useAppSelector, useAppDispatch } from '../../../redux/store';
 import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
 import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation, useUpdateCabVendorMutation } from '../../../redux/services/cabService';
+import { useLazyGetAvailableRidesQuery } from '../../../redux/services/rideService';
 import { BASE_URL } from '../../../contants/api';
 
 const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
@@ -101,6 +102,21 @@ const getCurrentLocationHelper = async (): Promise<{ latitude: number; longitude
   });
 };
 
+/** Approx distance in km between two geo points (Haversine). */
+const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 // Sample data - replace with actual data from API/state
 const sampleVehicles: Array<{
   id: string;
@@ -135,6 +151,8 @@ const MyVehicle = () => {
   const [setCabVendorStatus, { isLoading: isUpdatingStatus }] = useSetCabVendorStatusMutation();
   const [updateCabVendor, { isLoading: isUpdatingCab }] = useUpdateCabVendorMutation();
   const [isOnline, setIsOnline] = useState(false);
+  const [getAvailableRides, { data: availableRides, isLoading: loadingAvailableRides }] = useLazyGetAvailableRidesQuery();
+  const [nearbyRideCount, setNearbyRideCount] = useState(0);
 
   const cabVendor = response?.data;
   const vehicles = cabVendor ? [{
@@ -201,6 +219,63 @@ const MyVehicle = () => {
   };
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const ridesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastStatusLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  const fetchCurrentLocation = () => {
+    setLocationLoading(true);
+    getCurrentLocationHelper()
+      .then((coords) => {
+        setCurrentLocation(coords);
+      })
+      .catch(() => {
+        setCurrentLocation(null);
+      })
+      .finally(() => setLocationLoading(false));
+  };
+
+  useEffect(() => {
+    if (cabVendor?.id) fetchCurrentLocation();
+  }, [cabVendor?.id]);
+
+  // When online, poll backend for nearby available rides using current location
+  useEffect(() => {
+    if (!isOnline || !currentLocation) {
+      if (ridesPollRef.current) {
+        clearInterval(ridesPollRef.current);
+        ridesPollRef.current = null;
+      }
+      setNearbyRideCount(0);
+      return;
+    }
+
+    const fetchRides = () => {
+      getAvailableRides({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      });
+    };
+
+    fetchRides();
+    ridesPollRef.current = setInterval(fetchRides, 12 * 1000);
+
+    return () => {
+      if (ridesPollRef.current) {
+        clearInterval(ridesPollRef.current);
+        ridesPollRef.current = null;
+      }
+    };
+  }, [isOnline, currentLocation?.latitude, currentLocation?.longitude, getAvailableRides]);
+
+  // Keep a simple count from the available rides list
+  useEffect(() => {
+    if (Array.isArray(availableRides)) {
+      setNearbyRideCount(availableRides.length);
+    }
+  }, [availableRides]);
+
   const openPreview = (uri: string | null | undefined) => {
     const resolved = resolveImageUri(uri);
     if (resolved) setPreviewImage(resolved);
@@ -214,8 +289,8 @@ const MyVehicle = () => {
     try {
       
       const { latitude, longitude } = await getCurrentLocationHelper();
-      console.log("latitude", latitude);
-      console.log("longitude", longitude);
+      setCurrentLocation({ latitude, longitude });
+      lastStatusLocationRef.current = { latitude, longitude };
       await setCabVendorStatus({
         cabId: cabVendor.id,
         status: 'online',
@@ -242,6 +317,7 @@ const MyVehicle = () => {
       } catch {
         // use 0,0 if location unavailable
       }
+
       await setCabVendorStatus({
         cabId: cabVendor.id,
         status: 'offline',
@@ -249,6 +325,7 @@ const MyVehicle = () => {
         longitude,
       }).unwrap();
       setIsOnline(false);
+      lastStatusLocationRef.current = null;
       ShowToast('success', 'You are now offline');
     } catch (e: any) {
       ShowToast('error', e?.data?.message || e?.message || 'Failed to go offline');
@@ -256,7 +333,8 @@ const MyVehicle = () => {
   };
 
   // Continuous location tracking when online so backend can track cab vendor
-  const LOCATION_UPDATE_INTERVAL_MS = 12 * 1000;
+  const LOCATION_UPDATE_INTERVAL_MS = 20 * 1000;
+  const MIN_MOVE_KM_FOR_UPDATE = 0.05; // ~50 meters
   const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -270,12 +348,23 @@ const MyVehicle = () => {
     const updateLocation = () => {
       getCurrentLocationHelper()
         .then(({ latitude, longitude }) => {
+          const prev = lastStatusLocationRef.current;
+          const movedKm = prev
+            ? distanceKm(prev.latitude, prev.longitude, latitude, longitude)
+            : Number.POSITIVE_INFINITY;
+          if (movedKm < MIN_MOVE_KM_FOR_UPDATE) {
+            return;
+          }
+          lastStatusLocationRef.current = { latitude, longitude };
+          setCurrentLocation({ latitude, longitude });
           setCabVendorStatus({
             cabId: cabVendor.id,
             status: 'online',
             latitude,
             longitude,
-          }).unwrap().catch(() => {});
+          })
+            .unwrap()
+            .catch(() => {});
         })
         .catch(() => {});
     };
@@ -443,13 +532,38 @@ const MyVehicle = () => {
                   <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
                
                 </>
-              )}
+              )} 
 
               <View style={styles.divider} />
 
               <Text style={styles.detailsTitle}>Location Info</Text>
               <InfoRow label="City" value={cabVendor?.location?.city} />
               <InfoRow label="Street" value={cabVendor?.location?.street} />
+              <View style={styles.exactLocationRow}>
+                <Text style={styles.infoLabel}>Exact location</Text>
+                <View style={styles.exactLocationValue}>
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color={colors.c_0162C0} />
+                  ) : currentLocation ? (
+                    <Text style={styles.infoValue}>
+                      {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+                    </Text>
+                  ) : (
+                    <Text style={styles.infoValue}>—</Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.refreshLocationButton}
+                onPress={fetchCurrentLocation}
+                disabled={locationLoading}
+              >
+                {locationLoading ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.refreshLocationText}>Refresh my location</Text>
+                )}
+              </TouchableOpacity>
 
               <View style={styles.divider} />
 
@@ -517,6 +631,16 @@ const MyVehicle = () => {
                
               </TouchableOpacity>
               {isOnline ? (
+                <>
+                  {loadingAvailableRides ? (
+                    <Text style={styles.ridesInfoText}>Checking nearby rides...</Text>
+                  ) : nearbyRideCount > 0 ? (
+                    <Text style={styles.ridesInfoText}>
+                      {nearbyRideCount} ride{nearbyRideCount === 1 ? '' : 's'} available near you
+                    </Text>
+                  ) : (
+                    <Text style={styles.ridesInfoText}>No rides near you yet</Text>
+                  )}
                 <TouchableOpacity
                   style={[styles.findARideButton, styles.offlineButton]}
                   onPress={onPressMarkAsOffline}
@@ -528,6 +652,7 @@ const MyVehicle = () => {
                     <Text style={styles.findARideText}>Mark as offline</Text>
                   )}
                 </TouchableOpacity>
+                </>
               ) : (
                 <TouchableOpacity
                   style={styles.findARideButton}
@@ -677,6 +802,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.c_666666,
     marginBottom: 10,
+  },
+  ridesInfoText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.c_0162C0,
+    marginBottom: 8,
   },
   fcmLink: {
     marginTop: 6,
@@ -847,6 +978,32 @@ const styles = StyleSheet.create({
   editSaveText: {
     fontSize: 13,
     fontFamily: fonts.bold,
+    color: colors.white,
+  },
+  exactLocationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  exactLocationValue: {
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'flex-end',
+  },
+  refreshLocationButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.c_0162C0,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    minWidth: 140,
+    alignItems: 'center',
+  },
+  refreshLocationText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
     color: colors.white,
   },
 });

@@ -42,13 +42,21 @@ export async function getFCMToken(): Promise<string | null> {
 
 /** Register current FCM token with backend. Call when vendor is logged in. */
 export async function registerTokenWithBackend(fcmToken: string): Promise<boolean> {
+  const masked = fcmToken ? `${fcmToken.substring(0, 24)}...${fcmToken.slice(-12)}` : '';
+  console.log('[FCM Vendor] Saving FCM token to backend...', masked , fcmToken);
   try {
     const result = await (store.dispatch as any)(
       notificationApi.endpoints.registerFcmToken.initiate({ fcmToken })
     );
-    return !('error' in result) && 'data' in result;
+    const ok = !('error' in result) && 'data' in result;
+    if (ok) {
+      console.log('[FCM Vendor] FCM token saved successfully.');
+    } else {
+      console.warn('[FCM Vendor] FCM token save failed.', result);
+    }
+    return ok;
   } catch (e) {
-    console.warn('Register FCM token error:', e);
+    console.warn('[FCM Vendor] Register FCM token error:', e);
     return false;
   }
 }
