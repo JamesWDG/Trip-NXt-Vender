@@ -34,6 +34,15 @@ function parseRideListResponse(raw: any): RidePayload[] {
 
 export const rideService = baseApi.injectEndpoints({
   endpoints: (builder) => ({
+    getVendorActiveRide: builder.query<RidePayload | null, void>({
+      query: () => ({ url: '/ride/vendor/active', method: 'GET' }),
+      transformResponse: (raw: any) => {
+        const body = raw?.data ?? raw;
+        const inner = body?.data ?? body;
+        if (inner && typeof inner === 'object' && 'id' in inner) return inner as RidePayload;
+        return null;
+      },
+    }),
     getAvailableRides: builder.query<RidePayload[], { latitude: number; longitude: number }>({
       query: ({ latitude, longitude }) => ({
         url: '/ride/vendor/available',
@@ -73,13 +82,23 @@ export const rideService = baseApi.injectEndpoints({
       }),
       transformResponse: parseRideResponse,
     }),
+    updateRideStatus: builder.mutation<RidePayload, { rideId: number; status: 'ongoing' | 'completed' }>({
+      query: ({ rideId, status }) => ({
+        url: `/ride/${rideId}/status`,
+        method: 'PATCH',
+        body: { status },
+      }),
+      transformResponse: parseRideResponse,
+    }),
   }),
 });
 
 export const {
+  useLazyGetVendorActiveRideQuery,
   useLazyGetAvailableRidesQuery,
   useLazyGetRideByIdQuery,
   useAcceptRideMutation,
   useCounterOfferMutation,
   useCancelRideMutation,
+  useUpdateRideStatusMutation,
 } = rideService;
