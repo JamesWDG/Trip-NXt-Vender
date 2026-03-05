@@ -13,6 +13,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapViewDirections from 'react-native-maps-directions';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { ChevronLeft, MapPin, User, Navigation, CheckCircle, Clock, DollarSign } from 'lucide-react-native';
 import colors from '../../../config/colors';
@@ -30,6 +31,7 @@ import type { RidePayload } from '../../../redux/services/rideService';
 import { formatUsd, RS_PER_USD } from '../../../utils/currency';
 
 const { width, height } = Dimensions.get('window');
+const GOOGLE_MAPS_API_KEY = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
 
 const OrderSummaryModal = ({ visible, ride, onComplete }: { visible: boolean; ride: any; onComplete: () => void }) => {
     return (
@@ -94,44 +96,6 @@ const OrderSummaryModal = ({ visible, ride, onComplete }: { visible: boolean; ri
 
 
 
-const calculateBearing = (startLat: number, startLng: number, destLat: number, destLng: number) => {
-    const startLatRad = (startLat * Math.PI) / 180;
-    const startLngRad = (startLng * Math.PI) / 180;
-    const destLatRad = (destLat * Math.PI) / 180;
-    const destLngRad = (destLng * Math.PI) / 180;
-
-    const y = Math.sin(destLngRad - startLngRad) * Math.cos(destLatRad);
-    const x =
-        Math.cos(startLatRad) * Math.sin(destLatRad) -
-        Math.sin(startLatRad) * Math.cos(destLatRad) * Math.cos(destLngRad - startLngRad);
-    const brng = Math.atan2(y, x);
-    const brngDeg = (brng * 180) / Math.PI;
-    return (brngDeg + 360) % 360;
-};
-
-// Simulate a road path by adding intermediate waypoints
-const generateSimulatedPath = (start: { latitude: number; longitude: number }, end: { latitude: number; longitude: number }) => {
-    const path = [start];
-    const latDiff = end.latitude - start.latitude;
-    const lngDiff = end.longitude - start.longitude;
-
-    // Add 3 intermediate points with slight offsets to simulate turning corners
-    path.push({
-        latitude: start.latitude + latDiff * 0.2,
-        longitude: start.longitude + lngDiff * 0.1,
-    });
-    path.push({
-        latitude: start.latitude + latDiff * 0.5,
-        longitude: start.longitude + lngDiff * 0.5,
-    });
-    path.push({
-        latitude: start.latitude + latDiff * 0.8,
-        longitude: start.longitude + lngDiff * 0.9,
-    });
-
-    path.push(end);
-    return path;
-};
 
 /** Map API RidePayload to the shape the UI card expects */
 function mapRideToCard(ride: RidePayload): any {
@@ -163,7 +127,6 @@ const RideRequest = () => {
     const rideIdFromParams = route.params?.rideId;
     const mapRef = useRef<MapView>(null);
     const driverMarkerRef = useRef<any>(null);
-    const simulationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const [getRideById, { data: singleRide, isLoading: loadingSingle }] = useLazyGetRideByIdQuery();
     const [getVendorActiveRide, { data: activeRideData }] = useLazyGetVendorActiveRideQuery();
@@ -180,12 +143,12 @@ const RideRequest = () => {
         longitude: -74.0060,
     });
     const [status, setStatus] = useState<'searching' | 'accepted' | 'to_pickup' | 'in_progress' | 'completed'>('searching');
-    const [ridePhase, setRidePhase] = useState<'to_pickup' | 'to_dropoff' | null>(null);
     const [reachedPickup, setReachedPickup] = useState(false);
+    const [arrivedMarked, setArrivedMarked] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
     const [driverRotation, setDriverRotation] = useState(0);
     const [counterOfferModal, setCounterOfferModal] = useState<{ rideId: number; offeredFare: number } | null>(null);
-    const [counterFare, setCounterFare] = useState('');
+    const [counterAdjustment, setCounterAdjustment] = useState(0);
 
 
 
@@ -213,6 +176,12 @@ const RideRequest = () => {
             if (ride.status === 'accepted') {
                 setAcceptedRide(card);
                 setStatus('accepted');
+                setArrivedMarked(false);
+            } else if (ride.status === 'driver_arrived') {
+                setAcceptedRide(card);
+                setStatus('accepted');
+                setReachedPickup(true);
+                setArrivedMarked(true);
             } else if (ride.status === 'ongoing') {
                 setAcceptedRide(card);
                 setStatus('in_progress');
@@ -222,7 +191,7 @@ const RideRequest = () => {
             setAcceptedRide(null);
             setStatus('searching');
             setReachedPickup(false);
-            setRidePhase(null);
+            setArrivedMarked(false);
         }
     }, [activeRideData]);
 
@@ -279,14 +248,21 @@ const RideRequest = () => {
         }
     }, [availableRides, rideIdFromParams, activeRide?.id]);
 
+    // Live driver location when going to pickup or to dropoff (Bykea-style: real map, no animation)
     useEffect(() => {
-        return () => {
-            if (simulationIntervalRef.current) {
-                clearInterval(simulationIntervalRef.current);
-                simulationIntervalRef.current = null;
-            }
-        };
-    }, []);
+        if (status !== 'to_pickup' && status !== 'in_progress') return;
+        const Geolocation = require('react-native-geolocation-service')?.default ?? require('react-native-geolocation-service');
+        const watchId = Geolocation.watchPosition(
+            (pos: any) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                setDriverLocation({ latitude: lat, longitude: lng });
+            },
+            () => {},
+            { enableHighAccuracy: true, distanceFilter: 10 }
+        );
+        return () => { Geolocation.clearWatch(watchId); };
+    }, [status]);
 
     const handleAcceptRide = async (ride: any) => {
         const payload = ride._payload as RidePayload | undefined;
@@ -327,48 +303,56 @@ const RideRequest = () => {
     const handleCounterOffer = (ride: any) => {
         const payload = ride._payload as RidePayload | undefined;
         const id = payload?.id ?? parseInt(ride.id, 10);
-        if (id) setCounterOfferModal({ rideId: id, offeredFare: ride._payload?.offeredFare ?? 0 });
+        if (id) {
+            setCounterOfferModal({ rideId: id, offeredFare: payload?.offeredFare ?? 0 });
+            setCounterAdjustment(0);
+        }
     };
 
     const submitCounterOffer = async () => {
         if (!counterOfferModal) return;
-        // User enters amount in USD (e.g. "2" = $2)
-        const usd = parseFloat(String(counterFare).trim());
-        if (!Number.isFinite(usd) || usd <= 0) {
-            Alert.alert('Invalid fare', `Enter a valid amount in $ (e.g. 2 for $2). Minimum ${formatUsd(50)}.`);
-            return;
-        }
-        const proposedFareInRs = Math.round(usd * RS_PER_USD);
-        if (proposedFareInRs < 50) {
-            Alert.alert('Invalid fare', `Minimum fare is ${formatUsd(50)}. You entered ${formatUsd(proposedFareInRs)}.`);
-            return;
-        }
+        const base = counterOfferModal.offeredFare;
+        const proposedFareInRs = Math.max(50, base + counterAdjustment * 2);
         try {
             await counterOffer({ rideId: counterOfferModal.rideId, proposedFare: proposedFareInRs }).unwrap();
             setCounterOfferModal(null);
-            setCounterFare('');
+            setCounterAdjustment(0);
             setRides(prev => prev.filter(r => r._payload?.id !== counterOfferModal.rideId));
         } catch (e) {
             Alert.alert('Error', (e as any)?.data?.message ?? 'Counter offer failed');
         }
     };
 
-    /** Leg 1: Driver moves to pickup. When reached, show "Reached pickup - Start ride". */
+    /** Leg 1: Show map with directions to pickup. Driver moves in real life; we show live location + route (Bykea-style). */
     const startMovingToPickup = () => {
         if (!acceptedRide) return;
         setStatus('to_pickup');
-        setRidePhase('to_pickup');
-        const path = generateSimulatedPath(driverLocation, acceptedRide.pickup);
-        runPathSimulation(path, () => {
-            setRidePhase(null);
-            setReachedPickup(true);
-        });
+        setReachedPickup(true);
+        // Fit map to show driver + pickup so route is visible
+        setTimeout(() => {
+            mapRef.current?.fitToCoordinates(
+                [driverLocation, acceptedRide.pickup],
+                { edgePadding: { top: 80, right: 60, bottom: 200, left: 60 }, animated: true }
+            );
+        }, 300);
     };
 
-    /** Leg 2: After user is picked up, driver moves to dropoff. When reached, complete ride. */
+    /** Mark that driver has arrived at pickup (Bykea: "Arrived" button). */
+    const markArrived = async () => {
+        if (!activeRide || !acceptedRide) return;
+        try {
+            await updateRideStatus({ rideId: activeRide.id, status: 'driver_arrived' }).unwrap();
+            setActiveRide((prev) => (prev ? { ...prev, status: 'driver_arrived' } : null));
+            setArrivedMarked(true);
+        } catch (e) {
+            Alert.alert('Error', (e as any)?.data?.message ?? 'Failed to mark arrived');
+        }
+    };
+
+    /** Leg 2: Show map with directions to dropoff. Driver drives in real life; vendor taps "Complete ride" when done (Bykea-style). */
     const startRideWithUser = async () => {
         if (!acceptedRide) return;
-        if (activeRide && activeRide.status === 'accepted') {
+        if (activeRide && (activeRide.status === 'accepted' || activeRide.status === 'driver_arrived')) {
             try {
                 await updateRideStatus({ rideId: activeRide.id, status: 'ongoing' }).unwrap();
                 setActiveRide((prev) => (prev ? { ...prev, status: 'ongoing' } : null));
@@ -379,51 +363,25 @@ const RideRequest = () => {
         }
         setReachedPickup(false);
         setStatus('in_progress');
-        setRidePhase('to_dropoff');
-        const path = generateSimulatedPath(acceptedRide.pickup, acceptedRide.dropoff);
-        runPathSimulation(path, () => {
-            setRidePhase(null);
-            const rideId = acceptedRide?._payload?.id ?? activeRide?.id;
-            if (rideId) {
-                updateRideStatus({ rideId: Number(rideId), status: 'completed' }).catch(() => {});
-            }
-            setTimeout(() => {
-                setStatus('completed');
-                setShowSummary(true);
-            }, 500);
-        });
+        setTimeout(() => {
+            mapRef.current?.fitToCoordinates(
+                [driverLocation, acceptedRide.pickup, acceptedRide.dropoff],
+                { edgePadding: { top: 80, right: 60, bottom: 200, left: 60 }, animated: true }
+            );
+        }, 300);
     };
 
-    function runPathSimulation(path: { latitude: number; longitude: number }[], onComplete: () => void) {
-        if (simulationIntervalRef.current) {
-            clearInterval(simulationIntervalRef.current);
-            simulationIntervalRef.current = null;
+    const completeRide = async () => {
+        const rideId = acceptedRide?._payload?.id ?? activeRide?.id;
+        if (!rideId) return;
+        try {
+            await updateRideStatus({ rideId: Number(rideId), status: 'completed' }).unwrap();
+            setStatus('completed');
+            setShowSummary(true);
+        } catch (e) {
+            Alert.alert('Error', (e as any)?.data?.message ?? 'Failed to complete ride');
         }
-        let currentPointIndex = 0;
-        const duration = 2000;
-        simulationIntervalRef.current = setInterval(() => {
-            if (currentPointIndex >= path.length - 1) {
-                if (simulationIntervalRef.current) {
-                    clearInterval(simulationIntervalRef.current);
-                    simulationIntervalRef.current = null;
-                }
-                onComplete();
-                return;
-            }
-            const currentPoint = path[currentPointIndex];
-            const nextPoint = path[currentPointIndex + 1];
-            const bearing = calculateBearing(
-                currentPoint.latitude, currentPoint.longitude,
-                nextPoint.latitude, nextPoint.longitude
-            );
-            setDriverRotation(bearing);
-            if (driverMarkerRef.current) {
-                driverMarkerRef.current.animateMarkerToCoordinate(nextPoint, duration);
-            }
-            setDriverLocation(nextPoint);
-            currentPointIndex++;
-        }, duration);
-    }
+    };
 
     const renderRideItem = ({ item }: { item: any }) => (
         <View style={styles.rideCard}>
@@ -519,11 +477,43 @@ const RideRequest = () => {
                     <>
                         <Marker coordinate={acceptedRide.pickup} pinColor="green" title="Pickup" />
                         <Marker coordinate={acceptedRide.dropoff} pinColor="red" title="Dropoff" />
-                        <Polyline
-                            coordinates={[driverLocation, acceptedRide.pickup, acceptedRide.dropoff]}
-                            strokeColor={colors.c_0162C0}
-                            strokeWidth={3}
-                        />
+                        {status === 'to_pickup' && (
+                            <MapViewDirections
+                                origin={driverLocation}
+                                destination={acceptedRide.pickup}
+                                apikey={GOOGLE_MAPS_API_KEY}
+                                strokeColor={colors.c_0162C0}
+                                strokeWidth={4}
+                                onReady={(result) => {
+                                    mapRef.current?.fitToCoordinates(result.coordinates, {
+                                        edgePadding: { top: 80, right: 60, bottom: 200, left: 60 },
+                                        animated: true,
+                                    });
+                                }}
+                            />
+                        )}
+                        {status === 'in_progress' && (
+                            <MapViewDirections
+                                origin={driverLocation}
+                                destination={acceptedRide.dropoff}
+                                apikey={GOOGLE_MAPS_API_KEY}
+                                strokeColor={colors.c_0162C0}
+                                strokeWidth={4}
+                                onReady={(result) => {
+                                    mapRef.current?.fitToCoordinates(result.coordinates, {
+                                        edgePadding: { top: 80, right: 60, bottom: 200, left: 60 },
+                                        animated: true,
+                                    });
+                                }}
+                            />
+                        )}
+                        {status === 'accepted' && (
+                            <Polyline
+                                coordinates={[driverLocation, acceptedRide.pickup, acceptedRide.dropoff]}
+                                strokeColor={colors.c_0162C0}
+                                strokeWidth={2}
+                            />
+                        )}
                     </>
                 )}
             </MapView>
@@ -572,10 +562,21 @@ const RideRequest = () => {
                 </View>
             )}
 
-            {status === 'accepted' && reachedPickup && (
+            {status === 'to_pickup' && !arrivedMarked && (
                 <View style={styles.statusPanel}>
-                    <Text style={[styles.statusText, { fontSize: 12, marginBottom: 4 }]}>Reached pickup</Text>
-                    <Text style={styles.statusText}>User picked up. Start ride to dropoff.</Text>
+                    <Text style={[styles.statusText, { fontSize: 12, marginBottom: 4 }]}>Heading to pickup</Text>
+                    <Text style={styles.statusText}>Follow the route. Tap when you have arrived at pickup.</Text>
+                    <TouchableOpacity style={styles.startButton} onPress={markArrived} disabled={updatingStatus}>
+                        <Text style={styles.startButtonText}>{updatingStatus ? '...' : 'Arrived'}</Text>
+                        <Navigation color={colors.white} size={20} />
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {(status === 'to_pickup' || status === 'accepted') && arrivedMarked && (
+                <View style={styles.statusPanel}>
+                    <Text style={[styles.statusText, { fontSize: 12, marginBottom: 4 }]}>User can get in</Text>
+                    <Text style={styles.statusText}>Start ride to dropoff.</Text>
                     <TouchableOpacity style={styles.startButton} onPress={startRideWithUser} disabled={updatingStatus}>
                         <Text style={styles.startButtonText}>{updatingStatus ? 'Starting...' : 'Start ride'}</Text>
                         <Navigation color={colors.white} size={20} />
@@ -583,34 +584,47 @@ const RideRequest = () => {
                 </View>
             )}
 
-            {(status === 'to_pickup' || ridePhase === 'to_pickup') && (
-                <View style={styles.statusPanel}>
-                    <Text style={styles.statusText}>Heading to pickup...</Text>
-                </View>
-            )}
-
             {status === 'in_progress' && (
                 <View style={styles.statusPanel}>
-                    <Text style={styles.statusText}>Ride in progress – going to dropoff</Text>
+                    <Text style={[styles.statusText, { fontSize: 12, marginBottom: 4 }]}>Ride in progress</Text>
+                    <Text style={styles.statusText}>Follow the route to dropoff. Tap when you have completed the ride.</Text>
+                    <TouchableOpacity style={styles.startButton} onPress={completeRide} disabled={updatingStatus}>
+                        <Text style={styles.startButtonText}>{updatingStatus ? '...' : 'Complete ride'}</Text>
+                        <CheckCircle color={colors.white} size={20} />
+                    </TouchableOpacity>
                 </View>
             )}
-            {/* Counter Offer Modal */}
+            {/* Counter Offer Modal – Bykea style: +/-2 buttons */}
             <Modal visible={!!counterOfferModal} transparent animationType="fade">
                 <View style={styles.modalOverlay}>
                     <View style={styles.counterModalContent}>
                         <Text style={styles.counterModalTitle}>Counter offer ($)</Text>
-                        <TextInput
-                            style={styles.counterModalInput}
-                            placeholder={counterOfferModal ? `Min ${formatUsd(50)}, user offered ${formatUsd(counterOfferModal.offeredFare)}` : formatUsd(50)}
-                            placeholderTextColor={colors.c_999999}
-                            keyboardType="decimal-pad"
-                            value={counterFare}
-                            onChangeText={setCounterFare}
-                        />
+                        <Text style={[styles.counterModalTitle, { fontSize: 14, marginTop: 4 }]}>
+                            User offered {counterOfferModal ? formatUsd(counterOfferModal.offeredFare) : '—'}. Min {formatUsd(50)}.
+                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 16 }}>
+                            <TouchableOpacity
+                                style={styles.counterPlusMinusBtn}
+                                onPress={() => setCounterAdjustment((a) => a - 1)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.counterPlusMinusText}>−2</Text>
+                            </TouchableOpacity>
+                            <Text style={[styles.counterModalTitle, { marginHorizontal: 20, minWidth: 80, textAlign: 'center' }]}>
+                                {counterOfferModal ? formatUsd(Math.max(50, counterOfferModal.offeredFare + counterAdjustment * 2)) : '—'}
+                            </Text>
+                            <TouchableOpacity
+                                style={styles.counterPlusMinusBtn}
+                                onPress={() => setCounterAdjustment((a) => a + 1)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.counterPlusMinusText}>+2</Text>
+                            </TouchableOpacity>
+                        </View>
                         <View style={styles.counterModalActions}>
                             <TouchableOpacity
                                 style={styles.counterModalCancel}
-                                onPress={() => { setCounterOfferModal(null); setCounterFare(''); }}
+                                onPress={() => { setCounterOfferModal(null); setCounterAdjustment(0); }}
                                 activeOpacity={0.8}
                             >
                                 <Text style={styles.counterModalCancelText}>Cancel</Text>
@@ -826,6 +840,19 @@ const styles = StyleSheet.create({
         padding: 14,
         fontSize: 16,
         marginBottom: 16,
+    },
+    counterPlusMinusBtn: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.c_0162C0,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    counterPlusMinusText: {
+        fontSize: 18,
+        fontFamily: fonts.bold,
+        color: colors.white,
     },
     counterModalActions: {
         flexDirection: 'row',

@@ -82,7 +82,7 @@ export const rideService = baseApi.injectEndpoints({
       }),
       transformResponse: parseRideResponse,
     }),
-    updateRideStatus: builder.mutation<RidePayload, { rideId: number; status: 'ongoing' | 'completed' }>({
+    updateRideStatus: builder.mutation<RidePayload, { rideId: number; status: 'driver_arrived' | 'ongoing' | 'completed' }>({
       query: ({ rideId, status }) => ({
         url: `/ride/${rideId}/status`,
         method: 'PATCH',
