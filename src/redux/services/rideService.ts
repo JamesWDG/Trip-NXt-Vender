@@ -74,6 +74,17 @@ export const rideService = baseApi.injectEndpoints({
         return inner ?? body;
       },
     }),
+    declineRide: builder.mutation<{ declined: boolean }, number>({
+      query: (rideId) => ({
+        url: `/ride/${rideId}/decline`,
+        method: 'POST',
+      }),
+      transformResponse: (raw: any) => {
+        const body = raw?.data ?? raw;
+        const inner = body?.data ?? body;
+        return (inner && typeof inner === 'object' && 'declined' in inner) ? inner : { declined: true };
+      },
+    }),
     cancelRide: builder.mutation<RidePayload, { rideId: number; asVendor?: boolean }>({
       query: ({ rideId, asVendor }) => ({
         url: `/ride/${rideId}/cancel`,
@@ -99,6 +110,7 @@ export const {
   useLazyGetRideByIdQuery,
   useAcceptRideMutation,
   useCounterOfferMutation,
+  useDeclineRideMutation,
   useCancelRideMutation,
   useUpdateRideStatusMutation,
 } = rideService;

@@ -25,8 +25,11 @@ import {
   useLazyGetAvailableRidesQuery,
   useAcceptRideMutation,
   useCounterOfferMutation,
+  useDeclineRideMutation,
   useUpdateRideStatusMutation,
+  useCancelRideMutation,
 } from '../../../redux/services/rideService';
+import { useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
 import type { RidePayload } from '../../../redux/services/rideService';
 import { formatUsd, RS_PER_USD } from '../../../utils/currency';
 
@@ -127,13 +130,17 @@ const RideRequest = () => {
     const rideIdFromParams = route.params?.rideId;
     const mapRef = useRef<MapView>(null);
     const driverMarkerRef = useRef<any>(null);
+    const lastSentLocationRef = useRef<{ lat: number; lng: number; time: number } | null>(null);
 
     const [getRideById, { data: singleRide, isLoading: loadingSingle }] = useLazyGetRideByIdQuery();
     const [getVendorActiveRide, { data: activeRideData }] = useLazyGetVendorActiveRideQuery();
     const [getAvailableRides, { data: availableRides, isLoading: loadingAvailable }] = useLazyGetAvailableRidesQuery();
     const [acceptRide, { isLoading: accepting }] = useAcceptRideMutation();
     const [counterOffer, { isLoading: countering }] = useCounterOfferMutation();
+    const [declineRide, { isLoading: declining }] = useDeclineRideMutation();
     const [updateRideStatus, { isLoading: updatingStatus }] = useUpdateRideStatusMutation();
+    const [cancelRide, { isLoading: cancellingRide }] = useCancelRideMutation();
+    const [setCabVendorStatus] = useSetCabVendorStatusMutation();
 
     const [rides, setRides] = useState<any[]>([]);
     const [acceptedRide, setAcceptedRide] = useState<any>(null);
@@ -248,21 +255,44 @@ const RideRequest = () => {
         }
     }, [availableRides, rideIdFromParams, activeRide?.id]);
 
-    // Live driver location when going to pickup or to dropoff (Bykea-style: real map, no animation)
+    // Live driver location when ride is active – update map and send to backend so user sees driver move in real time
     useEffect(() => {
-        if (status !== 'to_pickup' && status !== 'in_progress') return;
+        if (status !== 'accepted' && status !== 'to_pickup' && status !== 'in_progress') return;
+        const cabId = activeRide?.vendorId ?? activeRide?.vendor?.id;
+        if (!cabId) return;
+
+        const MIN_SEND_METERS = 15;
+        const MIN_SEND_INTERVAL_MS = 8000;
+        const haversineM = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+            const R = 6371000;
+            const dLat = (b.lat - a.lat) * Math.PI / 180;
+            const dLng = (b.lng - a.lng) * Math.PI / 180;
+            const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+            return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+        };
+
         const Geolocation = require('react-native-geolocation-service')?.default ?? require('react-native-geolocation-service');
         const watchId = Geolocation.watchPosition(
             (pos: any) => {
                 const lat = pos.coords.latitude;
                 const lng = pos.coords.longitude;
                 setDriverLocation({ latitude: lat, longitude: lng });
+
+                const now = Date.now();
+                const last = lastSentLocationRef.current;
+                const shouldSend = !last
+                    || haversineM(last, { lat, lng }) >= MIN_SEND_METERS
+                    || now - last.time >= MIN_SEND_INTERVAL_MS;
+                if (shouldSend) {
+                    lastSentLocationRef.current = { lat, lng, time: now };
+                    setCabVendorStatus({ cabId, status: 'online', latitude: lat, longitude: lng }).catch(() => {});
+                }
             },
             () => {},
             { enableHighAccuracy: true, distanceFilter: 10 }
         );
         return () => { Geolocation.clearWatch(watchId); };
-    }, [status]);
+    }, [status, activeRide?.vendorId, activeRide?.vendor?.id, setCabVendorStatus]);
 
     const handleAcceptRide = async (ride: any) => {
         const payload = ride._payload as RidePayload | undefined;
@@ -286,8 +316,18 @@ const RideRequest = () => {
         }
     };
 
-    const handleDeclineRide = (id: string) => {
-        setRides(prev => prev.filter(r => r.id !== id));
+    const handleDeclineRide = async (item: any) => {
+        const rideId = item._payload?.id ?? parseInt(String(item.id), 10);
+        if (!rideId || Number.isNaN(rideId)) {
+            setRides(prev => prev.filter(r => r.id !== item.id));
+            return;
+        }
+        try {
+            await declineRide(rideId).unwrap();
+            setRides(prev => prev.filter(r => Number(r._payload?.id ?? r.id) !== Number(rideId)));
+        } catch (_) {
+            // Keep in list on error so user can retry; next fetch won't show it if backend stored the decline
+        }
     };
 
     const centerOnMyLocation = () => {
@@ -383,6 +423,34 @@ const RideRequest = () => {
         }
     };
 
+    const handleCancelRideAsVendor = () => {
+        const rideId = activeRide?.id ?? acceptedRide?._payload?.id;
+        if (!rideId) return;
+        Alert.alert(
+            'Cancel ride',
+            'Are you sure you want to cancel this ride?',
+            [
+                { text: 'No', style: 'cancel' },
+                {
+                    text: 'Yes, cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await cancelRide({ rideId: Number(rideId), asVendor: true }).unwrap();
+                            setActiveRide(null);
+                            setAcceptedRide(null);
+                            setStatus('searching');
+                            setReachedPickup(false);
+                            setArrivedMarked(false);
+                        } catch (e) {
+                            Alert.alert('Error', (e as any)?.data?.message ?? 'Failed to cancel ride');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     const renderRideItem = ({ item }: { item: any }) => (
         <View style={styles.rideCard}>
             <View style={styles.rideHeader}>
@@ -413,9 +481,10 @@ const RideRequest = () => {
             <View style={styles.actionButtons}>
                 <TouchableOpacity
                     style={[styles.button, styles.declineButton]}
-                    onPress={() => handleDeclineRide(item.id)}
+                    onPress={() => handleDeclineRide(item)}
+                    disabled={declining}
                 >
-                    <Text style={styles.declineText}>Decline</Text>
+                    <Text style={styles.declineText}>{declining ? '...' : 'Decline'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.button, styles.counterButton]}
@@ -559,6 +628,9 @@ const RideRequest = () => {
                         <Text style={styles.startButtonText}>Start moving to pickup</Text>
                         <Navigation color={colors.white} size={20} />
                     </TouchableOpacity>
+                    <TouchableOpacity style={styles.cancelRideButton} onPress={handleCancelRideAsVendor} disabled={cancellingRide}>
+                        <Text style={styles.cancelRideText}>{cancellingRide ? 'Cancelling...' : 'Cancel ride'}</Text>
+                    </TouchableOpacity>
                 </View>
             )}
 
@@ -569,6 +641,9 @@ const RideRequest = () => {
                     <TouchableOpacity style={styles.startButton} onPress={markArrived} disabled={updatingStatus}>
                         <Text style={styles.startButtonText}>{updatingStatus ? '...' : 'Arrived'}</Text>
                         <Navigation color={colors.white} size={20} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.cancelRideButton} onPress={handleCancelRideAsVendor} disabled={cancellingRide}>
+                        <Text style={styles.cancelRideText}>{cancellingRide ? 'Cancelling...' : 'Cancel ride'}</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -581,6 +656,9 @@ const RideRequest = () => {
                         <Text style={styles.startButtonText}>{updatingStatus ? 'Starting...' : 'Start ride'}</Text>
                         <Navigation color={colors.white} size={20} />
                     </TouchableOpacity>
+                    <TouchableOpacity style={styles.cancelRideButton} onPress={handleCancelRideAsVendor} disabled={cancellingRide}>
+                        <Text style={styles.cancelRideText}>{cancellingRide ? 'Cancelling...' : 'Cancel ride'}</Text>
+                    </TouchableOpacity>
                 </View>
             )}
 
@@ -591,6 +669,9 @@ const RideRequest = () => {
                     <TouchableOpacity style={styles.startButton} onPress={completeRide} disabled={updatingStatus}>
                         <Text style={styles.startButtonText}>{updatingStatus ? '...' : 'Complete ride'}</Text>
                         <CheckCircle color={colors.white} size={20} />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.cancelRideButton} onPress={handleCancelRideAsVendor} disabled={cancellingRide}>
+                        <Text style={styles.cancelRideText}>{cancellingRide ? 'Cancelling...' : 'Cancel ride'}</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -920,6 +1001,16 @@ const styles = StyleSheet.create({
         color: colors.white,
         fontFamily: fonts.bold,
         fontSize: 16,
+    },
+    cancelRideButton: {
+        marginTop: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+    },
+    cancelRideText: {
+        color: colors.red,
+        fontFamily: fonts.medium,
+        fontSize: 14,
     },
     // Modal Styles
     modalOverlay: {
