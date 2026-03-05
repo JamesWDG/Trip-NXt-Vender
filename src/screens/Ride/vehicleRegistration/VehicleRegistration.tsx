@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
-import React, { useState, useRef, useMemo } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
@@ -15,8 +15,13 @@ import { updateRegistrationData } from '../../../redux/slices/registrationSlice'
 import BottomSheetComp, { BottomSheetComponentRef } from '../../../components/bottomSheetComp/BottomSheetComp';
 import { Check } from 'lucide-react-native';
 
+type VehicleRegistrationRouteParams = {
+  cabVendor?: any;
+};
+
 const VehicleRegistration = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const route = useRoute<RouteProp<{ params: VehicleRegistrationRouteParams }, 'params'>>();
   const dispatch = useAppDispatch();
   const registrationData = useAppSelector(state => state.registration);
 
@@ -28,6 +33,30 @@ const VehicleRegistration = () => {
     color: registrationData.vehicleColor,
     vehiclePhoto: registrationData.vehicleImage || null,
   });
+
+  // Prefill when editing existing vehicle (coming from MyVehicle)
+  useEffect(() => {
+    const cabVendor = route.params?.cabVendor;
+    if (!cabVendor) return;
+    const next = {
+      vehicleType: cabVendor.vehicleType || formData.vehicleType,
+      vehicleModel: cabVendor.vehicleModal || formData.vehicleModel,
+      vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : formData.vehicleYear,
+      vehiclePlate: cabVendor.vehicleNumber || formData.vehiclePlate,
+      color: cabVendor.vehicleColor || formData.color,
+      vehiclePhoto: cabVendor.vehicleImage || formData.vehiclePhoto,
+    };
+    setFormData(prev => ({ ...prev, ...next }));
+    dispatch(updateRegistrationData({
+      vehicleType: next.vehicleType,
+      vehicleModal: next.vehicleModel,
+      vehicleYear: next.vehicleYear,
+      vehicleNumber: next.vehiclePlate,
+      vehicleColor: next.color,
+      vehicleImage: next.vehiclePhoto,
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.cabVendor]);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const vehicleTypeSheetRef = useRef<BottomSheetComponentRef>(null);
@@ -89,7 +118,12 @@ const VehicleRegistration = () => {
       vehicleImage: formData.vehiclePhoto,
     }));
 
-    navigation.navigate('VehicleDocuments');
+    const cabVendor = route.params?.cabVendor;
+    if (cabVendor) {
+      navigation.navigate('VehicleDocuments', { cabVendor });
+    } else {
+      navigation.navigate('VehicleDocuments');
+    }
   };
 
   return (

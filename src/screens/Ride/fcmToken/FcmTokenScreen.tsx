@@ -54,6 +54,7 @@ const FcmTokenScreen = () => {
     if (!token) return;
     try {
       await registerFcmToken({ fcmToken: token }).unwrap();
+      console.log('[FCM Vendor] FCM token saved from FcmToken screen.');
       const shareResult = await Share.share({
         message: token,
         title: 'FCM Token',

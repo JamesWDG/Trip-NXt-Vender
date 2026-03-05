@@ -10,6 +10,7 @@ import {
   onNotificationOpenedApp,
   getInitialNotification,
 } from '../services/notificationSetup';
+import { navigationRef } from '../config/constants';
 
 let backgroundHandlerSet = false;
 
@@ -37,20 +38,48 @@ export function NotificationSetup() {
       if (!fcmToken || cancelled || fcmToken === lastRegisteredToken.current) return;
       console.log('[FCM Vendor] Registering token with backend');
       const ok = await registerTokenWithBackend(fcmToken);
-      if (ok) lastRegisteredToken.current = fcmToken;
+      if (ok) {
+        lastRegisteredToken.current = fcmToken;
+        console.log('[FCM Vendor] FCM token registered and saved.');
+      }
     })();
     return () => { cancelled = true; };
   }, [token]);
 
+  const navigateToRideRequest = (rideId: string | number) => {
+    const id = typeof rideId === 'string' ? parseInt(rideId, 10) : rideId;
+    if (Number.isNaN(id)) return;
+    if (navigationRef.isReady()) {
+      (navigationRef as any).navigate('app', {
+        screen: 'CabStack',
+        params: { screen: 'RideRequest', params: { rideId: id } },
+      });
+    }
+  };
+
   useEffect(() => {
     const unsubForeground = onForegroundMessage((remoteMessage) => {
       console.log('Foreground notification:', remoteMessage?.notification?.title, remoteMessage?.data);
+      const data = remoteMessage?.data;
+      if (data?.type === 'ride_request' && (data?.rideId != null)) {
+        navigateToRideRequest(data.rideId);
+      }
     });
     const unsubOpened = onNotificationOpenedApp((remoteMessage) => {
       console.log('Notification opened app:', remoteMessage?.data);
+      const data = remoteMessage?.data;
+      if (data?.type === 'ride_request' && (data?.rideId != null)) {
+        navigateToRideRequest(data.rideId);
+      }
     });
     getInitialNotification().then((msg) => {
-      if (msg) console.log('App opened from notification:', msg?.data);
+      if (msg) {
+        console.log('App opened from notification:', msg?.data);
+        const data = msg?.data;
+        if (data?.type === 'ride_request' && (data?.rideId != null)) {
+          navigateToRideRequest(data.rideId);
+        }
+      }
     });
     return () => {
       unsubForeground();

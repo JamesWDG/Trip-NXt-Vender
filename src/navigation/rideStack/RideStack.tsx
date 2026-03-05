@@ -17,6 +17,7 @@ import UpcomingRides from '../../screens/Ride/upcomingRides/UpcomingRides';
 import RideBookingLogs from '../../screens/Ride/rideBookingLogs/RideBookingLogs';
 import Documents from '../../screens/Ride/documents/Documents';
 import MyVehicle from '../../screens/Ride/myVehicle/MyVehicle';
+import EditVehicle from '../../screens/Ride/editVehicle/EditVehicle';
 import TotalEarnings from '../../screens/Ride/totalEarnings/TotalEarnings';
 import CancelBooking from '../../screens/Ride/cancelBooking/CancelBooking';
 import RideRequest from '../../screens/Ride/rideRequest/RideRequest';
@@ -61,6 +62,7 @@ const RideStack: FC = () => {
       <Stack.Screen name="TotalEarnings" component={TotalEarnings} />
 
       {/* Vehicle Management */}
+      <Stack.Screen name="EditVehicle" component={EditVehicle} />
       <Stack.Screen name="RideRequest" component={RideRequest} />
       <Stack.Screen name="FcmToken" component={FcmTokenScreen} />
     </Stack.Navigator>

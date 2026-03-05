@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
   PermissionsAndroid,
+  TextInput,
+  Modal,
 } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '@react-navigation/native';
@@ -20,8 +22,10 @@ import fonts from '../../../config/fonts';
 import { width, height, ShowToast } from '../../../config/constants';
 import { Plus } from 'lucide-react-native';
 import DrawerModalCab from '../../../components/drawers/DrawerModalCab';
-import { useAppSelector } from '../../../redux/store';
-import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation } from '../../../redux/services/cabService';
+import { useAppSelector, useAppDispatch } from '../../../redux/store';
+import { updateRegistrationData } from '../../../redux/slices/registrationSlice';
+import { useGetCabVendorByUserIdQuery, useSetCabVendorStatusMutation, useUpdateCabVendorMutation } from '../../../redux/services/cabService';
+import { useLazyGetAvailableRidesQuery } from '../../../redux/services/rideService';
 import { BASE_URL } from '../../../contants/api';
 
 const ASSETS_BASE = BASE_URL.replace(/\/api\/v\d+$/, ''); // e.g. https://api.trip-nxt.com or http://192.168.1.171:5003
@@ -98,6 +102,21 @@ const getCurrentLocationHelper = async (): Promise<{ latitude: number; longitude
   });
 };
 
+/** Approx distance in km between two geo points (Haversine). */
+const distanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 // Sample data - replace with actual data from API/state
 const sampleVehicles: Array<{
   id: string;
@@ -118,13 +137,22 @@ const sampleVehicles: Array<{
 
 const MyVehicle = () => {
   const navigation = useNavigation<NavigationPropType>();
+  const dispatch = useAppDispatch();
   const user = useAppSelector(state => state.auth.user);
 
-  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(Number(user?.id) || 0, {
-    skip: !user?.id
-  });
+  const { data: response, isLoading, refetch } = useGetCabVendorByUserIdQuery(
+    Number(user?.id) || 0,
+    {
+      skip: !user?.id,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    }
+  );
   const [setCabVendorStatus, { isLoading: isUpdatingStatus }] = useSetCabVendorStatusMutation();
+  const [updateCabVendor, { isLoading: isUpdatingCab }] = useUpdateCabVendorMutation();
   const [isOnline, setIsOnline] = useState(false);
+  const [getAvailableRides, { data: availableRides, isLoading: loadingAvailableRides }] = useLazyGetAvailableRidesQuery();
+  const [nearbyRideCount, setNearbyRideCount] = useState(0);
 
   const cabVendor = response?.data;
   const vehicles = cabVendor ? [{
@@ -136,6 +164,24 @@ const MyVehicle = () => {
   }] : [];
 
   const [showMenu, setShowMenu] = useState(false);
+  const [isEditingVehicle, setIsEditingVehicle] = useState(false);
+  const [editForm, setEditForm] = useState({
+    vehicleModal: cabVendor?.vehicleModal || '',
+    vehicleYear: cabVendor?.vehicleYear ? String(cabVendor.vehicleYear) : '',
+    vehicleColor: cabVendor?.vehicleColor || '',
+    vehicleNumber: cabVendor?.vehicleNumber || '',
+  });
+
+  useEffect(() => {
+    if (cabVendor) {
+      setEditForm({
+        vehicleModal: cabVendor.vehicleModal || '',
+        vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+        vehicleColor: cabVendor.vehicleColor || '',
+        vehicleNumber: cabVendor.vehicleNumber || '',
+      });
+    }
+  }, [cabVendor?.vehicleModal, cabVendor?.vehicleYear, cabVendor?.vehicleColor, cabVendor?.vehicleNumber]);
 
   const onPressAddVehicle = () => {
     navigation.navigate('DriverRegistration');
@@ -143,6 +189,96 @@ const MyVehicle = () => {
 
   const onPressFindARide = () => {
     navigation.navigate('RideRequest');
+  };
+
+  const prefillRegistrationFromCab = () => {
+    if (!cabVendor) return;
+    dispatch(updateRegistrationData({
+      cabVendorId: cabVendor.id,
+      // Driver
+      fullName: cabVendor.user?.name ?? '',
+      dob: cabVendor.dob ?? '',
+      phoneNumber: cabVendor.user?.phoneNumber ?? '',
+      email: cabVendor.user?.email ?? '',
+      address: cabVendor.location?.street ?? '',
+      passportPhoto: cabVendor.passportPhoto ?? null,
+      // Driver docs
+      driverLicenseFront: cabVendor.driverLicenseFront ?? null,
+      driverLicenseBack: cabVendor.driverLicenseBack ?? null,
+      // Vehicle docs
+      vehicleInsuranceFront: cabVendor.vehicleInsuranceFront ?? null,
+      vehicleInsuranceBack: cabVendor.vehicleInsuranceBack ?? null,
+      // Vehicle
+      vehicleType: cabVendor.vehicleType ?? '',
+      vehicleModal: cabVendor.vehicleModal ?? '',
+      vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+      vehicleNumber: cabVendor.vehicleNumber ?? '',
+      vehicleColor: cabVendor.vehicleColor ?? '',
+      vehicleImage: cabVendor.vehicleImage ?? null,
+    }));
+  };
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const ridesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastStatusLocationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+
+  const fetchCurrentLocation = () => {
+    setLocationLoading(true);
+    getCurrentLocationHelper()
+      .then((coords) => {
+        setCurrentLocation(coords);
+      })
+      .catch(() => {
+        setCurrentLocation(null);
+      })
+      .finally(() => setLocationLoading(false));
+  };
+
+  useEffect(() => {
+    if (cabVendor?.id) fetchCurrentLocation();
+  }, [cabVendor?.id]);
+
+  // When online, poll backend for nearby available rides using current location
+  useEffect(() => {
+    if (!isOnline || !currentLocation) {
+      if (ridesPollRef.current) {
+        clearInterval(ridesPollRef.current);
+        ridesPollRef.current = null;
+      }
+      setNearbyRideCount(0);
+      return;
+    }
+
+    const fetchRides = () => {
+      getAvailableRides({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+      });
+    };
+
+    fetchRides();
+    ridesPollRef.current = setInterval(fetchRides, 12 * 1000);
+
+    return () => {
+      if (ridesPollRef.current) {
+        clearInterval(ridesPollRef.current);
+        ridesPollRef.current = null;
+      }
+    };
+  }, [isOnline, currentLocation?.latitude, currentLocation?.longitude, getAvailableRides]);
+
+  // Keep a simple count from the available rides list
+  useEffect(() => {
+    if (Array.isArray(availableRides)) {
+      setNearbyRideCount(availableRides.length);
+    }
+  }, [availableRides]);
+
+  const openPreview = (uri: string | null | undefined) => {
+    const resolved = resolveImageUri(uri);
+    if (resolved) setPreviewImage(resolved);
   };
 
   const onPressMarkAsOnline = async () => {
@@ -153,8 +289,8 @@ const MyVehicle = () => {
     try {
       
       const { latitude, longitude } = await getCurrentLocationHelper();
-      console.log("latitude", latitude);
-      console.log("longitude", longitude);
+      setCurrentLocation({ latitude, longitude });
+      lastStatusLocationRef.current = { latitude, longitude };
       await setCabVendorStatus({
         cabId: cabVendor.id,
         status: 'online',
@@ -181,6 +317,7 @@ const MyVehicle = () => {
       } catch {
         // use 0,0 if location unavailable
       }
+
       await setCabVendorStatus({
         cabId: cabVendor.id,
         status: 'offline',
@@ -188,6 +325,7 @@ const MyVehicle = () => {
         longitude,
       }).unwrap();
       setIsOnline(false);
+      lastStatusLocationRef.current = null;
       ShowToast('success', 'You are now offline');
     } catch (e: any) {
       ShowToast('error', e?.data?.message || e?.message || 'Failed to go offline');
@@ -195,7 +333,8 @@ const MyVehicle = () => {
   };
 
   // Continuous location tracking when online so backend can track cab vendor
-  const LOCATION_UPDATE_INTERVAL_MS = 12 * 1000;
+  const LOCATION_UPDATE_INTERVAL_MS = 20 * 1000;
+  const MIN_MOVE_KM_FOR_UPDATE = 0.05; // ~50 meters
   const locationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -209,12 +348,23 @@ const MyVehicle = () => {
     const updateLocation = () => {
       getCurrentLocationHelper()
         .then(({ latitude, longitude }) => {
+          const prev = lastStatusLocationRef.current;
+          const movedKm = prev
+            ? distanceKm(prev.latitude, prev.longitude, latitude, longitude)
+            : Number.POSITIVE_INFINITY;
+          if (movedKm < MIN_MOVE_KM_FOR_UPDATE) {
+            return;
+          }
+          lastStatusLocationRef.current = { latitude, longitude };
+          setCurrentLocation({ latitude, longitude });
           setCabVendorStatus({
             cabId: cabVendor.id,
             status: 'online',
             latitude,
             longitude,
-          }).unwrap().catch(() => {});
+          })
+            .unwrap()
+            .catch(() => {});
         })
         .catch(() => {});
     };
@@ -233,6 +383,8 @@ const MyVehicle = () => {
       <Text style={styles.infoValue}>{value || 'N/A'}</Text>
     </View>
   );
+
+  console.log(cabVendor ,vehicles, "cabVendorcabVendorcabVendor")
 
   return (
     <WrapperContainer
@@ -257,17 +409,12 @@ const MyVehicle = () => {
                   here
                 </Text>
               </View>
-              {/* Illustration */}
-              <View style={styles.illustrationContainer}>
-                <Image
-                  source={images.empty_car}
-                  style={styles.illustration}
-                  resizeMode="contain"
-                />
-              </View>
+          
             </>
           );
         }}
+
+        
         renderItem={({ item }) => (
           <View>
             <VehicleCard
@@ -275,6 +422,7 @@ const MyVehicle = () => {
               vehicleName={item.vehicleName}
               licensePlate={item.licensePlate}
               description={item.description}
+              onPress={() => openPreview(cabVendor?.vehicleImage)}
             />
 
             {/* Detailed Info Section */}
@@ -289,17 +437,133 @@ const MyVehicle = () => {
               <View style={styles.divider} />
 
               <Text style={styles.detailsTitle}>Vehicle Specifications</Text>
-              <InfoRow label="Type" value={cabVendor?.vehicleType} />
-              <InfoRow label="Model" value={cabVendor?.vehicleModal} />
-              <InfoRow label="Year" value={cabVendor?.vehicleYear} />
-              <InfoRow label="Color" value={cabVendor?.vehicleColor} />
-              <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+              {isEditingVehicle ? (
+                <>
+                  <InfoRow label="Type" value={cabVendor?.vehicleType} />
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Model:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleModal}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleModal: text })}
+                      placeholder="Vehicle model"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Year:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleYear}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleYear: text })}
+                      keyboardType="numeric"
+                      placeholder="Year"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Color:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleColor}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleColor: text })}
+                      placeholder="Color"
+                    />
+                  </View>
+                  <View style={styles.editRow}>
+                    <Text style={styles.infoLabel}>Plate Number:</Text>
+                    <TextInput
+                      style={styles.editInput}
+                      value={editForm.vehicleNumber}
+                      onChangeText={(text) => setEditForm({ ...editForm, vehicleNumber: text })}
+                      placeholder="Plate number"
+                    />
+                  </View>
+                  <View style={styles.editActionsRow}>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.editCancelButton]}
+                      onPress={() => {
+                        setIsEditingVehicle(false);
+                        if (cabVendor) {
+                          setEditForm({
+                            vehicleModal: cabVendor.vehicleModal || '',
+                            vehicleYear: cabVendor.vehicleYear ? String(cabVendor.vehicleYear) : '',
+                            vehicleColor: cabVendor.vehicleColor || '',
+                            vehicleNumber: cabVendor.vehicleNumber || '',
+                          });
+                        }
+                      }}
+                    >
+                      <Text style={styles.editCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.editButton, styles.editSaveButton]}
+                      disabled={isUpdatingCab}
+                      onPress={async () => {
+                        if (!cabVendor?.id) return;
+                        const yearNum = parseInt(editForm.vehicleYear, 10);
+                        const formData = new FormData();
+                        formData.append('vehicleModal', editForm.vehicleModal);
+                        formData.append('vehicleYear', !Number.isNaN(yearNum) ? String(yearNum) : '');
+                        formData.append('vehicleColor', editForm.vehicleColor);
+                        formData.append('vehicleNumber', editForm.vehicleNumber);
+                        try {
+                          await updateCabVendor({ id: cabVendor.id, formData } as any).unwrap();
+                          ShowToast('success', 'Vehicle details updated');
+                          setIsEditingVehicle(false);
+                          refetch();
+                        } catch (e: any) {
+                          ShowToast('error', e?.data?.message || e?.message || 'Failed to update vehicle');
+                        }
+                      }}
+                    >
+                      {isUpdatingCab ? (
+                        <ActivityIndicator color={colors.white} size="small" />
+                      ) : (
+                        <Text style={styles.editSaveText}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </>
+              ) : (
+                <>
+                  <InfoRow label="Type" value={cabVendor?.vehicleType} />
+                  <InfoRow label="Model" value={cabVendor?.vehicleModal} />
+                  <InfoRow label="Year" value={cabVendor?.vehicleYear} />
+                  <InfoRow label="Color" value={cabVendor?.vehicleColor} />
+                  <InfoRow label="Plate Number" value={cabVendor?.vehicleNumber} />
+               
+                </>
+              )} 
 
               <View style={styles.divider} />
 
               <Text style={styles.detailsTitle}>Location Info</Text>
               <InfoRow label="City" value={cabVendor?.location?.city} />
               <InfoRow label="Street" value={cabVendor?.location?.street} />
+              <View style={styles.exactLocationRow}>
+                <Text style={styles.infoLabel}>Exact location</Text>
+                <View style={styles.exactLocationValue}>
+                  {locationLoading ? (
+                    <ActivityIndicator size="small" color={colors.c_0162C0} />
+                  ) : currentLocation ? (
+                    <Text style={styles.infoValue}>
+                      {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+                    </Text>
+                  ) : (
+                    <Text style={styles.infoValue}>—</Text>
+                  )}
+                </View>
+              </View>
+              <TouchableOpacity
+                style={styles.refreshLocationButton}
+                onPress={fetchCurrentLocation}
+                disabled={locationLoading}
+              >
+                {locationLoading ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.refreshLocationText}>Refresh my location</Text>
+                )}
+              </TouchableOpacity>
 
               <View style={styles.divider} />
 
@@ -308,7 +572,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Passport</Text>
                   {cabVendor?.passportPhoto ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.passportPhoto)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.passportPhoto) ?? cabVendor.passportPhoto }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -316,7 +585,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Front</Text>
                   {cabVendor?.driverLicenseFront ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.driverLicenseFront)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.driverLicenseFront) ?? cabVendor.driverLicenseFront }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -324,7 +598,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>License Back</Text>
                   {cabVendor?.driverLicenseBack ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.driverLicenseBack)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.driverLicenseBack) ?? cabVendor.driverLicenseBack }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -332,7 +611,12 @@ const MyVehicle = () => {
                 <View style={styles.docItem}>
                   <Text style={styles.docLabel}>Insurance Front</Text>
                   {cabVendor?.vehicleInsuranceFront ? (
-                    <Image source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }} style={styles.docImage} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => openPreview(cabVendor.vehicleInsuranceFront)}>
+                      <Image
+                        source={{ uri: resolveImageUri(cabVendor.vehicleInsuranceFront) ?? cabVendor.vehicleInsuranceFront }}
+                        style={styles.docImage}
+                      />
+                    </TouchableOpacity>
                   ) : (
                     <View style={styles.emptyDoc}><Text style={styles.emptyDocText}>N/A</Text></View>
                   )}
@@ -344,9 +628,19 @@ const MyVehicle = () => {
               <Text style={styles.detailsTitle}>Driver status</Text>
               <Text style={styles.statusLabel}>{isOnline ? 'You are online (location shared with app)' : 'You are offline'}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('FcmToken')} style={styles.fcmLink}>
-                <Text style={styles.fcmLinkText}>View FCM Token</Text>
+               
               </TouchableOpacity>
               {isOnline ? (
+                <>
+                  {loadingAvailableRides ? (
+                    <Text style={styles.ridesInfoText}>Checking nearby rides...</Text>
+                  ) : nearbyRideCount > 0 ? (
+                    <Text style={styles.ridesInfoText}>
+                      {nearbyRideCount} ride{nearbyRideCount === 1 ? '' : 's'} available near you
+                    </Text>
+                  ) : (
+                    <Text style={styles.ridesInfoText}>No rides near you yet</Text>
+                  )}
                 <TouchableOpacity
                   style={[styles.findARideButton, styles.offlineButton]}
                   onPress={onPressMarkAsOffline}
@@ -358,6 +652,7 @@ const MyVehicle = () => {
                     <Text style={styles.findARideText}>Mark as offline</Text>
                   )}
                 </TouchableOpacity>
+                </>
               ) : (
                 <TouchableOpacity
                   style={styles.findARideButton}
@@ -374,6 +669,20 @@ const MyVehicle = () => {
             </View>
 
             <View style={styles.findARideContainer}>
+              {!!cabVendor && (
+                <>
+                  <TouchableOpacity
+                    style={[styles.findARideButton, styles.editVehicleButton]}
+                    onPress={() => {
+                      prefillRegistrationFromCab();
+                      navigation.navigate('DriverRegistration');
+                    }}
+                  >
+                    <Text style={styles.findARideText}>Edit Driver</Text>
+                  </TouchableOpacity>
+              
+                </>
+              )}
               <TouchableOpacity
                 style={styles.findARideButton}
                 onPress={onPressFindARide}
@@ -401,6 +710,26 @@ const MyVehicle = () => {
       )}
 
       <DrawerModalCab visible={showMenu} setIsModalVisible={setShowMenu} />
+
+      {previewImage && (
+        <Modal
+          visible={true}
+          transparent
+          onRequestClose={() => setPreviewImage(null)}
+        >
+          <TouchableOpacity
+            style={styles.previewOverlay}
+            activeOpacity={1}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </Modal>
+      )}
     </WrapperContainer>
   );
 };
@@ -474,6 +803,12 @@ const styles = StyleSheet.create({
     color: colors.c_666666,
     marginBottom: 10,
   },
+  ridesInfoText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.c_0162C0,
+    marginBottom: 8,
+  },
   fcmLink: {
     marginTop: 6,
     marginBottom: 4,
@@ -502,6 +837,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  editVehicleButton: {
+    backgroundColor: colors.c_666666,
+    marginBottom: 10,
   },
   detailsSection: {
     backgroundColor: colors.white,
@@ -577,5 +916,94 @@ const styles = StyleSheet.create({
   emptyDocText: {
     fontSize: 12,
     color: colors.c_666666,
+  },
+  previewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: width * 0.9,
+    height: height * 0.8,
+  },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  editInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_2B2B2B,
+    marginLeft: 10,
+  },
+  inlineEditButton: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  inlineEditText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.c_0162C0,
+  },
+  editActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    gap: 8,
+  },
+  editButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  editCancelButton: {
+    backgroundColor: colors.c_F3F3F3,
+  },
+  editSaveButton: {
+    backgroundColor: colors.c_0162C0,
+  },
+  editCancelText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.c_666666,
+  },
+  editSaveText: {
+    fontSize: 13,
+    fontFamily: fonts.bold,
+    color: colors.white,
+  },
+  exactLocationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  exactLocationValue: {
+    flex: 1,
+    marginLeft: 10,
+    alignItems: 'flex-end',
+  },
+  refreshLocationButton: {
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.c_0162C0,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    minWidth: 140,
+    alignItems: 'center',
+  },
+  refreshLocationText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.white,
   },
 });

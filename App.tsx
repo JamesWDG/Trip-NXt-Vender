@@ -5,7 +5,7 @@ import {
   useColorScheme,
   View,
 } from 'react-native';
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
@@ -40,6 +40,11 @@ const App = () => {
 
 function AppContent() {
   const safeAreaInsets = useSafeAreaInsets();
+
+  useEffect(() => {
+    const { requestLocationPermissionAndPromptSettings } = require('./src/services/locationPermission');
+    requestLocationPermissionAndPromptSettings().catch(() => {});
+  }, []);
 
   return <Navigation />;
 }
