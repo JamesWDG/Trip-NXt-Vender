@@ -456,7 +456,7 @@ const RideRequest = () => {
             <View style={styles.rideHeader}>
                 <View style={styles.userInfo}>
                     <View style={styles.avatar}>
-                        <User size={20} color={colors.white} />
+                        <Image source={images.user} style={styles.avatarImage} resizeMode="contain" />
                     </View>
                     <View>
                         <Text style={styles.userName}>{item.user}</Text>
@@ -537,14 +537,15 @@ const RideRequest = () => {
                     <Marker
                         key={ride.id}
                         coordinate={ride.pickup}
-                        pinColor={colors.c_0162C0}
                         title={`Pickup: ${ride.user}`}
+                        image={images.user}
+                        anchor={{ x: 0.5, y: 1 }}
                     />
                 ))}
 
                 {acceptedRide && (
                     <>
-                        <Marker coordinate={acceptedRide.pickup} pinColor="green" title="Pickup" />
+                        <Marker coordinate={acceptedRide.pickup} title="Pickup (Rider)" image={images.user} anchor={{ x: 0.5, y: 1 }} />
                         <Marker coordinate={acceptedRide.dropoff} pinColor="red" title="Dropoff" />
                         {status === 'to_pickup' && (
                             <MapViewDirections
@@ -828,7 +829,12 @@ const styles = StyleSheet.create({
         backgroundColor: colors.c_C4C4C4,
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
         marginRight: 10,
+    },
+    avatarImage: {
+        width: 24,
+        height: 24,
     },
     userName: {
         fontSize: 16,
