@@ -7,7 +7,7 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { X } from 'lucide-react-native';
 import ImagePicker from 'react-native-image-crop-picker';
@@ -16,6 +16,7 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import { ShowToast } from '../../../config/constants';
 
 const RideDetails = () => {
   const navigation = useNavigation<NavigationProp<any>>();
@@ -99,6 +100,8 @@ const RideDetails = () => {
               style={styles.input}
             />
           </View>
+          
+          
 
           {/* Description Input */}
           <View style={styles.inputContainer}>
@@ -244,5 +247,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.bold,
     color: colors.white,
+  },
+  priceText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    marginTop: 10,
   },
 });

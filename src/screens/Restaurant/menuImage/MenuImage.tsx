@@ -21,6 +21,7 @@ import fonts from '../../../config/fonts';
 import { useAddMenuItemMutation, useUpdateMenuItemMutation } from '../../../redux/services/restaurantService';
 import { addMenuItemValidation, MenuItemValidationParams } from '../../../utils/validations';
 import { ShowToast } from '../../../config/constants';
+import { fetchNGN } from '../../../contants/exchangeRate';
 
 interface MenuImageProps {
   route: RouteProp<{
@@ -54,9 +55,14 @@ const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
     description: '',
     image: '',
   });
+  const [NGN, setNGN] = useState(0);
   const [addMenuItem, { isLoading }] = useAddMenuItemMutation();
   const [updateMenuItem] = useUpdateMenuItemMutation();
   const categories = ['Starters', 'Mains', 'Drinks', 'Desserts'];
+
+  useEffect(() => {
+    fetchNGN(setNGN);
+  }, []);
 
   useEffect(() => {
     // if (screenType === 'edit') {
@@ -331,6 +337,7 @@ const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
                 keyboardType="numeric"
                 style={styles.input}
               />
+              {price && <Text style={styles.priceText}>{price} USD = {(NGN * parseFloat(price)).toFixed(2)} NGN</Text>}
               {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
             </View>
 
@@ -658,6 +665,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: 8,
+  },
+  priceText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    marginTop: 10,
   },
 });
 

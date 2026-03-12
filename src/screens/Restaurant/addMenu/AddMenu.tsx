@@ -17,6 +17,7 @@ import CustomTextInput from '../../../components/customTextInput/CustomTextInput
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import { fetchNGN } from '../../../contants/exchangeRate';
 
 interface MenuItem {
   id: string;
@@ -50,20 +51,11 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
         price: '',
       },
   ]);
+  const [NGN, setNGN] = useState(0);
 
-  // Sample menu items - replace with actual data from API
-  const menuItems: MenuItem[] = [
-    { id: '1', name: 'Main Course' },
-    { id: '2', name: 'Plain Rice' },
-    { id: '3', name: 'Paneer Roti' },
-    { id: '4', name: 'Sweet Dessert' },
-    { id: '5', name: 'Mushroom Masala' },
-    { id: '6', name: 'Butter Chicken' },
-    { id: '7', name: 'Naan Bread' },
-    { id: '8', name: 'Biryani' },
-    { id: '9', name: 'Tandoori Chicken' },
-    { id: '10', name: 'Dal Makhani' },
-  ];
+  useEffect(() => {
+    fetchNGN(setNGN);
+  }, []);
 
   const handleSelectPress = (index: number) => {
     setActiveIndex(index);
@@ -218,6 +210,7 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
                     onChangeText={value => handleItemChange(item.id, 'price', value)}
                     keyboardType="numeric"
                   />
+                  {item?.price && <Text style={styles.priceText}>{item?.price} USD = {(NGN * parseFloat(item?.price)).toFixed(2)} NGN</Text>}
                 </View>
               </View>
             ))}
@@ -394,5 +387,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  priceText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    marginTop: 10,
   },
 });

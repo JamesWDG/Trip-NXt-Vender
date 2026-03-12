@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
@@ -17,6 +17,7 @@ import GeneralStyles from '../../../utils/GeneralStyles';
 import CustomTextInput from '../../../components/customTextInput/CustomTextInput';
 import CustomTextArea from '../../../components/customTextArea/CustomTextArea';
 import DestinationSearch, { SearchHistoryItem } from '../../../components/destinationSearch/DestinationSearch';
+import { fetchNGN } from '../../../contants/exchangeRate';
 
 const AddHotel = () => {
   const navigation = useNavigation<NavigationPropType>();
@@ -32,6 +33,10 @@ const AddHotel = () => {
   const [serviceFee, setServiceFee] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const categories = ['Budget', 'Standard', 'Luxury'];
+  const [NGN, setNGN] = useState(0);
+  useEffect(() => {
+    fetchNGN(setNGN);
+  }, []);
 
   const handleNext = () => {
     navigation.navigate('Accomodation', {
@@ -110,12 +115,14 @@ const AddHotel = () => {
               onChangeText={setRentPerDay}
               keyboardType="numeric"
             />
+            {rentPerDay && <Text style={styles.priceText}>{rentPerDay} USD = {(NGN * parseFloat(rentPerDay)).toFixed(2)} NGN</Text>}
             <CustomTextInput
               placeholder="$ Enter Rent per hour"
               value={rentPerHour}
               onChangeText={setRentPerHour}
               keyboardType="numeric"
             />
+            {rentPerHour && <Text style={styles.priceText}>{rentPerHour} USD = {(NGN * parseFloat(rentPerHour)).toFixed(2)} NGN</Text>}
             <CustomTextInput
               placeholder="$ Enter Service Fee"
               value={serviceFee}
@@ -123,6 +130,7 @@ const AddHotel = () => {
               keyboardType="numeric"
             />
 
+            {serviceFee && <Text style={styles.priceText}>{serviceFee} USD = {(NGN * parseFloat(serviceFee)).toFixed(2)} NGN</Text>}
             <CustomTextInput
               placeholder="Enter Postal Code"
               value={postalCode}
@@ -229,5 +237,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.c_F3F3F3,
+  },
+  priceText: {
+    fontSize: 14,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+    marginTop: 10,
   },
 });

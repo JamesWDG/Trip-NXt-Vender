@@ -125,6 +125,8 @@ const generalData = [
     id: 3,
     name: 'Settings',
     image: images.settings,
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('ChooseRegion'),
   },
 ];
 interface IDrawerModal {
@@ -142,7 +144,8 @@ const DrawerModal = ({ visible, setIsModalVisible }: IDrawerModal) => {
   }) => {
     return <IconsWithTitle image={item.image} title={item.name} />;
   };
-  const renderVerticalTabs = ({ item }: { item: (typeof upperTabData)[0] }) => {
+  type DrawerLinkItem = (typeof importantLinksData)[0] | (typeof generalData)[0];
+  const renderVerticalTabs = ({ item }: { item: DrawerLinkItem }) => {
     return (
       <IconWithTitleAndDivider
         image={item.image}
@@ -150,7 +153,7 @@ const DrawerModal = ({ visible, setIsModalVisible }: IDrawerModal) => {
         divider={true}
         dividerColor={colors.c_111111}
         onPress={() => {
-          if (item.navigation) {
+          if ('navigation' in item && item.navigation) {
             setIsModalVisible(false);
             setTimeout(() => {
               item.navigation(navigation);

@@ -144,6 +144,8 @@ const generalData = [
     id: 3,
     name: 'Settings',
     image: images.settings,
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('ChooseRegion'),
   },
 ];
 interface IDrawerModal {
