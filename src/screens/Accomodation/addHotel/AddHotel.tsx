@@ -115,14 +115,14 @@ const AddHotel = () => {
               onChangeText={setRentPerDay}
               keyboardType="numeric"
             />
-            {rentPerDay && <Text style={styles.priceText}>{rentPerDay} USD = {(NGN * parseFloat(rentPerDay)).toFixed(2)} NGN</Text>}
+            {rentPerDay && <Text style={styles.priceText}>{rentPerDay} NGN = {parseFloat(rentPerDay) / NGN} USD</Text>}
             <CustomTextInput
               placeholder="$ Enter Rent per hour"
               value={rentPerHour}
               onChangeText={setRentPerHour}
               keyboardType="numeric"
             />
-            {rentPerHour && <Text style={styles.priceText}>{rentPerHour} USD = {(NGN * parseFloat(rentPerHour)).toFixed(2)} NGN</Text>}
+            {rentPerHour && <Text style={styles.priceText}>{rentPerHour} NGN = {parseFloat(rentPerHour) / NGN} USD</Text>}
             <CustomTextInput
               placeholder="$ Enter Service Fee"
               value={serviceFee}
@@ -130,7 +130,7 @@ const AddHotel = () => {
               keyboardType="numeric"
             />
 
-            {serviceFee && <Text style={styles.priceText}>{serviceFee} USD = {(NGN * parseFloat(serviceFee)).toFixed(2)} NGN</Text>}
+            {serviceFee && <Text style={styles.priceText}>{serviceFee} NGN = {parseFloat(serviceFee) / NGN} USD</Text>}
             <CustomTextInput
               placeholder="Enter Postal Code"
               value={postalCode}

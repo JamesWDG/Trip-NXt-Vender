@@ -337,7 +337,7 @@ const MenuImage: FC<MenuImageProps> = ({ route, navigation }) => {
                 keyboardType="numeric"
                 style={styles.input}
               />
-              {price && <Text style={styles.priceText}>{price} USD = {(NGN * parseFloat(price)).toFixed(2)} NGN</Text>}
+              {price && <Text style={styles.priceText}>{price} NGN = {parseFloat(price) / NGN} USD</Text>}
               {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
             </View>
 

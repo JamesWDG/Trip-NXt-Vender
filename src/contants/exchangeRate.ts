@@ -1,14 +1,15 @@
 import { Dispatch, SetStateAction } from 'react';
 import { ShowToast } from '../config/constants';
+import { BASE_URL } from './api';
 
 export const fetchNGN = async (fn: Dispatch<SetStateAction<number>>) => {
   try {
     const res = await fetch(
-      'https://hexarate.paikama.co/api/rates/USD/NGN/latest',
+      BASE_URL + '/exchange/exchange-rate'
     );
     const data = await res.json();
-    console.log(data?.data?.mid);
-    fn(data?.data?.mid);
+    console.log("Data: ",data);
+    fn(data?.data?.exchangeRate);
   } catch (error) {
     console.log(error);
     ShowToast('error', 'Failed to fetch NGN');

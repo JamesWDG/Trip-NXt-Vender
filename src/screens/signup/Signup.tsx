@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import  { useState } from 'react';
+import { useState } from 'react';
 import WrapperWithVideo from '../../components/wrappers/WrapperWithVideo';
 import IntroWrapperWithTitle from '../../components/introWrapperWithTitle/IntroWrapperWithTitle';
 import labels from '../../config/labels';
@@ -82,7 +82,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
         role: [flowDetails?.user_type],
       };
       const res = await signup(data).unwrap();
-     
+
       ShowToast('success', res.message);
       if (res.success) {
         dispatch(setActiveStack({ stack: flowDetails?.stack }));
@@ -91,17 +91,17 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
           screenToNavigate: {
             selectedStack: flowDetails?.stack,
             screenName: flowDetails?.screenName,
-            type: 'register'
+            type: 'register',
           },
         });
       }
     } catch (error) {
+      console.log('error', error);
       ShowToast(
         'error',
         (error as { data: { message: string } }).data.message ||
           'Something went wrong',
       );
-      console.log('error', error);
     }
   };
 
@@ -120,7 +120,7 @@ const Signup = ({ route, navigation }: { route: any; navigation: any }) => {
   };
 
   return (
-    <WrapperWithVideo otherStyles={styles.introWrapper} >
+    <WrapperWithVideo otherStyles={styles.introWrapper}>
       <View style={styles.introWrapperContainer} pointerEvents="box-none">
         <IntroWrapperWithTitle
           showBack={true}

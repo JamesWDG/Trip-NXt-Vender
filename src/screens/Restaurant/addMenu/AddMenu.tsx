@@ -6,7 +6,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
-import { NavigationProp, RouteProp, useNavigation } from '@react-navigation/native';
+import {
+  NavigationProp,
+  RouteProp,
+  useNavigation,
+} from '@react-navigation/native';
 import { Plus, Check, Trash2 } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
@@ -43,13 +47,14 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const bottomSheetRef = useRef<BottomSheetComponentRef>(null);
   const [menuItemsInput, setMenuItemsInput] = useState<MenuItemInput[]>([
-    route.params?.extraToppings ? route.params?.extraToppings
+    route.params?.extraToppings
+      ? route.params?.extraToppings
       : {
-        id: Date.now().toString(),
-        name: '',
-        description: '',
-        price: '',
-      },
+          id: Date.now().toString(),
+          name: '',
+          description: '',
+          price: '',
+        },
   ]);
   const [NGN, setNGN] = useState(0);
 
@@ -91,9 +96,7 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
     value: string,
   ) => {
     setMenuItemsInput(prev =>
-      prev.map(item =>
-        item.id === id ? { ...item, [field]: value } : item,
-      ),
+      prev.map(item => (item.id === id ? { ...item, [field]: value } : item)),
     );
   };
 
@@ -156,7 +159,10 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
   };
 
   useEffect(() => {
-    console.log('route.params?.extraToppings ===>', route.params?.extraToppings);
+    console.log(
+      'route.params?.extraToppings ===>',
+      route.params?.extraToppings,
+    );
     if (route.params?.extraToppings) {
       setMenuItemsInput(route.params?.extraToppings);
     }
@@ -190,7 +196,9 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
                   <CustomTextInput
                     placeholder="Item Name"
                     value={item.name}
-                    onChangeText={value => handleItemChange(item.id, 'name', value)}
+                    onChangeText={value =>
+                      handleItemChange(item.id, 'name', value)
+                    }
                   />
                 </View>
                 <View style={styles.inputWrapper}>
@@ -207,10 +215,17 @@ const AddMenu = ({ route }: { route: RouteProp<any, any> }) => {
                   <CustomTextInput
                     placeholder="Price"
                     value={item?.price?.toString()}
-                    onChangeText={value => handleItemChange(item.id, 'price', value)}
+                    onChangeText={value =>
+                      handleItemChange(item.id, 'price', value)
+                    }
                     keyboardType="numeric"
                   />
-                  {item?.price && <Text style={styles.priceText}>{item?.price} USD = {(NGN * parseFloat(item?.price)).toFixed(2)} NGN</Text>}
+                  {item?.price && (
+                    <Text style={styles.priceText}>
+                      {item?.price} NGN  ={' '}
+                      { (parseFloat(item?.price) / NGN).toFixed(2) } USD
+                    </Text>
+                  )}
                 </View>
               </View>
             ))}
