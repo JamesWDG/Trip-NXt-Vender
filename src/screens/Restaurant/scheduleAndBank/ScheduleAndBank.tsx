@@ -474,21 +474,20 @@ const ScheduleAndBank = ({ route }: { route: any }) => {
           {/* Delivery Radius Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Radius</Text>
+            <View style={styles.sliderHeaderRow}>
+              <Text style={styles.sliderRangeLabel}>{minRadius} km</Text>
+              <Text style={styles.sliderRangeLabel}>{maxRadius} km</Text>
+            </View>
             <Slider
-              style={{ width: '100%', height: 40 }}
-              minimumValue={0}
-              maximumValue={1}
-              step={0.01}
-              value={(deliveryRadius - minRadius) / (maxRadius - minRadius)}
+              style={styles.slider}
+              minimumValue={minRadius}
+              maximumValue={maxRadius}
+              step={1}
+              value={deliveryRadius}
               minimumTrackTintColor={colors.c_0162C0}
               maximumTrackTintColor={colors.c_F3F3F3}
               thumbTintColor={colors.white}
-              onValueChange={value => {
-                const radius = Math.round(
-                  minRadius + value * (maxRadius - minRadius),
-                );
-                setDeliveryRadius(radius);
-              }}
+              onValueChange={value => setDeliveryRadius(Math.round(value))}
             />
             {/* <View
               style={styles.sliderContainer}
@@ -663,6 +662,21 @@ const styles = StyleSheet.create({
   },
   statusButtonTextDisabled: {
     color: colors.c_666666,
+  },
+  sliderHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  sliderRangeLabel: {
+    fontSize: 12,
+    fontFamily: fonts.normal,
+    color: colors.c_666666,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
   },
   sliderContainer: {
     marginBottom: 12,

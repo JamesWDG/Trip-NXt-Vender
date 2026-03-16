@@ -26,6 +26,10 @@ type endpointTypes = {
     GET_BOOKING_LOGS: string;
     GET_BOOKING_BY_ID: (id: number) => string;
     UPDATE_HOTEL_BOOKING_STATUS: (id: number) => string;
+    GET_VENDOR_EARNINGS_SUMMARY: string;
+    GET_VENDOR_WITHDRAWALS: string;
+    REQUEST_VENDOR_WITHDRAWAL: string;
+    GET_STRIPE_VENDOR_STATUS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -63,4 +67,8 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
     GET_BOOKING_BY_ID: (id: number) => `/booking/get-single-hotel-booking/${id}`,
     UPDATE_HOTEL_BOOKING_STATUS: (id: number) => `/booking/update-hotel-booking-status/${id}`,
+    GET_VENDOR_EARNINGS_SUMMARY: '/vendor/earnings/summary',
+    GET_VENDOR_WITHDRAWALS: '/vendor/withdrawals',
+    REQUEST_VENDOR_WITHDRAWAL: '/vendor/withdrawals/request',
+    GET_STRIPE_VENDOR_STATUS: '/subscription/get-stripe-vender-account-status',
 })
