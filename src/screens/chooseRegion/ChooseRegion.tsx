@@ -10,7 +10,7 @@ import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { setRegion, type RegionType } from '../../redux/slices/regionSlice';
 
 const REGIONS: { id: RegionType; label: string }[] = [
-  { id: 'US', label: 'United States' },
+  { id: 'USD', label: 'United States' },
   { id: 'NGN', label: 'Nigeria' },
 ];
 

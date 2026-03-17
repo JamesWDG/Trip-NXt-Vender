@@ -14,6 +14,7 @@ import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
 import { NavigationProp, ParamListBase, useNavigation } from '@react-navigation/native';
+import { useAppSelector } from '../../redux/store';
 
 interface MenuItemCardProps {
   id: number;
@@ -48,6 +49,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   extraToppings,
 }) => {
   const navigation = useNavigation<NavigationProp<ParamListBase, string>>();
+  const region = useAppSelector(state => state.region.selectedRegion);
   const formatPrice = (amt: number) => {
     return `$${amt.toFixed(1)}`;
   };
@@ -89,7 +91,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
         <Text style={styles.description} numberOfLines={1}>
           {description}
         </Text>
-        <Text style={styles.price}>{formatPrice(price)}</Text>
+        <Text style={styles.price}>{region === 'NGN' ? '₦'+formatPrice(price) : `$${price.toFixed(4)}`}</Text>
         {/* <View style={styles.ratingContainer}>
           <Star size={16} color="#FFD700" fill="#FFD700" />
           <Text style={styles.ratingText}>

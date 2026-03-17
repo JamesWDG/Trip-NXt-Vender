@@ -3,6 +3,7 @@ import React from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { useAppSelector } from '../../redux/store';
 
 interface OrderCardProps {
   orderId: string;
@@ -33,6 +34,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   status,
   onViewDetails,
 }) => {
+  const region = useAppSelector((state) => state.region.selectedRegion);
   return (
     <View style={[styles.card, GeneralStyles.shadow]}>
       {/* Top Section */}
@@ -52,7 +54,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <Text style={styles.customerName}>{customerName}</Text>
             <View style={styles.rightSection}>
               <Text style={styles.paymentInfo}>
-                {amount} • {paymentMethod}
+                {region === 'NGN' ? '₦'+ Number(amount).toFixed(2) : `$${Number(amount).toFixed(4)}`} • {paymentMethod}
               </Text>
             </View>
           </View>

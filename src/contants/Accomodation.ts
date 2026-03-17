@@ -59,7 +59,9 @@ export interface Hotel {
     checkOutTime: string,
     images: string[],
     createdAt: string,
-    updatedAt: string
+    updatedAt: string,
+    avgRating: number,
+    reviewCount: number
 }
 
 export const IconListArray: IconList[] = [

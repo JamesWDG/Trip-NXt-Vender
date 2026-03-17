@@ -1,13 +1,13 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-export type RegionType = 'US' | 'NGN';
+export type RegionType = 'USD' | 'NGN';
 
 interface RegionState {
   selectedRegion: RegionType;
 }
 
 const initialState: RegionState = {
-  selectedRegion: 'US',
+  selectedRegion: 'NGN',
 };
 
 const regionSlice = createSlice({

@@ -4,6 +4,8 @@ import FastImage from 'react-native-fast-image';
 import StarRating from 'react-native-star-rating-widget';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
+import images from '../../../config/images';
+import { formatDate } from '../../../utils/utility';
 
 interface Params {
   name: string;
@@ -21,10 +23,11 @@ const ReviewCard = ({
   description,
   otherStyles,
 }: Params) => {
+  const placeholderImage = images.placeholder;
   return (
     <View style={[styles.container, otherStyles]}>
       <View style={styles.imageContainer}>
-        <FastImage source={image} style={styles.image} resizeMode="cover" />
+        <FastImage source={image ? { uri: image } : placeholderImage} style={styles.image} resizeMode="cover" />
         <Text style={styles.name}>{name}</Text>
       </View>
       <View style={styles.ratingContainer}>
@@ -34,7 +37,7 @@ const ReviewCard = ({
           starSize={14}
           starStyle={styles.starRating}
         />
-        <Text style={styles.time}>{time}</Text>
+        <Text style={styles.time}>{formatDate(time)}</Text>
       </View>
 
       <Text numberOfLines={3} style={styles.description}>

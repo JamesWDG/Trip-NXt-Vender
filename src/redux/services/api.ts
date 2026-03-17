@@ -10,9 +10,13 @@ const baseQuery = fetchBaseQuery({
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
     const token = state.auth?.token;
+    const region = state.region.selectedRegion;
     console.log('token ===>', token);
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
+    }
+    if (region) {
+      headers.set('region', region);
     }
     return headers;
   },

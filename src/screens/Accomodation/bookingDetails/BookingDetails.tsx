@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Alert,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,7 @@ import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import { ShowToast } from '../../../config/constants';
 import { useGetBookingByIdQuery, useUpdateHotelBookingStatusMutation } from '../../../redux/services/hotelService';
-import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
+import { useAppSelector } from '../../../redux/store';
 
 const HOURS_BEFORE_CHECKIN_TO_ALLOW_CANCEL = 24;
 
@@ -51,6 +52,7 @@ const BookingDetails = ({
 }) => {
   const paramsBooking = route.params?.booking;
   const bookingId = paramsBooking?.id ?? route.params?.bookingId;
+  const {selectedRegion} = useAppSelector(state => state.region)
 
   const { data: fetchResult, isLoading: isFetching, refetch } = useGetBookingByIdQuery(bookingId!, {
     skip: bookingId == null || bookingId === undefined,
@@ -127,6 +129,7 @@ const BookingDetails = ({
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} />}
       >
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{hotel?.name ?? 'Hotel'}</Text>
@@ -151,7 +154,7 @@ const BookingDetails = ({
         </View>
         <View style={styles.section}>
           <Text style={styles.label}>Total amount</Text>
-          <Text style={styles.valueAmount}>${booking.totalAmount ?? 0}</Text>
+          <Text style={styles.valueAmount}>{selectedRegion === 'NGN' ? '₦'+booking.totalAmount : `$${booking.totalAmount}`}</Text>
         </View>
         <View style={styles.section}>
           <Text style={styles.label}>Status</Text>

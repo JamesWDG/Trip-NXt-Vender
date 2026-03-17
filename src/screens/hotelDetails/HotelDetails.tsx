@@ -8,19 +8,9 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import {
-  Heart,
-  LocateIcon,
-  LocateOffIcon,
-  LocationEditIcon,
-  MapPin,
-} from 'lucide-react-native';
-import StarRating from 'react-native-star-rating-widget';
-
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import PrimaryHeader from '../../components/primaryHeader/PrimaryHeader';
 import MainCarousel from '../../components/mainCarousel/MainCarousel';
 import DetailsCard from '../../components/detailsCard/DetailsCard';
@@ -29,29 +19,26 @@ import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
 import images from '../../config/images';
-import IntroCard from '../../components/introCard/IntroCard';
-import GradientButtonForAccomodation from '../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 import ReviewCard from '../Accomodation/reviewCard/ReviewCard';
 import { width } from '../../config/constants';
 import FastImage from 'react-native-fast-image';
 import { useGetHotelByIdQuery } from '../../redux/services/hotelService';
-
-const DEFAULT_DESCRIPTION =
-  "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s.";
+import { useGetHotelReviewsQuery } from '../../redux/services/reviewService';
 
 const defaultCarouselData: CarouselData[] = [{ id: '0', image: '', title: 'Hotel', description: '' }];
 
 const HotelDetails = ({ navigation }: { navigation?: any }) => {
   const { top } = useSafeAreaInsets();
   const route = useRoute<any>();
-  const paramsHotel = route.params?.hotel as Hotel | undefined;
-  const hotelId = paramsHotel?.hotelId ?? route.params?.hotelId as number | undefined;
-
-  const { data: fetchedHotel, isLoading: isHotelLoading } = useGetHotelByIdQuery(hotelId!, {
-    skip: hotelId == null || hotelId === undefined,
+  const { data: reviews, isLoading: isReviewsLoading } = useGetHotelReviewsQuery(route.params.hotel.id!, {
+    skip: route.params.hotel.id == null || route.params.hotel.id === undefined,
   });
 
-  const hotel: Hotel | undefined = (fetchedHotel as Hotel) ?? paramsHotel;
+  const { data: fetchedHotel, isLoading: isHotelLoading } = useGetHotelByIdQuery(route.params.hotel.id!, {
+    skip: route.params.hotel.id == null || route.params.hotel.id === undefined,
+  });
+
+  const hotel: Hotel | undefined = (fetchedHotel as Hotel) ?? route.params.hotel;
 
   const wishlistButtonStyles = useMemo(() => {
     return wishlistButton(top);
@@ -61,7 +48,14 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
     ? `${(hotel as any)?.location?.city ?? ''}, ${(hotel as any)?.location?.state ?? ''} ${(hotel as any)?.location?.country ?? ''}`.trim() || '—'
     : 'Las Vegas, NV, USA';
 
-  if (hotelId != null && isHotelLoading && !paramsHotel) {
+    useEffect(() => {
+      console.log(route.params.hotel.id, 'hotelId', route.params);
+      if (reviews) {
+        console.log('reviews ===>', reviews);
+      }
+    }, [reviews]);
+
+  if (route.params.hotel.id != null && isHotelLoading && !route.params.hotel) {
     return (
       <View style={GeneralStyles.flex as ViewStyle}>
         <View style={styles.headerContainer}>
@@ -106,11 +100,11 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
         >
           <DetailsCard
             title={hotel?.name ?? 'Lux Hotel Casino'}
-            reviews={11}
-            rating={4}
-            price={hotel?.rentPerDay ?? 23456}
+            reviews={hotel?.reviewCount ?? 0}
+            rating={hotel.avgRating}
+            price={hotel?.rentPerDay}
             location={locationStr}
-            description={hotel?.description ?? DEFAULT_DESCRIPTION}
+            description={hotel?.description}
             amenities={[
               {
                 name: 'WiFi',
@@ -170,18 +164,16 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
             </Text>
 
             <FlatList
-              data={[1, 2, 2, 2, 2, 2]}
+              data={reviews?.data?.reviews}
               keyExtractor={(item, index) => index.toString()}
               renderItem={({ item, index }) => (
                 <ReviewCard
-                  name={'James Henry'}
-                  rating={4.5}
-                  time={'1 Day ago'}
-                  image={images.avatar}
+                  name={item.user.name}
+                  rating={item.rating}
+                  time={item.createdAt}
+                  image={item.user.profilePicture}
                   otherStyles={{ width: width * 0.75 }}
-                  description={
-                    "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries."
-                  }
+                  description={item?.comment ?? ''}
                 />
               )}
               showsHorizontalScrollIndicator={false}

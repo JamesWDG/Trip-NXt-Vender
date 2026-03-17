@@ -5,6 +5,7 @@ import StarRating from 'react-native-star-rating-widget';
 import fonts from '../../config/fonts';
 import colors from '../../config/colors';
 import IconCard from '../iconCard/IconCard';
+import { useAppSelector } from '../../redux/store';
 type Amenity = {
   name: string;
   icon: string;
@@ -27,6 +28,7 @@ const DetailsCard = ({
   description,
   amenities,
 }: Params) => {
+  const {selectedRegion} = useAppSelector(state => state.region)
   return (
     <View style={styles.container}>
       <View>
@@ -34,7 +36,7 @@ const DetailsCard = ({
       </View>
       <View style={styles.priceContainer}>
         <View>
-          <Text style={styles.price}> $ {price}</Text>
+          <Text style={styles.price}> {selectedRegion === 'NGN' ? '₦'+price : `$${price}`}</Text>
           <View style={styles.locationContainer}>
             <MapPin size={12} />
             <Text style={styles.location}>{location}</Text>

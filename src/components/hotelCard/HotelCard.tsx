@@ -12,6 +12,7 @@ import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import { width } from '../../config/constants';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { useAppSelector } from '../../redux/store';
 
 interface HotelCardProps {
   image: ImageSourcePropType | string | ImageURISource;
@@ -40,6 +41,7 @@ const HotelCard: React.FC<HotelCardProps> = ({
   onPress,
   show = true,
 }) => {
+  const {selectedRegion} = useAppSelector(state => state.region)
   return (
     <TouchableOpacity
       style={[styles.card, GeneralStyles.shadow]}
@@ -51,10 +53,10 @@ const HotelCard: React.FC<HotelCardProps> = ({
         <Text style={styles.hotelName}>{hotelName}</Text>
         <View style={styles.priceRatingContainer}>
           <Text style={styles.priceRating}>
-            Rent Per Day: ${rentPerDay}
+            Rent Per Day: {selectedRegion === 'NGN' ? '₦'+rentPerDay : `$${rentPerDay}`}
           </Text>
           <Text style={styles.priceRating}>
-            Rent Per Hour: ${rentPerHour}
+            Rent Per Hour: {selectedRegion === 'NGN' ? '₦'+rentPerHour : `$${rentPerHour}`}
           </Text>
         </View>
         {

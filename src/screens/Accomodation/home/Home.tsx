@@ -41,6 +41,8 @@ export type HotelBookingItem = {
     numberOfBathrooms?: number;
     numberOfGuests?: number;
     location?: { city?: string; address?: string };
+    avgRating?: number;
+    reviewCount?: number;
   };
 };
 
@@ -96,7 +98,7 @@ const Home = () => {
 
   const fetchPendingBookings = async () => {
     try {
-      const res = await getPendingBookings().unwrap();
+      const res = await getPendingBookings({}).unwrap();
       const list = Array.isArray(res?.data) ? res.data : [];
       setPendingBookings(list);
     } catch (error) {
@@ -184,7 +186,7 @@ const Home = () => {
                       hotelName={item.name}
                       rentPerDay={item.rentPerDay}
                       rentPerHour={item.rentPerHour}
-                      rating={4.5}
+                      rating={item.avgRating}
                       beds={item.numberOfBeds}
                       baths={item.numberOfBathrooms}
                       parking={item.numberOfGuests}
@@ -232,7 +234,7 @@ const Home = () => {
                           hotelName={hotel?.name ?? 'Hotel'}
                           rentPerDay={hotel?.rentPerDay ?? 0}
                           rentPerHour={hotel?.rentPerHour ?? 0}
-                          rating={4.5}
+                          rating={hotel?.avgRating ?? 0}
                           beds={hotel?.numberOfBeds ?? 0}
                           baths={hotel?.numberOfBathrooms ?? 0}
                           parking={hotel?.numberOfGuests ?? 0}

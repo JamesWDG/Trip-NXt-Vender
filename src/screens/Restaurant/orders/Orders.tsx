@@ -29,7 +29,7 @@ interface OrderDisplay {
   orderNumber: string;
   time: string;
   customerName: string;
-  amount: string;
+  amount: string | number;
   paymentMethod: string;
   status?: string;
 }
@@ -114,7 +114,7 @@ const Orders = () => {
           orderNumber: `#${order?.id ?? orderId}`,
           time: timeStr,
           customerName,
-          amount: `$${totalAmount}`,
+          amount: totalAmount,
           paymentMethod: ((order as any)?.paymentMethod || 'Cash') as PaymentMethod,
           status: orderStatus,
         },

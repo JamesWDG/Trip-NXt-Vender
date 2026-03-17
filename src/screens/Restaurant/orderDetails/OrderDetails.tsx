@@ -16,6 +16,7 @@ import images from '../../../config/images';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import { height } from '../../../config/constants';
+import { useAppSelector } from '../../../redux/store';
 
 interface OrderItem {
   id: string;
@@ -32,6 +33,7 @@ const OrderDetails = () => {
   const { top } = useSafeAreaInsets();
   const [isOnline, setIsOnline] = useState(true);
   const [notificationCount] = useState(3);
+  const region = useAppSelector((state) => state.region.selectedRegion);
 
   // Get order data from route params
   const orderData = (route.params as any)?.orderData;
@@ -117,7 +119,7 @@ const OrderDetails = () => {
   };
 
   const formatPrice = (amount: number) => {
-    return `$${amount.toFixed(2)}`;
+    return region === 'NGN' ? '₦'+amount.toFixed(2) : `$${amount.toFixed(4)}`;
   };
 
   const renderOrderItem = (item: OrderItem, index: number) => (

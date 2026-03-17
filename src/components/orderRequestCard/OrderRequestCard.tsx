@@ -3,6 +3,7 @@ import React from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { RootState, useAppSelector } from '../../redux/store';
 
 type PaymentMethod = 'Cash' | 'Online';
 
@@ -41,8 +42,9 @@ const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
   isAccepting = false,
   isRejecting = false,
 }) => {
+  const region = useAppSelector((state: RootState) => state.region.selectedRegion);
   const formatAmount = (amt: number) => {
-    return `$${amt.toFixed(0)}`;
+    return region === 'NGN' ? '₦'+amt.toFixed(2) : `$${amt.toFixed(4)}`;
   };
 
   return (
@@ -78,7 +80,7 @@ const OrderRequestCard: React.FC<OrderRequestCardProps> = ({
       {/* Bill Summary */}
       <View style={styles.billSummary}>
         <Text style={styles.totalBill}>
-          Total Bill: {formatAmount(totalBill)}
+          Total Bill: {region === 'NGN' ? '₦'+totalBill.toFixed(2) : `$${totalBill.toFixed(4)}`}
         </Text>
         <Text style={styles.paymentMode}>
           Payment Mode:{' '}

@@ -11,6 +11,9 @@ PODS:
     - FirebaseAuth (~> 12.4.0)
   - Firebase/CoreOnly (12.4.0):
     - FirebaseCore (~> 12.4.0)
+  - Firebase/Messaging (12.4.0):
+    - Firebase/CoreOnly
+    - FirebaseMessaging (~> 12.4.0)
   - FirebaseAppCheckInterop (12.4.0)
   - FirebaseAuth (12.4.0):
     - FirebaseAppCheckInterop (~> 12.4.0)
@@ -30,10 +33,27 @@ PODS:
     - FirebaseCore (~> 12.4.0)
   - FirebaseCoreInternal (12.4.0):
     - "GoogleUtilities/NSData+zlib (~> 8.1)"
+  - FirebaseInstallations (12.4.0):
+    - FirebaseCore (~> 12.4.0)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - PromisesObjC (~> 2.4)
+  - FirebaseMessaging (12.4.0):
+    - FirebaseCore (~> 12.4.0)
+    - FirebaseInstallations (~> 12.4.0)
+    - GoogleDataTransport (~> 10.1)
+    - GoogleUtilities/AppDelegateSwizzler (~> 8.1)
+    - GoogleUtilities/Environment (~> 8.1)
+    - GoogleUtilities/Reachability (~> 8.1)
+    - GoogleUtilities/UserDefaults (~> 8.1)
+    - nanopb (~> 3.30910.0)
   - fmt (11.0.2)
   - glog (0.3.5)
   - Google-Maps-iOS-Utils (6.1.0):
     - GoogleMaps (~> 9.0)
+  - GoogleDataTransport (10.1.0):
+    - nanopb (~> 3.30910.0)
+    - PromisesObjC (~> 2.4)
   - GoogleMaps (9.4.0):
     - GoogleMaps/Maps (= 9.4.0)
   - GoogleMaps/Maps (9.4.0)
@@ -58,6 +78,9 @@ PODS:
   - GoogleUtilities/Reachability (8.1.0):
     - GoogleUtilities/Logger
     - GoogleUtilities/Privacy
+  - GoogleUtilities/UserDefaults (8.1.0):
+    - GoogleUtilities/Logger
+    - GoogleUtilities/Privacy
   - GTMSessionFetcher/Core (5.0.0)
   - hermes-engine (0.82.1):
     - hermes-engine/Pre-built (= 0.82.1)
@@ -74,6 +97,12 @@ PODS:
   - libwebp/sharpyuv (1.5.0)
   - libwebp/webp (1.5.0):
     - libwebp/sharpyuv
+  - nanopb (3.30910.0):
+    - nanopb/decode (= 3.30910.0)
+    - nanopb/encode (= 3.30910.0)
+  - nanopb/decode (3.30910.0)
+  - nanopb/encode (3.30910.0)
+  - PromisesObjC (2.4.0)
   - RCT-Folly (2024.11.18.00):
     - boost
     - DoubleConversion
@@ -1848,7 +1877,7 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
-  - react-native-date-picker (5.0.13):
+  - react-native-date-picker (5.0.12):
     - boost
     - DoubleConversion
     - fast_float
@@ -1876,7 +1905,9 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-maps/Generated (1.26.20):
+  - react-native-geolocation-service (5.3.1):
+    - React
+  - react-native-maps/Generated (1.27.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -1904,7 +1935,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-maps/Google (1.26.20):
+  - react-native-maps/Google (1.27.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -1936,7 +1967,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-maps/Maps (1.26.20):
+  - react-native-maps/Maps (1.27.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -1965,7 +1996,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context (5.6.2):
+  - react-native-safe-area-context (5.7.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -1983,8 +2014,8 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-safe-area-context/common (= 5.6.2)
-    - react-native-safe-area-context/fabric (= 5.6.2)
+    - react-native-safe-area-context/common (= 5.7.0)
+    - react-native-safe-area-context/fabric (= 5.7.0)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -1995,7 +2026,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context/common (5.6.2):
+  - react-native-safe-area-context/common (5.7.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2023,7 +2054,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-safe-area-context/fabric (5.6.2):
+  - react-native-safe-area-context/fabric (5.7.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -2109,7 +2140,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-video (6.19.0):
+  - react-native-video (6.19.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2127,7 +2158,7 @@ PODS:
     - React-graphics
     - React-ImageManager
     - React-jsi
-    - react-native-video/Video (= 6.19.0)
+    - react-native-video/Video (= 6.19.1)
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -2138,7 +2169,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-video/Fabric (6.19.0):
+  - react-native-video/Fabric (6.19.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2166,7 +2197,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-video/Video (6.19.0):
+  - react-native-video/Video (6.19.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2195,7 +2226,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-webview (13.16.0):
+  - react-native-webview (13.16.1):
     - boost
     - DoubleConversion
     - fast_float
@@ -2833,6 +2864,11 @@ PODS:
     - Firebase/Auth (= 12.4.0)
     - React-Core
     - RNFBApp
+  - RNFBMessaging (23.5.0):
+    - Firebase/Messaging (= 12.4.0)
+    - FirebaseCoreExtension
+    - React-Core
+    - RNFBApp
   - RNGestureHandler (2.30.0):
     - boost
     - DoubleConversion
@@ -2923,7 +2959,7 @@ PODS:
     - SocketRocket
     - TOCropViewController (~> 2.8.0)
     - Yoga
-  - RNReanimated (4.2.1):
+  - RNReanimated (4.2.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2950,11 +2986,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated (= 4.2.1)
+    - RNReanimated/reanimated (= 4.2.2)
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNReanimated/reanimated (4.2.1):
+  - RNReanimated/reanimated (4.2.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -2981,11 +3017,11 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNReanimated/reanimated/apple (= 4.2.1)
+    - RNReanimated/reanimated/apple (= 4.2.2)
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNReanimated/reanimated/apple (4.2.1):
+  - RNReanimated/reanimated/apple (4.2.2):
     - boost
     - DoubleConversion
     - fast_float
@@ -3015,7 +3051,7 @@ PODS:
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNScreens (4.20.0):
+  - RNScreens (4.24.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3042,10 +3078,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNScreens/common (= 4.20.0)
+    - RNScreens/common (= 4.24.0)
     - SocketRocket
     - Yoga
-  - RNScreens/common (4.20.0):
+  - RNScreens/common (4.24.0):
     - boost
     - DoubleConversion
     - fast_float
@@ -3074,7 +3110,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - RNSVG (15.15.1):
+  - RNSVG (15.15.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3100,10 +3136,10 @@ PODS:
     - ReactCodegen
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
-    - RNSVG/common (= 15.15.1)
+    - RNSVG/common (= 15.15.3)
     - SocketRocket
     - Yoga
-  - RNSVG/common (15.15.1):
+  - RNSVG/common (15.15.3):
     - boost
     - DoubleConversion
     - fast_float
@@ -3399,6 +3435,7 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - react-native-date-picker (from `../node_modules/react-native-date-picker`)
+  - react-native-geolocation-service (from `../node_modules/react-native-geolocation-service`)
   - react-native-maps/Google (from `../node_modules/react-native-maps`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
@@ -3442,6 +3479,7 @@ DEPENDENCIES:
   - RNFastImage (from `../node_modules/react-native-fast-image`)
   - "RNFBApp (from `../node_modules/@react-native-firebase/app`)"
   - "RNFBAuth (from `../node_modules/@react-native-firebase/auth`)"
+  - "RNFBMessaging (from `../node_modules/@react-native-firebase/messaging`)"
   - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNImageCropPicker (from `../node_modules/react-native-image-crop-picker`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
@@ -3462,11 +3500,16 @@ SPEC REPOS:
     - FirebaseCore
     - FirebaseCoreExtension
     - FirebaseCoreInternal
+    - FirebaseInstallations
+    - FirebaseMessaging
     - Google-Maps-iOS-Utils
+    - GoogleDataTransport
     - GoogleMaps
     - GoogleUtilities
     - GTMSessionFetcher
     - libwebp
+    - nanopb
+    - PromisesObjC
     - RecaptchaInterop
     - SDWebImage
     - SDWebImageWebPCoder
@@ -3568,6 +3611,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   react-native-date-picker:
     :path: "../node_modules/react-native-date-picker"
+  react-native-geolocation-service:
+    :path: "../node_modules/react-native-geolocation-service"
   react-native-maps:
     :path: "../node_modules/react-native-maps"
   react-native-safe-area-context:
@@ -3654,6 +3699,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-firebase/app"
   RNFBAuth:
     :path: "../node_modules/@react-native-firebase/auth"
+  RNFBMessaging:
+    :path: "../node_modules/@react-native-firebase/messaging"
   RNGestureHandler:
     :path: "../node_modules/react-native-gesture-handler"
   RNImageCropPicker:
@@ -3685,14 +3732,19 @@ SPEC CHECKSUMS:
   FirebaseCore: bb595f3114953664e3c1dc032f008a244147cfd3
   FirebaseCoreExtension: 7e1f7118ee970e001a8013719fb90950ee5e0018
   FirebaseCoreInternal: d7f5a043c2cd01a08103ab586587c1468047bca6
+  FirebaseInstallations: ae9f4902cb5bf1d0c5eaa31ec1f4e5495a0714e2
+  FirebaseMessaging: d33971b7bb252745ea6cd31ab190d1a1df4b8ed5
   fmt: a40bb5bd0294ea969aaaba240a927bd33d878cdd
   glog: 5683914934d5b6e4240e497e0f4a3b42d1854183
   Google-Maps-iOS-Utils: 0a484b05ed21d88c9f9ebbacb007956edd508a96
+  GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleMaps: 0608099d4870cac8754bdba9b6953db543432438
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMSessionFetcher: 02d6e866e90bc236f48a703a041dfe43e6221a29
   hermes-engine: 273e30e7fb618279934b0b95ffab60ecedb7acf5
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
+  nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
+  PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RCT-Folly: 59ec0ac1f2f39672a0c6e6cecdd39383b764646f
   RCTDeprecation: f17e2ebc07876ca9ab8eb6e4b0a4e4647497ae3a
   RCTRequired: e2c574c1b45231f7efb0834936bd609d75072b63
@@ -3726,12 +3778,13 @@ SPEC CHECKSUMS:
   React-logger: fceaaedb9c715923a1900af68a7534e9b3a601a1
   React-Mapbuffer: 60a42c90f1db2c852d5e06577f3d3d5d3233d45b
   React-microtasksnativemodule: 044e6549d565f0a5f23b01cf3ed745541cb980e0
-  react-native-date-picker: d1d607499ff9f2e1231f902b4bda70595d71253e
-  react-native-maps: e91876977e36d95cf8ff5858a9554f762907d286
-  react-native-safe-area-context: fea29ae0275beaa22f72d0a8be1eb0ab09c3feae
+  react-native-date-picker: 75b015a41b3323cab5c0b528f1956fbf82b4d557
+  react-native-geolocation-service: 608e1da71a1ac31b4de64d9ef2815f697978c55b
+  react-native-maps: 0272104f074a1397e44464ef7692d6fa0ec26aaa
+  react-native-safe-area-context: 7e0ba374906d8f5009aaf96cd19d4866d8de342b
   react-native-slider: 01f8ede24c83dac924c6c86adfbb8159c5605595
-  react-native-video: d7c758820331cdbccbc4388d7533680ab2a44320
-  react-native-webview: 5887b6094417c75a9bee446261f89c32adf6b602
+  react-native-video: deda3dbd14c35feece29f246ff772d29c061d428
+  react-native-webview: 21fdd62caca650645e429b4a84941626612616ef
   React-NativeModulesApple: a4af348fce12730a7bc424559e8207b35e6ac046
   React-oscompat: 95875e81f5d4b3c7b2c888d5bd2c9d83450d8bdb
   React-perflogger: d5b5677902d23a6611b700601634271b29356ac6
@@ -3771,11 +3824,12 @@ SPEC CHECKSUMS:
   RNFastImage: 5c9c9fed9c076e521b3f509fe79e790418a544e8
   RNFBApp: a349eebf3b10a0b9104ed5cf262732678eacd2a5
   RNFBAuth: f25a96e3daefeea47d01750322e1b640e2dd57b2
+  RNFBMessaging: d738068a1ec59046d8203c942ffdcddae7072a4d
   RNGestureHandler: 31d3156498c22e0aa71ff546731580512a7aef81
   RNImageCropPicker: 53721829357e8d8d00b1391662d29e263f05c067
-  RNReanimated: 750484717cd4ec103523bab26e173798ea72a4cd
-  RNScreens: d61eb089662cb40d69a76e2ab4f428a2a9f32b09
-  RNSVG: 733e3d36693dd7d55f09728dda44a5105ca9622e
+  RNReanimated: e362e783481d924973686e18ef46c17b35f22c83
+  RNScreens: 656e050942ae9445f5cc45d05d57f13ce7a4c8e4
+  RNSVG: a94c296924a4832a4be8b18b6dbcda08440b3c30
   RNWorklets: 9d423f16ed98eeaa4526f325b95ed0fe0226bf49
   SDWebImage: a7f831e1a65eb5e285e3fb046a23fcfbf08e696d
   SDWebImageWebPCoder: 908b83b6adda48effe7667cd2b7f78c897e5111d

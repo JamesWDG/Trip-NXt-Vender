@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import React, { FC, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
@@ -7,6 +7,7 @@ import { navigationRef } from '../config/constants';
 import AuthStack from './authStack/AuthStack';
 import BottomStack from './bottomStack/BottomStack';
 import RestaurantInfo from '../screens/Restaurant/restaurantInfo/RestaurantInfo';
+import { useAppSelector } from '../redux/store';
 
 export interface RootParamList {
   auth: undefined;
@@ -15,12 +16,14 @@ export interface RootParamList {
 
 const RootNavigator = createNativeStackNavigator<RootParamList>();
 const RootNavigation: FC = () => {
+  const { selectedRegion } = useAppSelector(state => state.region);
+  useEffect(() => {}, [selectedRegion]);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <BottomSheetModalProvider>
         <NavigationContainer ref={navigationRef} onReady={() => {}}>
           <RootNavigator.Navigator screenOptions={{ headerShown: false }}>
-           <RootNavigator.Screen name="auth" component={AuthStack} />
+            <RootNavigator.Screen name="auth" component={AuthStack} />
             <RootNavigator.Screen name="app" component={BottomStack} />
           </RootNavigator.Navigator>
         </NavigationContainer>

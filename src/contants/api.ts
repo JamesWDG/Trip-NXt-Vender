@@ -26,6 +26,7 @@ type endpointTypes = {
     GET_BOOKING_LOGS: string;
     GET_BOOKING_BY_ID: (id: number) => string;
     UPDATE_HOTEL_BOOKING_STATUS: (id: number) => string;
+    GET_HOTEL_REVIEWS: (hotelId: number) => string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -63,4 +64,5 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
     GET_BOOKING_BY_ID: (id: number) => `/booking/get-single-hotel-booking/${id}`,
     UPDATE_HOTEL_BOOKING_STATUS: (id: number) => `/booking/update-hotel-booking-status/${id}`,
+    GET_HOTEL_REVIEWS: (hotelId: number) => `/review/get-reviews-by-hotel-id/${hotelId}`,
 })
