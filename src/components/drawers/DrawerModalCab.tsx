@@ -107,6 +107,13 @@ const importantLinksData = [
     navigation: (navigation: NavigationPropType) =>
       navigation.navigate('RestaurantStack', { screen: 'Reviews' }),
   },
+  {
+    id: 5,
+    name: 'Subscription',
+    image: images.card,
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('CabStack', { screen: 'SubscriptionPlans' }),
+  },
 ];
 
 const generalData = [

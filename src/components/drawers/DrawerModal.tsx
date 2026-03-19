@@ -98,6 +98,13 @@ const importantLinksData = [
     navigation: (navigation: NavigationPropType) =>
       navigation.navigate('Accomodation', { screen: 'ThankNote' }),
   },
+  {
+    id: 5,
+    name: 'Subscription',
+    image: images.card,
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('Accomodation', { screen: 'SubscriptionPlans' }),
+  },
 ];
 
 const generalData = [

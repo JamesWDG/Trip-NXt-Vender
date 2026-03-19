@@ -51,7 +51,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   const navigation = useNavigation<NavigationProp<ParamListBase, string>>();
   const region = useAppSelector(state => state.region.selectedRegion);
   const formatPrice = (amt: number) => {
-    return `$${amt.toFixed(1)}`;
+    return `${amt.toFixed(1)}`;
   };
   const handleEditItem = () => {
     navigation.navigate('MenuImage', {
