@@ -79,7 +79,7 @@ export const chatApi = baseApi.injectEndpoints({
 });
 
 export const {
-  useGetAllChatsQuery,
+  useLazyGetAllChatsQuery,
   useGetChatQuery,
   useCreateSingleChatMutation,
   useGetMessagesQuery,
