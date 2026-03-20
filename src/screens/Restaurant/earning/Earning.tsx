@@ -1,6 +1,6 @@
 import { FlatList, Modal, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import EarningsSummaryCard from '../../../components/earningsSummaryCard/EarningsSummaryCard';
@@ -16,6 +16,7 @@ import {
 } from '../../../redux/services/vendorService';
 import { useLazyGetRestaurantTotalEarningsQuery } from '../../../redux/services/restaurantService';
 import { formatTime12h } from '../../../utils/utility';
+import { useLazyGetHotelTotalEarningsQuery } from '../../../redux/services/hotelService';
 
 type TimeFilter = 'Today' | 'Weekly' | 'Monthly';
 
@@ -57,9 +58,10 @@ type TimeFilter = 'Today' | 'Weekly' | 'Monthly';
 
 const TABS: TimeFilter[] = ['Today', 'Weekly', 'Monthly'];
 
-const Earning = () => {
+const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'accomodation'}}>}) => {
   const navigation = useNavigation<NavigationPropType>();
   const [activeTab, setActiveTab] = useState<TimeFilter>('Today');
+  const {type} = route.params;
   // const [orders] = useState(sampleOrders);
   const [connectStripeVisible, setConnectStripeVisible] = useState(false);
   const [confirmPayoutVisible, setConfirmPayoutVisible] = useState(false);
@@ -70,19 +72,34 @@ const Earning = () => {
   const [checkStripeStatus] = useLazyGetStripeVendorStatusQuery();
   const [requestWithdrawal, { isLoading: isWithdrawing }] = useRequestVendorWithdrawalMutation();
   const [getRestaurantTotalEarnings,{data:totalEarningsData,isLoading:isLoadingTotalEarnings}] = useLazyGetRestaurantTotalEarningsQuery();
-
+  const [getHotelTotalEarnings,{data:hotelTotalEarningsData,isLoading:isLoadingHotelTotalEarnings}] = useLazyGetHotelTotalEarningsQuery();
   const totalEarnings = data?.totalNet ?? 0;
   const totalGross = data?.totalGross ?? 0;
   const pendingBalance = data?.pendingBalance ?? 0;
 
-  useEffect(() => {
-    fetchTotalEarnings();
-  },[]);
+  console.log('type',type)
 
-  const fetchTotalEarnings = async () => {
+  useEffect(() => {
+    if(type === 'restaurant'){
+      fetchRestaurantTotalEarnings();
+    } else {
+      fetchHotelTotalEarnings();
+    }
+  },[type]);
+
+  const fetchRestaurantTotalEarnings = async () => {
     try {
       const res = await getRestaurantTotalEarnings(undefined).unwrap();
       // console.log('total earnings data', res);
+    } catch (error) {
+      console.log('error fetching total earnings', error);
+    }
+  };
+
+  const fetchHotelTotalEarnings = async () => {
+    try {
+      const res = await getHotelTotalEarnings(undefined).unwrap();
+      console.log('hotel earnings data', res);
     } catch (error) {
       console.log('error fetching total earnings', error);
     }
@@ -111,13 +128,13 @@ const Earning = () => {
         <View style={styles.container}>
           {/* Earnings Summary Cards */}
           <View style={styles.summaryContainer}>
-            <EarningsSummaryCard value={totalEarningsData?.data?.totalEarnings ?? 0} label="Total Earnings" />
+            <EarningsSummaryCard value={type === 'restaurant' ? totalEarningsData?.data?.totalEarnings ?? 0 : hotelTotalEarningsData?.data?.totalEarnings ?? 0} label="Total Earnings" />
             <EarningsSummaryCard
               value={pendingBalance}
               label="Pending Balance"
               isHighlighted={true}
             />
-            <EarningsSummaryCard value={totalEarningsData?.data?.totalNet ?? 0} label="Total Gross" />
+            <EarningsSummaryCard value={type === 'restaurant' ? totalEarningsData?.data?.totalNet ?? 0 : hotelTotalEarningsData?.data?.totalNet ?? 0} label="Total Gross" />
           </View>
 
           {/* Payout button */}
@@ -142,7 +159,7 @@ const Earning = () => {
           <View style={[GeneralStyles.paddingHorizontal, styles.tabContainer]}>
             <AccomodationTabButtons data={TABS} />
           </View>
-          {isLoadingTotalEarnings ? (
+          {(type === 'restaurant' ? isLoadingTotalEarnings : isLoadingHotelTotalEarnings) ? (
             <View style={styles.loader}>
               <ActivityIndicator size="large" color="#0162C0" />
             </View>
@@ -150,24 +167,27 @@ const Earning = () => {
             <>    
           {/* Orders List */}
           <FlatList
-            data={totalEarningsData?.data?.orders ?? []}
+            data={type === 'restaurant' ? totalEarningsData?.data?.orders ?? [] : hotelTotalEarningsData?.data?.bookings ?? []}
             ListEmptyComponent={<View style={styles.empty}>
-              <Text style={styles.emptyText}>No orders found</Text>
+              <Text style={styles.emptyText}>{type === 'restaurant' ? 'No orders found' : 'No bookings found'}</Text>
             </View>}
             renderItem={({ item }) => (
               <OrderCard
                 orderId={String(item.id)}
                 status={item.status}
                 amount={item.totalAmount}
-                customerName={item?.user?.name ?? 'N/A'}
+                customerName={item?.user?.name ??  'N/A'}
                 paymentMethod={item.paymentMethod}
                 time={formatTime12h(item.createdAt)}
                 onViewDetails={() =>
-                  navigation.navigate('EarningOrderDetail', { order: item })
+                  navigation.navigate('EarningOrderDetail', {
+                    type: type === 'restaurant' ? 'restaurant' : 'hotel',
+                    order: item,
+                  })
                 }
               />
             )}
-            keyExtractor={item => item.id}
+            keyExtractor={item => String(item.id)}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />

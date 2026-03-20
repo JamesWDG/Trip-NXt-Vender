@@ -20,6 +20,8 @@ import ContactUs from '../../screens/Accomodation/contactUs/ContactUs';
 import HotelDetails from '../../screens/hotelDetails/HotelDetails';
 import BookingDetails from '../../screens/Accomodation/bookingDetails/BookingDetails';
 import Notification from '../../screens/notification/Notification';
+import Earning from '../../screens/Restaurant/earning/Earning';
+import EarningOrderDetail from '../../screens/Restaurant/earning/EarningOrderDetail';
 
 const Stack = createNativeStackNavigator();
 
@@ -54,6 +56,8 @@ const AccomodationStack: FC = () => {
       <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
       <Stack.Screen name="ContactUs" component={ContactUs} />
       <Stack.Screen name="Notifications" component={Notification} />
+      <Stack.Screen name="Earning" component={Earning} />
+      <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
     </Stack.Navigator>
   );
 };

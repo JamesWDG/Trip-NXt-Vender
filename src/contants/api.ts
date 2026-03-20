@@ -35,6 +35,7 @@ type endpointTypes = {
     GET_RESTAURANT_REVIEWS: string;
     GET_ALL_NOTIFICATIONS: string;
     GET_RESTAURANT_TOTAL_EARNINGS: string;
+    GET_HOTEL_TOTAL_EARNINGS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -81,5 +82,5 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_RESTAURANT_REVIEWS: '/review/get-restaurant-reviews',
     GET_ALL_NOTIFICATIONS: '/notification/list',
     GET_RESTAURANT_TOTAL_EARNINGS: '/restaurant/get-total-earnings',
-
+    GET_HOTEL_TOTAL_EARNINGS: '/hotel/get-total-earnings',
 })

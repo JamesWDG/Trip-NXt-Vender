@@ -1,23 +1,21 @@
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import React, { useEffect, useMemo } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
-import { useLazyGetSingleOrderQuery } from '../../../redux/services/orderService';
 import { formatTime12h, formatDate } from '../../../utils/utility';
 import { useAppSelector } from '../../../redux/store';
 
+export type EarningDetailType = 'restaurant' | 'hotel';
+
 type Params = {
-  EarningOrderDetail: { order?: Record<string, any> };
+  EarningOrderDetail: {
+    type?: EarningDetailType;
+    order?: Record<string, any>;
+  };
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -30,26 +28,22 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function hotelPaymentFromParams(data: Record<string, any>): string {
+  const pm = data.payment;
+  if (pm?.isCashPayment === true) return 'Cash';
+  if (pm?.isCashPayment === false && pm?.paymentProvider) return String(pm.paymentProvider);
+  if (pm?.status) return String(pm.status);
+  if (data.paymentMethod != null && data.paymentMethod !== '') return String(data.paymentMethod);
+  return '—';
+}
+
 const EarningOrderDetail = () => {
   const navigation = useNavigation<NavigationPropType>();
   const route = useRoute<RouteProp<Params, 'EarningOrderDetail'>>();
-  const summary = route.params?.order;
-  const orderId = summary?.id;
-
-  const [fetchOrder, { data: orderDetail, isFetching, isError }] =
-    useLazyGetSingleOrderQuery();
+  const earningType: EarningDetailType =
+    route.params?.type === 'hotel' ? 'hotel' : 'restaurant';
+  const data = route.params?.order ?? {};
   const region = useAppSelector((s) => s.region.selectedRegion);
-
-  useEffect(() => {
-    if (orderId != null && orderId !== '') {
-      fetchOrder(orderId);
-    }
-  }, [orderId, fetchOrder]);
-
-  const order = useMemo(
-    () => (orderDetail && typeof orderDetail === 'object' ? orderDetail : summary) ?? {},
-    [orderDetail, summary],
-  );
 
   const formatMoney = (n: number | string | undefined) => {
     const num = Number(n);
@@ -57,101 +51,147 @@ const EarningOrderDetail = () => {
     return region === 'NGN' ? `₦${num.toFixed(2)}` : `$${num.toFixed(2)}`;
   };
 
-  const user = order.user ?? summary?.user;
-  const items = Array.isArray(order.items) ? order.items : [];
+  const items = earningType === 'restaurant' && Array.isArray(data.items) ? data.items : [];
+  const guest = earningType === 'hotel' ? data.guestInfo : null;
 
   return (
     <WrapperContainer navigation={navigation} title="Earning detail">
-      {isFetching && !orderDetail && (
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" color={colors.c_0162C0} />
-        </View>
-      )}
       <ScrollView
         style={GeneralStyles.flex}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {isError && !orderDetail && summary ? (
-          <Text style={styles.hint}>Showing list data. Full order could not be loaded.</Text>
+        {!route.params?.order ? (
+          <Text style={styles.hint}>No data passed.</Text>
         ) : null}
 
-        <View style={[styles.card, GeneralStyles.shadow]}>
-          <Text style={styles.sectionTitle}>Order</Text>
-          <DetailRow label="Order ID" value={String(order.id ?? orderId ?? '—')} />
-          <DetailRow label="Status" value={String(order.status ?? '—')} />
-          <DetailRow
-            label="Payment"
-            value={String(order.paymentMethod ?? summary?.paymentMethod ?? '—')}
-          />
-          <DetailRow
-            label="Time"
-            value={
-              order.createdAt
-                ? formatTime12h(order.createdAt)
-                : summary?.createdAt
-                  ? formatTime12h(summary.createdAt)
-                  : '—'
-            }
-          />
-          <DetailRow
-            label="Date"
-            value={
-              order.createdAt
-                ? formatDate(order.createdAt)
-                : summary?.createdAt
-                  ? formatDate(summary.createdAt)
-                  : '—'
-            }
-          />
-        </View>
+        {earningType === 'restaurant' ? (
+          <>
+            <View style={[styles.card, GeneralStyles.shadow]}>
+              <Text style={styles.sectionTitle}>Order</Text>
+              <DetailRow label="Order ID" value={String(data.id ?? '—')} />
+              <DetailRow label="Status" value={String(data.status ?? '—')} />
+              <DetailRow label="Payment" value={String(data.paymentMethod ?? '—')} />
+              <DetailRow
+                label="Time"
+                value={data.createdAt ? formatTime12h(data.createdAt) : '—'}
+              />
+              <DetailRow
+                label="Date"
+                value={data.createdAt ? formatDate(data.createdAt) : '—'}
+              />
+            </View>
 
-        <View style={[styles.card, GeneralStyles.shadow]}>
-          <Text style={styles.sectionTitle}>Amounts</Text>
-          <DetailRow
-            label="Total"
-            value={formatMoney(order.totalAmount ?? summary?.totalAmount)}
-          />
-          <DetailRow label="Subtotal" value={formatMoney(order.subTotal)} />
-          <DetailRow label="Tax" value={formatMoney(order.tax)} />
-          <DetailRow label="Delivery fee" value={formatMoney(order.deliveryFee)} />
-        </View>
+            <View style={[styles.card, GeneralStyles.shadow]}>
+              <Text style={styles.sectionTitle}>Amounts</Text>
+              <DetailRow label="Total" value={formatMoney(data.totalAmount)} />
+              <DetailRow label="Subtotal" value={formatMoney(data.subTotal)} />
+              <DetailRow label="Tax" value={formatMoney(data.tax)} />
+              <DetailRow label="Delivery fee" value={formatMoney(data.deliveryFee)} />
+            </View>
 
-        {(user?.name || user?.email) && (
-          <View style={[styles.card, GeneralStyles.shadow]}>
-            <Text style={styles.sectionTitle}>Customer</Text>
-            <DetailRow label="Name" value={String(user.name ?? '—')} />
-            <DetailRow label="Email" value={String(user.email ?? '—')} />
-            {user.phoneNumber ? (
-              <DetailRow label="Phone" value={String(user.phoneNumber)} />
+            {(data.user?.name || data.user?.email) && (
+              <View style={[styles.card, GeneralStyles.shadow]}>
+                <Text style={styles.sectionTitle}>Customer</Text>
+                <DetailRow label="Name" value={String(data.user?.name ?? '—')} />
+                <DetailRow label="Email" value={String(data.user?.email ?? '—')} />
+                {data.user?.phoneNumber ? (
+                  <DetailRow label="Phone" value={String(data.user.phoneNumber)} />
+                ) : null}
+              </View>
+            )}
+
+            {data.restaurant?.name ? (
+              <View style={[styles.card, GeneralStyles.shadow]}>
+                <Text style={styles.sectionTitle}>Restaurant</Text>
+                <DetailRow label="Name" value={String(data.restaurant.name)} />
+              </View>
             ) : null}
-          </View>
-        )}
 
-        {order.restaurant?.name ? (
-          <View style={[styles.card, GeneralStyles.shadow]}>
-            <Text style={styles.sectionTitle}>Restaurant</Text>
-            <DetailRow label="Name" value={String(order.restaurant.name)} />
-          </View>
-        ) : null}
+            {items.length > 0 && (
+              <View style={[styles.card, GeneralStyles.shadow]}>
+                <Text style={styles.sectionTitle}>Items</Text>
+                {items.map((line: any, index: number) => {
+                  const name = line.item?.name ?? line.name ?? 'Item';
+                  const qty = line.quantity ?? 1;
+                  const price = line.item?.price ?? line.price ?? 0;
+                  return (
+                    <View key={line.id ?? index} style={styles.lineItem}>
+                      <Text style={styles.lineName}>
+                        {qty}× {name}
+                      </Text>
+                      <Text style={styles.linePrice}>
+                        {formatMoney(Number(price) * Number(qty))}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </>
+        ) : (
+          <>
+            <View style={[styles.card, GeneralStyles.shadow]}>
+              <Text style={styles.sectionTitle}>Booking</Text>
+              <DetailRow label="Booking ID" value={String(data.id ?? '—')} />
+              <DetailRow label="Status" value={String(data.status ?? '—')} />
+              <DetailRow label="Payment" value={hotelPaymentFromParams(data)} />
+              <DetailRow
+                label="Check-in"
+                value={data.checkInDate ? formatDate(data.checkInDate) : '—'}
+              />
+              <DetailRow
+                label="Check-out"
+                value={data.checkOutDate ? formatDate(data.checkOutDate) : '—'}
+              />
+              <DetailRow
+                label="Time"
+                value={data.createdAt ? formatTime12h(data.createdAt) : '—'}
+              />
+              <DetailRow
+                label="Booked on"
+                value={data.createdAt ? formatDate(data.createdAt) : '—'}
+              />
+              <DetailRow
+                label="Guests"
+                value={
+                  data.numberOfGuests != null ? String(data.numberOfGuests) : '—'
+                }
+              />
+              <DetailRow
+                label="Rooms"
+                value={
+                  data.numberOfRooms != null ? String(data.numberOfRooms) : '—'
+                }
+              />
+            </View>
 
-        {items.length > 0 && (
-          <View style={[styles.card, GeneralStyles.shadow]}>
-            <Text style={styles.sectionTitle}>Items</Text>
-            {items.map((line: any, index: number) => {
-              const name = line.item?.name ?? line.name ?? 'Item';
-              const qty = line.quantity ?? 1;
-              const price = line.item?.price ?? line.price ?? 0;
-              return (
-                <View key={line.id ?? index} style={styles.lineItem}>
-                  <Text style={styles.lineName}>
-                    {qty}× {name}
-                  </Text>
-                  <Text style={styles.linePrice}>{formatMoney(Number(price) * Number(qty))}</Text>
-                </View>
-              );
-            })}
-          </View>
+            <View style={[styles.card, GeneralStyles.shadow]}>
+              <Text style={styles.sectionTitle}>Amounts</Text>
+              <DetailRow label="Total" value={formatMoney(data.totalAmount)} />
+            </View>
+
+            {(guest?.name || guest?.email || guest?.phoneNumber) && (
+              <View style={[styles.card, GeneralStyles.shadow]}>
+                <Text style={styles.sectionTitle}>Guest</Text>
+                <DetailRow label="Name" value={String(guest?.name ?? '—')} />
+                <DetailRow label="Email" value={String(guest?.email ?? '—')} />
+                {guest?.phoneNumber ? (
+                  <DetailRow label="Phone" value={String(guest.phoneNumber)} />
+                ) : null}
+              </View>
+            )}
+
+            {data.hotel?.name ? (
+              <View style={[styles.card, GeneralStyles.shadow]}>
+                <Text style={styles.sectionTitle}>Hotel</Text>
+                <DetailRow label="Name" value={String(data.hotel.name)} />
+                {data.hotel?.location?.city ? (
+                  <DetailRow label="City" value={String(data.hotel.location.city)} />
+                ) : null}
+              </View>
+            ) : null}
+          </>
         )}
       </ScrollView>
     </WrapperContainer>
@@ -165,10 +205,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 40,
-  },
-  loader: {
-    paddingVertical: 24,
-    alignItems: 'center',
   },
   hint: {
     fontSize: 13,

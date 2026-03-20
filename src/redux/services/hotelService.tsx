@@ -44,6 +44,7 @@ export const hotelApi = baseApi.injectEndpoints({
                     method: 'GET',
                     url: endpoint.GET_BOOKING_BY_ID(id),
                 }),
+                transformResponse: (response: any) => response?.data ?? response,
                 providesTags: (_result, _error, id) => [{ type: 'Hotel', id: `Booking${id}` }],
             }),
             getVendorPendingBookings: builder.query({
@@ -62,6 +63,13 @@ export const hotelApi = baseApi.injectEndpoints({
                 }),
                 invalidatesTags: ['Hotel'],
             }),
+            getHotelTotalEarnings: builder.query({
+                query: () => ({
+                    method: 'GET',
+                    url: endpoint.GET_HOTEL_TOTAL_EARNINGS,
+                }),
+                providesTags: ['Hotel'],
+            }),
         }
     }
 });
@@ -73,6 +81,8 @@ export const {
   useGetHotelByIdQuery,
   useLazyGetBookingLogsQuery,
   useGetBookingByIdQuery,
+  useLazyGetBookingByIdQuery,
   useLazyGetVendorPendingBookingsQuery,
   useUpdateHotelBookingStatusMutation,
+  useLazyGetHotelTotalEarningsQuery
 } = hotelApi;
