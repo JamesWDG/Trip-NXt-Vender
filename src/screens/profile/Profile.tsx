@@ -211,6 +211,13 @@ const Profile = () => {
                 fontFamily={fonts.bold}
                 otherStyles={styles.updateButton}
               />
+              <GradientButton
+                title="Messages"
+                onPress={() => (navigation as any).navigate('ChatList')}
+                fontSize={16}
+                fontFamily={fonts.bold}
+                otherStyles={[styles.updateButton, { marginTop: 12 }]}
+              />
               {/* {activeStack === 'RestaurantStack' &&
           <GradientButton
           title="E"

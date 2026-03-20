@@ -1,88 +1,89 @@
 import { baseApi } from './api';
 
-interface ChatSummary {
+export interface ChatSummary {
   id: number;
-  otherUser: {
-    id: number;
-    name: string;
-    profilePicture: string | null;
-  };
+  isGroup: boolean;
+  groupName: string | null;
+  groupImage: string | null;
+  groupDescription: string | null;
   lastMessage: {
     id: number;
-    type: 'text' | 'image';
-    text: string | null;
-    imageUrl: string | null;
+    content: string;
+    messageType: string;
     createdAt: string;
+    senderId: number;
   } | null;
-  unreadCount: number;
+  lastMessageAt: string | null;
+  users: Array<{ id: number; name: string; profilePicture: string | null; email?: string }>;
+  otherUsers?: Array<{ id: number; name: string; profilePicture: string | null; email?: string }>;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface Message {
+export interface MessageType {
   id: number;
   chatId: number;
   senderId: number;
-  type: 'text' | 'image';
-  text: string | null;
-  imageUrl: string | null;
-  status: 'sent' | 'delivered' | 'read';
+  content: string;
+  messageType: 'text' | 'image' | 'video' | 'audio' | 'file';
+  sender?: { id: number; name: string; profilePicture: string | null; email?: string };
   createdAt: string;
+  updatedAt?: string;
 }
 
 export const chatApi = baseApi.injectEndpoints({
   endpoints: builder => ({
-    getOrCreateChat: builder.mutation<any, { userId: number }>({
-      query: body => ({
-        url: '/chat/chats',
-        method: 'POST',
-        body,
-      }),
-    }),
-    listChats: builder.query<ChatSummary[], void>({
+    getAllChats: builder.query<ChatSummary[], void>({
       query: () => ({
-        url: '/chat/chats',
+        url: '/chat/get-all-chats',
         method: 'GET',
       }),
+      transformResponse: (res: { data?: ChatSummary[] }) => res?.data ?? res ?? [],
     }),
-    getMessages: builder.query<Message[], { chatId: number; before?: number; limit?: number }>({
-      query: ({ chatId, before, limit }) => ({
-        url: `/chat/chats/${chatId}/messages`,
+    getChat: builder.query<ChatSummary, number>({
+      query: chatId => ({
+        url: `/chat/get-chat/${chatId}`,
         method: 'GET',
-        params: { before, limit },
       }),
+      transformResponse: (res: { data?: ChatSummary }) => res?.data ?? res,
     }),
-    sendMessage: builder.mutation<
-      Message,
-      { chatId: number; type: 'text' | 'image'; text?: string; imageUrl?: string }
-    >({
-      query: ({ chatId, ...body }) => ({
-        url: `/chat/chats/${chatId}/messages`,
+    createSingleChat: builder.mutation<ChatSummary, { otherUserId: number }>({
+      query: body => ({
+        url: '/chat/create-single-chat',
         method: 'POST',
         body,
       }),
+      transformResponse: (res: { data?: ChatSummary }) => res?.data ?? res,
     }),
-    markRead: builder.mutation<void, { chatId: number; lastReadMessageId: number }>({
-      query: ({ chatId, lastReadMessageId }) => ({
-        url: `/chat/chats/${chatId}/read`,
-        method: 'POST',
-        body: { lastReadMessageId },
+    getMessages: builder.query<
+      { messages: MessageType[]; pagination: { currentPage: number; totalPages: number; totalMessages: number; hasMore: boolean } },
+      { chatId: number; page?: number; limit?: number }
+    >({
+      query: ({ chatId, page = 1, limit = 20 }) => ({
+        url: '/chat/get-messages',
+        method: 'GET',
+        params: { chatId, page, limit },
       }),
+      transformResponse: (res: { data?: { messages: MessageType[]; pagination: any } }) => res?.data ?? res ?? { messages: [], pagination: { hasMore: false } },
     }),
-    uploadChatImage: builder.mutation<{ url: string }, { formData: FormData }>({
-      query: ({ formData }) => ({
-        url: '/uploads/chat-image',
+    sendMessage: builder.mutation<MessageType, { chatId: number; content: string; messageType?: string; receiverId?: number }>({
+      query: body => ({
+        url: '/chat/send-message',
         method: 'POST',
-        body: formData,
+        body,
       }),
+      transformResponse: (res: { data?: MessageType }) => res?.data ?? res,
+      invalidatesTags: ['Chat'],
     }),
   }),
 });
 
 export const {
-  useGetOrCreateChatMutation,
-  useListChatsQuery,
+  useGetAllChatsQuery,
+  useGetChatQuery,
+  useCreateSingleChatMutation,
   useGetMessagesQuery,
+  useLazyGetMessagesQuery,
   useSendMessageMutation,
-  useMarkReadMutation,
-  useUploadChatImageMutation,
 } = chatApi;
 
