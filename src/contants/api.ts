@@ -31,6 +31,8 @@ type endpointTypes = {
     GET_VENDOR_WITHDRAWALS: string;
     REQUEST_VENDOR_WITHDRAWAL: string;
     GET_STRIPE_VENDOR_STATUS: string;
+    GET_RESTAURANT_REVIEWS: string;
+    GET_ALL_NOTIFICATIONS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -73,4 +75,7 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_VENDOR_WITHDRAWALS: '/vendor/withdrawals',
     REQUEST_VENDOR_WITHDRAWAL: '/vendor/withdrawals/request',
     GET_STRIPE_VENDOR_STATUS: '/subscription/get-stripe-vender-account-status',
+    GET_RESTAURANT_REVIEWS: '/review/get-restaurant-reviews',
+    GET_ALL_NOTIFICATIONS: '/notification/list'
+
 })

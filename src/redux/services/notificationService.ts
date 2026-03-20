@@ -1,3 +1,4 @@
+import { endpoint } from '../../contants/api';
 import { baseApi } from './api';
 
 export const notificationApi = baseApi.injectEndpoints({
@@ -9,7 +10,13 @@ export const notificationApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    getAllNotifications: builder.query({
+      query: () => ({
+        url: endpoint.GET_ALL_NOTIFICATIONS,
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
-export const { useRegisterFcmTokenMutation } = notificationApi;
+export const { useRegisterFcmTokenMutation,useLazyGetAllNotificationsQuery } = notificationApi;

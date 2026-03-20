@@ -17,6 +17,33 @@ export const time12hTo24h = (time12: string): string => {
   return `${h}:${minute}:00`;
 };
 
+/**
+ * e.g. "2 days ago", "5 minutes ago", "just now"
+ */
+export const formatRelativeTime = (
+  createdAt: string | Date | null | undefined,
+): string => {
+  if (createdAt == null || createdAt === '') return '';
+  const then = new Date(createdAt).getTime();
+  if (Number.isNaN(then)) return '';
+  const now = Date.now();
+  const diffSec = Math.floor((now - then) / 1000);
+  if (diffSec < 0) return 'just now';
+  if (diffSec < 60) return diffSec <= 5 ? 'just now' : `${diffSec} seconds ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return diffMin === 1 ? '1 minute ago' : `${diffMin} minutes ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return diffHr === 1 ? '1 hour ago' : `${diffHr} hours ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return diffDay === 1 ? '1 day ago' : `${diffDay} days ago`;
+  const diffWeek = Math.floor(diffDay / 7);
+  if (diffWeek < 5) return diffWeek === 1 ? '1 week ago' : `${diffWeek} weeks ago`;
+  const diffMonth = Math.floor(diffDay / 30);
+  if (diffMonth < 12) return diffMonth <= 1 ? '1 month ago' : `${diffMonth} months ago`;
+  const diffYear = Math.floor(diffDay / 365);
+  return diffYear === 1 ? '1 year ago' : `${diffYear} years ago`;
+};
+
 export const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const monthNames = [

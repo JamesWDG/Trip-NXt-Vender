@@ -77,5 +77,5 @@ export const {
   useAddMenuItemMutation,
   useLazyGetMenuItemsQuery,
   useUpdateMenuItemMutation,
-  useDeleteMenuItemMutation
+  useDeleteMenuItemMutation,
 } = RestaurantApi;

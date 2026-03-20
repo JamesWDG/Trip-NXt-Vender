@@ -8,8 +8,14 @@ export const reviewApi = baseApi.injectEndpoints({
                 url: endpoint.GET_HOTEL_REVIEWS(hotelId),
                 method: 'GET'
             })
-        })
+        }),
+        getRestaurantReviews: builder.query({
+            query: () => ({
+              url: endpoint.GET_RESTAURANT_REVIEWS,
+              method: 'GET',
+            }),
+          }),
     })
 })
 
-export const { useGetHotelReviewsQuery } = reviewApi;
+export const { useGetHotelReviewsQuery,useLazyGetRestaurantReviewsQuery } = reviewApi;

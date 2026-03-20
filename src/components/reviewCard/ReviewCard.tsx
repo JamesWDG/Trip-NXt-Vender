@@ -10,6 +10,7 @@ import { ThumbsUp } from 'lucide-react-native';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { useSelector } from 'react-redux';
 
 interface DishDetails {
   image: ImageSourcePropType;
@@ -36,8 +37,9 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
   likedDishCount,
   dishDetails,
 }) => {
+  const {currency} = useSelector((state: any) => state.auth);
   const formatPrice = (price: number) => {
-    return `$${price.toFixed(2)}`;
+    return `${currency === 'USD' ? '$' : '₦'} ${price.toFixed(2)}`;
   };
 
   const renderStars = () => {
@@ -70,27 +72,27 @@ const ReviewCard: React.FC<ReviewCardProps> = ({
       {/* Review Text */}
       <Text style={styles.reviewText}>{reviewText}</Text>
 
-      {/* Liked Dish Indicator and Details */}
-      {likedDishCount !== undefined && likedDishCount > 0 && (
+      {/* Dish details (e.g. restaurant review for a menu item) */}
+      {dishDetails && (
         <>
-          <Text style={styles.likedDish}>
-            liked {likedDishCount} Dish{likedDishCount > 1 ? 'es' : ''}
-          </Text>
-          {dishDetails && (
-            <View style={styles.dishContainer}>
-              <Image
-                source={dishDetails.image}
-                style={styles.dishImage}
-                resizeMode="cover"
-              />
-              <View style={styles.dishInfo}>
-                <Text style={styles.dishName}>{dishDetails.name}</Text>
-                <Text style={styles.dishPrice}>
-                  {formatPrice(dishDetails.price)}
-                </Text>
-              </View>
-            </View>
+          {likedDishCount !== undefined && likedDishCount > 0 && (
+            <Text style={styles.likedDish}>
+              liked {likedDishCount} Dish{likedDishCount > 1 ? 'es' : ''}
+            </Text>
           )}
+          <View style={styles.dishContainer}>
+            <Image
+              source={dishDetails.image}
+              style={styles.dishImage}
+              resizeMode="cover"
+            />
+            <View style={styles.dishInfo}>
+              <Text style={styles.dishName}>{dishDetails.name}</Text>
+              <Text style={styles.dishPrice}>
+                {formatPrice(dishDetails.price)}
+              </Text>
+            </View>
+          </View>
         </>
       )}
 

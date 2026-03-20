@@ -30,7 +30,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       <View style={styles.messageContainer}>
         <Text
           style={[styles.message, !isRead && styles.unreadMessage]}
-          numberOfLines={2}
+          numberOfLines={3}
         >
           {message}
         </Text>
