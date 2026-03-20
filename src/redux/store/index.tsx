@@ -8,6 +8,7 @@ import { baseApi } from '../services/api';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import registrationReducer from '../slices/registrationSlice';
 import regionReducer from '../slices/regionSlice';
+import chatUnreadReducer from '../slices/chatUnreadSlice';
 
 const rootReducer = combineReducers({
   [baseApi.reducerPath]: baseApi.reducer,
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
   navigation: navigationReducer,
   registration: registrationReducer,
   region: regionReducer,
+  chatUnread: chatUnreadReducer,
 });
 
 type RootReducerState = ReturnType<typeof rootReducer>;

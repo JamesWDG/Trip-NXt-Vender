@@ -5,6 +5,8 @@ import AccomodationStack from '../accomodationStack/AccomodationStack';
 import RestaurantStack from '../restaurantStack/RestaurantStack';
 import Notification from '../../screens/notification/Notification';
 import PrivacyPolicy from '../../screens/privacyPolicy/PrivacyPolicy';
+import ChatListScreen from '../../screens/chat/ChatListScreen';
+import ChatConversationScreen from '../../screens/chat/ChatConversationScreen';
 import BottomStack from '../bottomStack/BottomStack';
 
 export type NavigationPropType = NativeStackNavigationProp<any>;
@@ -24,6 +26,8 @@ const AppStack: FC = () => {
       <Stack.Screen name="RestaurantStack" component={RestaurantStack} />
       <Stack.Screen name="Notification" component={Notification} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
+      <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
     </Stack.Navigator>
   );
 };
