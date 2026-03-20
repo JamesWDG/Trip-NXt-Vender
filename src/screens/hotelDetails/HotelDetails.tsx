@@ -18,6 +18,7 @@ import { CarouselData, Hotel } from '../../contants/Accomodation';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { formatTime12h } from '../../utils/utility';
 import images from '../../config/images';
 import ReviewCard from '../Accomodation/reviewCard/ReviewCard';
 import { width } from '../../config/constants';
@@ -170,7 +171,7 @@ const HotelDetails = ({ navigation }: { navigation?: any }) => {
                 <ReviewCard
                   name={item.user.name}
                   rating={item.rating}
-                  time={item.createdAt}
+                  time={formatTime12h(item.createdAt)}
                   image={item.user.profilePicture}
                   otherStyles={{ width: width * 0.75 }}
                   description={item?.comment ?? ''}

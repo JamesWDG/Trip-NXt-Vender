@@ -12,6 +12,7 @@ import Orders from '../../screens/Restaurant/orders/Orders';
 import OrderDetails from '../../screens/Restaurant/orderDetails/OrderDetails';
 import CurrentOrders from '../../screens/Restaurant/currentOrders/CurrentOrders';
 import Earning from '../../screens/Restaurant/earning/Earning';
+import EarningOrderDetail from '../../screens/Restaurant/earning/EarningOrderDetail';
 import Reviews from '../../screens/Restaurant/reviews/Reviews';
 import RestaurantProfile from '../../screens/Restaurant/restaurantProfile/RestaurantProfile';
 import RestaurantInfo from '../../screens/Restaurant/restaurantInfo/RestaurantInfo';
@@ -21,6 +22,7 @@ import RideDetails from '../../screens/Restaurant/rideDetails/RideDetails';
 import RiderDetails from '../../screens/Restaurant/riderDetails/RiderDetails';
 import FindYourRide from '../../screens/Restaurant/findYourRide/FindYourRide';
 import Map from '../../screens/Restaurant/Map/Map';
+import Payment from '../../screens/Accomodation/payment/Payment';
 
 const Stack = createNativeStackNavigator();
 
@@ -58,11 +60,13 @@ const RestaurantStack: FC = () => {
 
       {/* Other Screens */}
       <Stack.Screen name="Earning" component={Earning} />
+      <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
       <Stack.Screen name="Reviews" component={Reviews} />
       <Stack.Screen name="RestaurantProfile" component={RestaurantProfile} />
       <Stack.Screen name="RestaurantInfo" component={RestaurantInfo} />
       <Stack.Screen name="ManagePlan" component={ManagePlan} />
       <Stack.Screen name="RideDetails" component={RideDetails} />
+      <Stack.Screen name="Payment" component={Payment} />
     </Stack.Navigator>
   );
 };

@@ -3,6 +3,7 @@ import React from 'react';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import GeneralStyles from '../../utils/GeneralStyles';
+import { useAppSelector } from '../../redux/store';
 
 interface EarningsSummaryCardProps {
   value: number;
@@ -15,11 +16,17 @@ const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
   label,
   isHighlighted = false,
 }) => {
+  const region = useAppSelector((state) => state.region.selectedRegion);
+
   const formatAmount = (amt: number) => {
-    return `$${amt.toLocaleString('en-US', {
+    const formatted = amt.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    })}`;
+    });
+    if (region === 'NGN') {
+      return `₦${formatted}`;
+    }
+    return `$${formatted}`;
   };
 
   return (
@@ -30,7 +37,7 @@ const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
         isHighlighted && styles.highlightedCard,
       ]}
     >
-      <Text style={styles.value}>{formatAmount(value)}</Text>
+      <Text style={[styles.value,{fontSize: region === 'NGN' ? 20 : 24}]}>{formatAmount(value)}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
   );
@@ -54,7 +61,6 @@ const styles = StyleSheet.create({
     borderColor: colors.c_0162C0,
   },
   value: {
-    fontSize: 24,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
     marginBottom: 8,

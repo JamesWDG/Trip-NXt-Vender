@@ -1,5 +1,5 @@
-import { FlatList, Modal, StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import React, { useState } from 'react';
+import { FlatList, Modal, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
@@ -14,67 +14,53 @@ import {
   useLazyGetStripeVendorStatusQuery,
   useRequestVendorWithdrawalMutation,
 } from '../../../redux/services/vendorService';
+import { useLazyGetRestaurantTotalEarningsQuery } from '../../../redux/services/restaurantService';
+import { formatTime12h } from '../../../utils/utility';
 
 type TimeFilter = 'Today' | 'Weekly' | 'Monthly';
-type PaymentMethod = 'Cash' | 'Online';
-type OrderStatus =
-  | 'Delivered'
-  | 'Pending'
-  | 'Preparing'
-  | 'Cancelled'
-  | 'Refunded';
-
-interface Order {
-  id: string;
-  orderId: string;
-  status: OrderStatus;
-  amount: number;
-  paymentMethod: PaymentMethod;
-  time: string;
-}
 
 // Sample data - replace with actual data from API/state
-const sampleOrders: Order[] = [
-  {
-    id: '1',
-    orderId: '12345',
-    status: 'Delivered',
-    amount: 15.2,
-    paymentMethod: 'Cash',
-    time: '06:25 am',
-  },
-  {
-    id: '2',
-    orderId: '12345',
-    status: 'Refunded',
-    amount: 15.2,
-    paymentMethod: 'Cash',
-    time: '06:25 am',
-  },
-  {
-    id: '3',
-    orderId: '12345',
-    status: 'Delivered',
-    amount: 542.52,
-    paymentMethod: 'Online',
-    time: '06:25 am',
-  },
-  {
-    id: '4',
-    orderId: '12345',
-    status: 'Delivered',
-    amount: 15.2,
-    paymentMethod: 'Cash',
-    time: '06:25 am',
-  },
-];
+// const sampleOrders: Order[] = [
+//   {
+//     id: '1',
+//     orderId: '12345',
+//     status: 'Delivered',
+//     amount: 15.2,
+//     paymentMethod: 'Cash',
+//     time: '06:25 am',
+//   },
+//   {
+//     id: '2',
+//     orderId: '12345',
+//     status: 'Refunded',
+//     amount: 15.2,
+//     paymentMethod: 'Cash',
+//     time: '06:25 am',
+//   },
+//   {
+//     id: '3',
+//     orderId: '12345',
+//     status: 'Delivered',
+//     amount: 542.52,
+//     paymentMethod: 'Online',
+//     time: '06:25 am',
+//   },
+//   {
+//     id: '4',
+//     orderId: '12345',
+//     status: 'Delivered',
+//     amount: 15.2,
+//     paymentMethod: 'Cash',
+//     time: '06:25 am',
+//   },
+// ];
 
 const TABS: TimeFilter[] = ['Today', 'Weekly', 'Monthly'];
 
 const Earning = () => {
   const navigation = useNavigation<NavigationPropType>();
   const [activeTab, setActiveTab] = useState<TimeFilter>('Today');
-  const [orders] = useState(sampleOrders);
+  // const [orders] = useState(sampleOrders);
   const [connectStripeVisible, setConnectStripeVisible] = useState(false);
   const [confirmPayoutVisible, setConfirmPayoutVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
@@ -83,15 +69,23 @@ const Earning = () => {
   const { data, isLoading } = useGetVendorEarningsSummaryQuery();
   const [checkStripeStatus] = useLazyGetStripeVendorStatusQuery();
   const [requestWithdrawal, { isLoading: isWithdrawing }] = useRequestVendorWithdrawalMutation();
+  const [getRestaurantTotalEarnings,{data:totalEarningsData,isLoading:isLoadingTotalEarnings}] = useLazyGetRestaurantTotalEarningsQuery();
 
   const totalEarnings = data?.totalNet ?? 0;
   const totalGross = data?.totalGross ?? 0;
   const pendingBalance = data?.pendingBalance ?? 0;
 
-  const handleOrderPress = (order: Order) => {
-    // Handle order card press
-    console.log('Order pressed:', order);
-    // navigation.navigate('OrderDetails', { orderId: order.id });
+  useEffect(() => {
+    fetchTotalEarnings();
+  },[]);
+
+  const fetchTotalEarnings = async () => {
+    try {
+      const res = await getRestaurantTotalEarnings(undefined).unwrap();
+      // console.log('total earnings data', res);
+    } catch (error) {
+      console.log('error fetching total earnings', error);
+    }
   };
 
   const handleRequestPayout = async () => {
@@ -117,13 +111,13 @@ const Earning = () => {
         <View style={styles.container}>
           {/* Earnings Summary Cards */}
           <View style={styles.summaryContainer}>
-            <EarningsSummaryCard value={totalEarnings} label="Total Earnings" />
+            <EarningsSummaryCard value={totalEarningsData?.data?.totalEarnings ?? 0} label="Total Earnings" />
             <EarningsSummaryCard
               value={pendingBalance}
               label="Pending Balance"
               isHighlighted={true}
             />
-            <EarningsSummaryCard value={totalGross} label="Total Gross" />
+            <EarningsSummaryCard value={totalEarningsData?.data?.totalNet ?? 0} label="Total Gross" />
           </View>
 
           {/* Payout button */}
@@ -136,29 +130,49 @@ const Earning = () => {
               {isWithdrawing ? 'Requesting…' : 'Request Payout'}
             </Text>
           </TouchableOpacity>
-
+          <TouchableOpacity
+            style={styles.payoutButton}
+            onPress={() => navigation.navigate('Payment')}
+          >
+            <Text style={styles.payoutButtonText}>
+              {'Add Balance'}
+            </Text>
+          </TouchableOpacity>
           {/* Tab Bar */}
           <View style={[GeneralStyles.paddingHorizontal, styles.tabContainer]}>
             <AccomodationTabButtons data={TABS} />
           </View>
-
+          {isLoadingTotalEarnings ? (
+            <View style={styles.loader}>
+              <ActivityIndicator size="large" color="#0162C0" />
+            </View>
+          ) : (
+            <>    
           {/* Orders List */}
           <FlatList
-            data={orders}
+            data={totalEarningsData?.data?.orders ?? []}
+            ListEmptyComponent={<View style={styles.empty}>
+              <Text style={styles.emptyText}>No orders found</Text>
+            </View>}
             renderItem={({ item }) => (
               <OrderCard
-                orderId={item.orderId}
+                orderId={String(item.id)}
                 status={item.status}
-                amount={item.amount}
+                amount={item.totalAmount}
+                customerName={item?.user?.name ?? 'N/A'}
                 paymentMethod={item.paymentMethod}
-                time={item.time}
-                onPress={() => handleOrderPress(item)}
+                time={formatTime12h(item.createdAt)}
+                onViewDetails={() =>
+                  navigation.navigate('EarningOrderDetail', { order: item })
+                }
               />
             )}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
+          </>
+          )}
         </View>
       </WrapperContainer>
 
@@ -361,4 +375,19 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 14,
   },
+  empty: {
+    paddingVertical: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: '#666',
+  },
+  loader:{
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
+  }
 });

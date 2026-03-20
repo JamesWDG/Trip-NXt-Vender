@@ -21,6 +21,7 @@ type endpointTypes = {
     GET_HOTEL_BY_ID: (id: number) => string;
     CREATE_HOTEL: string;
     GET_ORDERS: (id: string) => string;
+    GET_SINGLE_ORDER: (id: string | number) => string;
     UPDATE_ORDER_STATUS: (id: string) => string;
     STRIPE_CONNECT: string;
     GET_BOOKING_LOGS: string;
@@ -33,6 +34,7 @@ type endpointTypes = {
     GET_STRIPE_VENDOR_STATUS: string;
     GET_RESTAURANT_REVIEWS: string;
     GET_ALL_NOTIFICATIONS: string;
+    GET_RESTAURANT_TOTAL_EARNINGS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -65,6 +67,7 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_MY_HOTEL: '/hotel/get-auth-user-hotels',
     GET_HOTEL_BY_ID: (id: number) => `/hotel/get/${id}`,
     GET_ORDERS: (id: string) => '/order/get-orders-by-restaurant-id/' + id,
+    GET_SINGLE_ORDER: (id: string | number) => `/order/get-single-order/${id}`,
     UPDATE_ORDER_STATUS: (id: string) => '/order/update-order-status/' + id,
     STRIPE_CONNECT: '/subscription/create-stripe-vender-account',
     GET_BOOKING_LOGS: '/booking/get-all-hotel-bookings-for-vendor',
@@ -76,6 +79,7 @@ export const endpoint: endpointTypes = Object.freeze({
     REQUEST_VENDOR_WITHDRAWAL: '/vendor/withdrawals/request',
     GET_STRIPE_VENDOR_STATUS: '/subscription/get-stripe-vender-account-status',
     GET_RESTAURANT_REVIEWS: '/review/get-restaurant-reviews',
-    GET_ALL_NOTIFICATIONS: '/notification/list'
+    GET_ALL_NOTIFICATIONS: '/notification/list',
+    GET_RESTAURANT_TOTAL_EARNINGS: '/restaurant/get-total-earnings',
 
 })
