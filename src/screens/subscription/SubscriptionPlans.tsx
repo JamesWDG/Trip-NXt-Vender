@@ -8,15 +8,16 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Check, Sparkles } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
-import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
-import colors from '../../../config/colors';
-import fonts from '../../../config/fonts';
+import { NavigationPropType } from '../../navigation/authStack/AuthStack';
+import WrapperContainer from '../../components/wrapperContainer/WrapperContainer';
+import GradientButtonForAccomodation from '../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
+import colors from '../../config/colors';
+import fonts from '../../config/fonts';
+import {useIAP} from 'react-native-iap';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = 280;
@@ -58,6 +59,7 @@ const PlanCard = ({
   isSelected: boolean;
   onPress: () => void;
 }) => {
+  const {connected, subscriptions, fetchProducts, requestPurchase} = useIAP();
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -122,6 +124,16 @@ const PlanCard = ({
       </View>
     </>
   );
+  useEffect(() => {
+    if (connected) {
+      fetchProducts({skus: ['bronze'], type: 'subs'});
+    }
+  }, [connected]);
+  useEffect(() => {
+    if (subscriptions) {
+      console.log('subscriptions: ', subscriptions);
+    }
+  }, [subscriptions]);
 
   return (
     <TouchableOpacity

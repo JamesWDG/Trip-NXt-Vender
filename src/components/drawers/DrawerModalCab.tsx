@@ -112,7 +112,7 @@ const importantLinksData = [
     name: 'Subscription',
     image: images.card,
     navigation: (navigation: NavigationPropType) =>
-      navigation.navigate('CabStack', { screen: 'SubscriptionPlans' }),
+      navigation.navigate('Subscription'),
   },
 ];
 

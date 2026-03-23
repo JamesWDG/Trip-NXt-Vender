@@ -103,7 +103,7 @@ const importantLinksData = [
     name: 'Subscription',
     image: images.card,
     navigation: (navigation: NavigationPropType) =>
-      navigation.navigate('Accomodation', { screen: 'SubscriptionPlans' }),
+      navigation.navigate('Subscription'),
   },
 ];
 

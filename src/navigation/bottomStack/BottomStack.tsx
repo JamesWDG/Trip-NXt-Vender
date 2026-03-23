@@ -14,6 +14,7 @@ import Notification from '../../screens/notification/Notification';
 import RideStack from '../rideStack/RideStack';
 import Web from '../../screens/Web/Web';
 import ChooseRegion from '../../screens/chooseRegion/ChooseRegion';
+import SubscriptionPlans from '../../screens/subscription/SubscriptionPlans';
 
 const Tab = createBottomTabNavigator();
 
@@ -31,6 +32,7 @@ const BottomStack: FC = () => {
       <Tab.Screen name="RestaurantStack" component={RestaurantStack} />
       <Tab.Screen name="Accomodation" component={AccomodationStack} />
       <Tab.Screen name="CabStack" component={RideStack} />
+      <Tab.Screen name="Subscription" component={SubscriptionPlans} />
       <Tab.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
       <Tab.Screen name="ChooseRegion" component={ChooseRegion} />
       <Tab.Screen name="FAQs" component={Faqs} />

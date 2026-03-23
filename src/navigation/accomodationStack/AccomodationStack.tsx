@@ -15,7 +15,6 @@ import UploadPhoto from '../../screens/Accomodation/uploadPhoto/UploadPhoto';
 import PeopleStays from '../../screens/Accomodation/peopleStays/PeopleStays';
 import Features from '../../screens/Accomodation/features/Features';
 import HotelBooking from '../../screens/Accomodation/hotelBooking/HotelBooking';
-import SubscriptionPlans from '../../screens/Accomodation/subscriptionPlans/SubscriptionPlans';
 import ContactUs from '../../screens/Accomodation/contactUs/ContactUs';
 import HotelDetails from '../../screens/hotelDetails/HotelDetails';
 import BookingDetails from '../../screens/Accomodation/bookingDetails/BookingDetails';
@@ -51,7 +50,6 @@ const AccomodationStack: FC = () => {
       <Stack.Screen name="PeopleStays" component={PeopleStays} />
       <Stack.Screen name="Features" component={Features} />
       <Stack.Screen name="HotelBooking" component={HotelBooking} />
-      <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
       <Stack.Screen name="ContactUs" component={ContactUs} />
       <Stack.Screen name="Notifications" component={Notification} />
     </Stack.Navigator>

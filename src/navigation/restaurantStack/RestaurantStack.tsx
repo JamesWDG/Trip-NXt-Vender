@@ -16,7 +16,6 @@ import Reviews from '../../screens/Restaurant/reviews/Reviews';
 import RestaurantProfile from '../../screens/Restaurant/restaurantProfile/RestaurantProfile';
 import RestaurantInfo from '../../screens/Restaurant/restaurantInfo/RestaurantInfo';
 import ManagePlan from '../../screens/Restaurant/managePlans/ManagePlan';
-import SubscriptionPlans from '../../screens/Ride/subscriptionPlans/SubscriptionPlans';
 import RideDetails from '../../screens/Restaurant/rideDetails/RideDetails';
 import RiderDetails from '../../screens/Restaurant/riderDetails/RiderDetails';
 import FindYourRide from '../../screens/Restaurant/findYourRide/FindYourRide';
@@ -41,7 +40,6 @@ const RestaurantStack: FC = () => {
       <Stack.Screen name="Map" component={Map} />
       <Stack.Screen name="ScheduleAndBank" component={ScheduleAndBank} />
       <Stack.Screen name="StripeConnection" component={StripeConnection} />
-      <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
 
       {/* Menu Management */}
       <Stack.Screen name="Menu" component={Menu} />

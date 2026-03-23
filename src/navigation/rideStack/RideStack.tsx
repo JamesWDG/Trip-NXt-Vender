@@ -2,7 +2,6 @@ import React, { FC } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import all Ride screens
-import SubscriptionPlans from '../../screens/Ride/subscriptionPlans/SubscriptionPlans';
 import Pickup from '../../screens/Ride/pickup/Pickup';
 import RideNumber from '../../screens/Ride/rideNumber/RideNumber';
 import TripEnd from '../../screens/Ride/tripEnded/TripEnded';
@@ -35,7 +34,6 @@ const RideStack: FC = () => {
     >
       {/* Subscription & Plans */}
       <Stack.Screen name="MyVehicle" component={MyVehicle} />
-      <Stack.Screen name="SubscriptionPlans" component={SubscriptionPlans} />
       <Stack.Screen name="ManagePlans" component={ManagePlans} />
 
       {/* Registration & Documents */}
