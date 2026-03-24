@@ -21,10 +21,18 @@ export const authApi = baseApi.injectEndpoints({
     }
    
   }),
+  getSingleOrder: builder.query({
+    query: (id: string | number) => ({
+      url: endpoint.GET_SINGLE_ORDER(id),
+      method: 'GET',
+    }),
+    transformResponse: (response: any) => response?.data ?? response,
+  }),
  }),
 });
 
 export const {
     useLazyGetOrdersQuery,
-    useUpdateOrderStatusMutation
+    useUpdateOrderStatusMutation,
+    useLazyGetSingleOrderQuery,
 } = authApi;

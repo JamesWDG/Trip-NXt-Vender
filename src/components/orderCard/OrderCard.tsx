@@ -54,7 +54,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <Text style={styles.customerName}>{customerName}</Text>
             <View style={styles.rightSection}>
               <Text style={styles.paymentInfo}>
-                {region === 'NGN' ? '₦'+ Number(amount).toFixed(2) : `$${Number(amount).toFixed(4)}`} • {paymentMethod}
+                {region === 'NGN' ? '₦'+ Number(amount).toFixed(2) : `$${Number(amount).toFixed(2)}`} • {paymentMethod}
               </Text>
             </View>
           </View>

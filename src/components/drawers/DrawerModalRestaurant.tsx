@@ -101,7 +101,7 @@ const importantLinksData = [
     name: 'Earnings',
     image: images.payment,
     navigation: (navigation: NavigationPropType) =>
-      navigation.navigate('RestaurantStack', { screen: 'Earning' }),
+      navigation.navigate('RestaurantStack', { screen: 'Earning',params: {type: 'restaurant'} }),
   },
   {
     id: 5,

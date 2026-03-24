@@ -66,6 +66,12 @@ export const RestaurantApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Menu'],
     }),
+    getRestaurantTotalEarnings: builder.query({
+      query: () => ({
+          url: endpoint.GET_RESTAURANT_TOTAL_EARNINGS,
+          method: 'GET',
+      })
+  })
   }),
 });
 
@@ -78,4 +84,5 @@ export const {
   useLazyGetMenuItemsQuery,
   useUpdateMenuItemMutation,
   useDeleteMenuItemMutation,
+  useLazyGetRestaurantTotalEarningsQuery,
 } = RestaurantApi;

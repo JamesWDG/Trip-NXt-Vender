@@ -1,3 +1,4 @@
+import { endpoint } from '../../contants/api';
 import { baseApi } from './api';
 
 export const cabService = baseApi.injectEndpoints({
@@ -29,6 +30,12 @@ export const cabService = baseApi.injectEndpoints({
         body: formData,
       }),
     }),
+    getCabTotalEarnings: builder.query({
+      query: () => ({
+        url: endpoint.GET_CAB_TOTAL_EARNINGS,
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
@@ -37,4 +44,5 @@ export const {
   useGetCabVendorByUserIdQuery,
   useSetCabVendorStatusMutation,
   useUpdateCabVendorMutation,
+  useLazyGetCabTotalEarningsQuery,
 } = cabService;

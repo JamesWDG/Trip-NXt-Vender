@@ -17,7 +17,7 @@ const AccomodationTabButtons = ({
   selectedIndex = () => {},
 }: {
   data: string[];
-  selectedIndex?: (index: number) => void;
+  selectedIndex?: (tab: 'Restaurant' | 'Hotel' | 'Cab') => void;
 }) => {
   TABS = data;
   const [activeIndex, setActiveIndex] = useState(0);
@@ -29,9 +29,9 @@ const AccomodationTabButtons = ({
     setContainerWidth(width);
   };
 
-  const handlePress = (index: number) => {
+  const handlePress = (tab: string, index: number) => {
     setActiveIndex(index);
-    selectedIndex(index);
+    selectedIndex(tab as 'Restaurant' | 'Hotel' | 'Cab');
     const tabWidth = containerWidth / TABS.length;
 
     Animated.spring(translateX, {
@@ -62,7 +62,7 @@ const AccomodationTabButtons = ({
             <TouchableOpacity
               key={index}
               activeOpacity={0.9}
-              onPress={() => handlePress(index)}
+              onPress={() => handlePress(tab,index)}
               style={[styles.tab, { width: tabWidth }]}
             >
               <Text

@@ -44,6 +44,23 @@ export const formatRelativeTime = (
   return diffYear === 1 ? '1 year ago' : `${diffYear} years ago`;
 };
 
+/** e.g. ISO string → "05:02 am" */
+export const formatTime12h = (
+  input: string | Date | null | undefined,
+): string => {
+  if (input == null || input === '') return '';
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return '';
+  const hour24 = d.getHours();
+  const minutes = d.getMinutes();
+  const ampm = hour24 >= 12 ? 'pm' : 'am';
+  let hour12 = hour24 % 12;
+  if (hour12 === 0) hour12 = 12;
+  const hh = hour12.toString().padStart(2, '0');
+  const mm = minutes.toString().padStart(2, '0');
+  return `${hh}:${mm} ${ampm}`;
+};
+
 export const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const monthNames = [

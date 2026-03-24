@@ -79,6 +79,13 @@ const importantLinksData = [
   },
   {
     id: 2,
+    name: 'Earnings',
+    image: images.payment,
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('Accomodation', { screen: 'Earning',params: {type: 'accomodation'} }),
+  },
+  {
+    id: 3,
     name: 'My Calender',
     image: images.payment,
     navigation: (navigation: NavigationPropType) =>
