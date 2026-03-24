@@ -30,7 +30,7 @@ import {
 } from '../../redux/slices/chatUnreadSlice';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
-import moment from 'moment';
+import images from '../../config/images';
 
 function toIsoTime(value: unknown): string | undefined {
   if (value == null) return undefined;
@@ -64,6 +64,21 @@ function formatLastMessagePreview(
   if (lastMessageAt) return 'Message';
   return 'No messages yet';
 }
+
+const formatTime = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  const sameDay =
+    now.getDate() === date.getDate() &&
+    now.getMonth() === date.getMonth() &&
+    now.getFullYear() === date.getFullYear();
+  if (sameDay) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleDateString();
+};
 
 const ChatListScreen = () => {
   const navigation = useNavigation<any>();
@@ -208,19 +223,25 @@ const ChatListScreen = () => {
     };
   }, [token, currentUserId, dispatch, loadChats]);
 
+  const getOtherParticipant = useCallback(
+    (chat: ChatSummary) => {
+      if (chat.otherUsers?.[0]) return chat.otherUsers[0];
+      const uid = currentUserId;
+      if (uid == null) return chat.users?.[0];
+      return chat.users?.find(u => Number(u.id) !== uid) ?? chat.users?.[0];
+    },
+    [currentUserId],
+  );
+
   const displayName = (chat: ChatSummary) => {
     if (chat.isGroup && chat.groupName) return chat.groupName;
-    const other =
-      chat.otherUsers?.[0] ||
-      chat.users?.find((u: any) => Number(u.id) !== currentUserId);
+    const other = getOtherParticipant(chat);
     return other?.name ?? 'Chat';
   };
 
   const displayAvatar = (chat: ChatSummary) => {
     if (chat.isGroup && chat.groupImage) return chat.groupImage;
-    const other =
-      chat.otherUsers?.[0] ||
-      chat.users?.find((u: any) => Number(u.id) !== currentUserId);
+    const other = getOtherParticipant(chat);
     return other?.profilePicture ?? null;
   };
 
@@ -234,11 +255,12 @@ const ChatListScreen = () => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return chats;
     return chats.filter((chat) => {
-      const name = displayName(chat).toLowerCase();
-      const preview = formatLastMessagePreview(chat.lastMessage, chat.lastMessageAt).toLowerCase();
-      return name.includes(query) || preview.includes(query);
+      const otherUser = getOtherParticipant(chat);
+      const title = (chat.isGroup ? chat.groupName || '' : otherUser?.name || '').toLowerCase();
+      const subtitle = formatLastMessagePreview(chat.lastMessage, chat.lastMessageAt).toLowerCase();
+      return title.includes(query) || subtitle.includes(query);
     });
-  }, [chats, searchQuery, currentUserId]);
+  }, [chats, searchQuery, getOtherParticipant]);
 
   const renderItem = ({ item }: { item: ChatSummary }) => {
     const name = displayName(item);
@@ -251,7 +273,7 @@ const ChatListScreen = () => {
     const lastMsg = pendingOutgoing
       ? 'Waiting for them to accept your request'
       : formatLastMessagePreview(item.lastMessage, item.lastMessageAt);
-    const time = item.lastMessageAt ? moment(item.lastMessageAt).format('HH:mm') : '';
+    const time = formatTime(item.lastMessageAt || item.lastMessage?.createdAt || null);
     const unread = unreadByChatId[Number(item.id)] || 0;
 
     return (
@@ -259,10 +281,14 @@ const ChatListScreen = () => {
         style={styles.chatRow}
         onPress={() => {
           dispatch(clearChatUnread(Number(item.id)));
+          const otherUser = getOtherParticipant(item);
+          const title = item.isGroup ? item.groupName || 'Group Chat' : otherUser?.name || 'Chat';
           navigation.navigate('ChatConversation', {
             chatId: item.id,
-            chatData: JSON.stringify(item),
-            chatName: name,
+            chatData: item,
+            chatName: title,
+            name: title,
+            avatar: otherUser?.profilePicture ? { uri: otherUser.profilePicture } : images.avatar,
           });
         }}
         activeOpacity={0.7}
@@ -299,7 +325,7 @@ const ChatListScreen = () => {
   return (
     <WrapperContainer navigation={navigation} title="Messages">
       <View style={styles.flexOne}>
-        {isLoading ? (
+        {isLoading && chats.length === 0 ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
@@ -335,7 +361,7 @@ const ChatListScreen = () => {
                               {reqName}
                             </Text>
                             <Text style={styles.requestSub} numberOfLines={2}>
-                              Wants to chat with you
+                              Wants to start a chat with you
                             </Text>
                           </View>
                           <View style={styles.requestBtns}>
@@ -362,14 +388,18 @@ const ChatListScreen = () => {
                                   const accepted = await acceptRequest({ chatId: cid }).unwrap();
                                   setChatRequests((prev) => prev.filter((r) => Number(r.id) !== cid));
                                   await loadChats();
-                                  const title =
-                                    accepted?.otherUsers?.[0]?.name ||
-                                    accepted?.users?.find((u) => Number(u.id) !== currentUserId)?.name ||
-                                    reqName;
+                                  const otherUser =
+                                    accepted?.otherUsers?.[0] ||
+                                    accepted?.users?.find((u) => Number(u.id) !== currentUserId);
+                                  const title = otherUser?.name || reqName;
                                   navigation.navigate('ChatConversation', {
                                     chatId: accepted?.id ?? cid,
-                                    chatData: JSON.stringify(accepted ?? req),
+                                    chatData: accepted ?? req,
                                     chatName: title,
+                                    name: title,
+                                    avatar: otherUser?.profilePicture
+                                      ? { uri: otherUser.profilePicture }
+                                      : images.avatar,
                                   });
                                 } catch (e) {
                                   console.log('accept chat request', e);
@@ -395,8 +425,11 @@ const ChatListScreen = () => {
               }
               ListEmptyComponent={
                 <View style={styles.empty}>
-                  <Text style={styles.emptyText}>
-                    {searchQuery.trim() ? 'No chats match your search' : 'No conversations yet'}
+                  <Text style={styles.emptyTitle}>No chats found</Text>
+                  <Text style={styles.emptySubtitle}>
+                    {searchQuery.trim()
+                      ? 'Try another name or keyword.'
+                      : 'Start a chat to see conversations here.'}
                   </Text>
                 </View>
               }
@@ -594,12 +627,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   empty: {
-    padding: 40,
     alignItems: 'center',
+    marginTop: 80,
+    paddingHorizontal: 30,
   },
-  emptyText: {
+  emptyTitle: {
+    fontFamily: fonts.bold,
     fontSize: 16,
+    color: colors.c_2B2B2B,
+  },
+  emptySubtitle: {
+    marginTop: 6,
+    textAlign: 'center',
     fontFamily: fonts.normal,
+    fontSize: 13,
     color: colors.c_666666,
   },
 });

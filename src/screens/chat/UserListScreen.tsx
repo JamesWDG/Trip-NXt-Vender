@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -12,9 +13,9 @@ import { useNavigation } from '@react-navigation/native';
 import WrapperContainer from '../../components/wrapperContainer/WrapperContainer';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
+import images from '../../config/images';
 import { useAppSelector } from '../../redux/store';
 import { useSearchUsersQuery } from '../../redux/services/authService';
-import { useCreateSingleChatMutation } from '../../redux/services/chatService';
 
 type UserItem = {
   id: number;
@@ -25,29 +26,15 @@ type UserItem = {
 
 const UserListScreen = () => {
   const navigation = useNavigation<any>();
-  const myId = useAppSelector((s) => (s.auth?.user?.id != null ? Number(s.auth.user.id) : null));
+  const myId = useAppSelector(s => (s.auth?.user?.id != null ? Number(s.auth.user.id) : null));
   const [searchQ, setSearchQ] = useState('');
   const { data: users = [], isLoading, isFetching } = useSearchUsersQuery(
     { q: searchQ.trim(), limit: 80 },
     { skip: false },
   );
-  const [createSingleChat, { isLoading: opening }] = useCreateSingleChatMutation();
 
   const rawList = Array.isArray(users) ? users : [];
   const list = myId != null ? rawList.filter((u: UserItem) => Number(u.id) !== myId) : rawList;
-
-  const onPickUser = async (item: UserItem) => {
-    try {
-      const chat = await createSingleChat({ otherUserId: Number(item.id), direct: true }).unwrap();
-      navigation.navigate('ChatConversation', {
-        chatId: chat.id,
-        chatData: JSON.stringify(chat),
-        chatName: item.name?.trim() || item.email || 'Chat',
-      });
-    } catch (e: any) {
-      console.log('create chat', e);
-    }
-  };
 
   return (
     <WrapperContainer navigation={navigation} title="New message" goBack>
@@ -71,32 +58,39 @@ const UserListScreen = () => {
         ) : (
           <FlatList
             data={list}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={item => String(item.id)}
             contentContainerStyle={styles.listContent}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.row}
-                onPress={() => onPickUser(item)}
-                disabled={opening}
-                activeOpacity={0.7}
-              >
-                <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarText}>
-                    {(item.name || item.email || '?').charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.info}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.name?.trim() || item.email || 'User'}
-                  </Text>
-                  {item.email ? (
-                    <Text style={styles.email} numberOfLines={1}>
-                      {item.email}
+            renderItem={({ item }) => {
+              const avatarSource = item.profilePicture
+                ? { uri: item.profilePicture }
+                : images.avatar;
+              return (
+                <TouchableOpacity
+                  style={styles.row}
+                  onPress={() =>
+                    navigation.navigate('ChatConversation', {
+                      receiverId: Number(item.id),
+                      name: item.name?.trim() || item.email || 'User',
+                      chatName: item.name?.trim() || item.email || 'User',
+                      avatar: item.profilePicture ? { uri: item.profilePicture } : images.avatar,
+                    })
+                  }
+                  activeOpacity={0.7}
+                >
+                  <Image source={avatarSource} style={styles.avatar} />
+                  <View style={styles.info}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {item.name?.trim() || item.email || 'User'}
                     </Text>
-                  ) : null}
-                </View>
-              </TouchableOpacity>
-            )}
+                    {item.email ? (
+                      <Text style={styles.email} numberOfLines={1}>
+                        {item.email}
+                      </Text>
+                    ) : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
             ListEmptyComponent={
               <View style={styles.empty}>
                 <Text style={styles.emptyText}>
@@ -141,19 +135,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.c_F3F3F3,
   },
-  avatarPlaceholder: {
+  avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.c_007DFC,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 12,
-  },
-  avatarText: {
-    color: colors.white,
-    fontSize: 18,
-    fontFamily: fonts.bold,
   },
   info: {
     flex: 1,
