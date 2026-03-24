@@ -7,6 +7,7 @@ type endpointTypes = {
     RESEND_OTP: string;
     RESET_PASSWORD: string;
     GET_USER_PROFILE: string;
+    USER_SEARCH: string;
     UPDATE_USER_PROFILE: (id: number) => string;
     CREATE_RESTAURANT: string;
     GET_RESTAURANT: (id: string) => string;
@@ -54,6 +55,7 @@ export const endpoint: endpointTypes = Object.freeze({
     RESEND_OTP: '/user/resend-otp',
     RESET_PASSWORD: '/user/reset-password',
     GET_USER_PROFILE: '/user/get-auth-user',
+    USER_SEARCH: '/user/search',
     UPDATE_USER_PROFILE: (id: number) => `/user/update-user/${id}`,
     CREATE_RESTAURANT: '/restaurant/create',
     GET_AUTH_USER_RESTAURANT: '/restaurant/get',

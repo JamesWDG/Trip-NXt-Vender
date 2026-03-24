@@ -124,6 +124,12 @@ const importantLinksData = [
     navigation: (navigation: NavigationPropType) =>
       navigation.navigate('RestaurantStack', { screen: 'SubscriptionPlans' }),
   },
+  {
+    id: 7,
+    name: 'Messages',
+    image: images.messages,
+    navigation: (navigation: NavigationPropType) => navigation.navigate('ChatList'),
+  },
 ];
 
 const generalData = [

@@ -13,6 +13,7 @@ import OrderDetails from '../../screens/Restaurant/orderDetails/OrderDetails';
 import CurrentOrders from '../../screens/Restaurant/currentOrders/CurrentOrders';
 import Earning from '../../screens/Restaurant/earning/Earning';
 import EarningOrderDetail from '../../screens/Restaurant/earning/EarningOrderDetail';
+import ChatConversationScreen from '../../screens/chat/ChatConversationScreen';
 import Reviews from '../../screens/Restaurant/reviews/Reviews';
 import RestaurantProfile from '../../screens/Restaurant/restaurantProfile/RestaurantProfile';
 import RestaurantInfo from '../../screens/Restaurant/restaurantInfo/RestaurantInfo';
@@ -61,6 +62,7 @@ const RestaurantStack: FC = () => {
       {/* Other Screens */}
       <Stack.Screen name="Earning" component={Earning} />
       <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
+      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
       <Stack.Screen name="Reviews" component={Reviews} />
       <Stack.Screen name="RestaurantProfile" component={RestaurantProfile} />
       <Stack.Screen name="RestaurantInfo" component={RestaurantInfo} />

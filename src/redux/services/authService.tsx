@@ -69,7 +69,21 @@ export const authApi = baseApi.injectEndpoints({
         url: endpoint.STRIPE_CONNECT,
         method: 'GET',
       })
-    })
+    }),
+    searchUsers: builder.query<
+      Array<{ id: number; name: string; email?: string; profilePicture?: string | null }>,
+      { q?: string; limit?: number }
+    >({
+      query: (params = {}) => {
+        const q = params.q ?? '';
+        const limit = params.limit ?? 80;
+        return {
+          url: `${endpoint.USER_SEARCH}?q=${encodeURIComponent(q)}&limit=${limit}`,
+          method: 'GET',
+        };
+      },
+      transformResponse: (res: any) => (Array.isArray(res) ? res : res?.data ?? res ?? []),
+    }),
   }),
 });
 
@@ -83,5 +97,6 @@ export const {
   useLogoutMutation,
   useUpdateUserMutation,
   useLazyGetUserQuery,
-  useLazyStripeConnectQuery
+  useLazyStripeConnectQuery,
+  useSearchUsersQuery,
 } = authApi;

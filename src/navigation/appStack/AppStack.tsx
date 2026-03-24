@@ -7,6 +7,7 @@ import Notification from '../../screens/notification/Notification';
 import PrivacyPolicy from '../../screens/privacyPolicy/PrivacyPolicy';
 import ChatListScreen from '../../screens/chat/ChatListScreen';
 import ChatConversationScreen from '../../screens/chat/ChatConversationScreen';
+import UserListScreen from '../../screens/chat/UserListScreen';
 import BottomStack from '../bottomStack/BottomStack';
 
 export type NavigationPropType = NativeStackNavigationProp<any>;
@@ -27,6 +28,7 @@ const AppStack: FC = () => {
       <Stack.Screen name="Notification" component={Notification} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicy} />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="UserListScreen" component={UserListScreen} />
       <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
     </Stack.Navigator>
   );
