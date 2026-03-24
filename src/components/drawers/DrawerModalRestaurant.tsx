@@ -128,7 +128,8 @@ const importantLinksData = [
     id: 7,
     name: 'Messages',
     image: images.messages,
-    navigation: (navigation: NavigationPropType) => navigation.navigate('ChatList'),
+    navigation: (navigation: NavigationPropType) =>
+      navigation.navigate('Profile', { screen: 'ChatList' }),
   },
 ];
 
