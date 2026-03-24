@@ -124,6 +124,12 @@ const importantLinksData = [
     navigation: (navigation: NavigationPropType) =>
       navigation.navigate('Subscription'),
   },
+  {
+    id: 7,
+    name: 'Messages',
+    image: images.messages,
+    navigation: (navigation: NavigationPropType) => navigation.navigate('ChatList'),
+  },
 ];
 
 const generalData = [

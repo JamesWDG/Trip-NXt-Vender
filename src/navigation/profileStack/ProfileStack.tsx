@@ -4,6 +4,7 @@ import Profile from '../../screens/profile/Profile';
 import EditProfile from '../../screens/profile/EditProfile';
 import ChatListScreen from '../../screens/chat/ChatListScreen';
 import ChatConversationScreen from '../../screens/chat/ChatConversationScreen';
+import UserListScreen from '../../screens/chat/UserListScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,6 +19,7 @@ const ProfileStack: FC = () => {
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="ChatList" component={ChatListScreen} />
+      <Stack.Screen name="UserListScreen" component={UserListScreen} />
       <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
     </Stack.Navigator>
   );

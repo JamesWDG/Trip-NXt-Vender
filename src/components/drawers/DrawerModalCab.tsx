@@ -93,13 +93,12 @@ const importantLinksData = [
     navigation: (navigation: NavigationPropType) =>
       navigation.navigate('CabStack', { screen: 'TotalEarnings' }),
   },
-  // {
-  //   id: 3,
-  //   name: 'Messages',
-  //   image: images.messages,
-  //   navigation: (navigation: NavigationPropType) =>
-  //     navigation.navigate('Accomodation', { screen: 'MessagesSent' }),
-  // },
+  {
+    id: 10,
+    name: 'Messages',
+    image: images.messages,
+    navigation: (navigation: NavigationPropType) => navigation.navigate('ChatList'),
+  },
   {
     id: 4,
     name: 'All Reviews',

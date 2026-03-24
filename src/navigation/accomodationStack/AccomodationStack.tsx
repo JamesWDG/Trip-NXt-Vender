@@ -21,6 +21,7 @@ import BookingDetails from '../../screens/Accomodation/bookingDetails/BookingDet
 import Notification from '../../screens/notification/Notification';
 import Earning from '../../screens/Restaurant/earning/Earning';
 import EarningOrderDetail from '../../screens/Restaurant/earning/EarningOrderDetail';
+import ChatConversationScreen from '../../screens/chat/ChatConversationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -56,6 +57,7 @@ const AccomodationStack: FC = () => {
       <Stack.Screen name="Notifications" component={Notification} />
       <Stack.Screen name="Earning" component={Earning} />
       <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
+      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
     </Stack.Navigator>
   );
 };
