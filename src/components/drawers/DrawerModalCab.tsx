@@ -20,7 +20,7 @@ import { navigationRef } from '../../config/constants';
 import IconsWithTitle from '../iconsWithTitle/IconsWithTitle';
 import IconWithTitleAndDivider from '../iconWithTitleAndDivider/IconWithTitleAndDivider';
 import { NavigationPropType } from '../../navigation/authStack/AuthStack';
-import { useAppDispatch } from '../../redux/store';
+import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { setLogout } from '../../redux/slices/authSlice';
 import { resetRegistrationData } from '../../redux/slices/registrationSlice';
 
@@ -153,6 +153,12 @@ const DrawerModalCab = ({ visible, setIsModalVisible }: IDrawerModal) => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationPropType>();
   const dispatch = useAppDispatch();
+  const totalChatUnread = useAppSelector(s =>
+    Object.values(s.chatUnread?.unreadByChatId ?? {}).reduce(
+      (sum, n) => sum + (Number(n) || 0),
+      0,
+    ),
+  );
 
   const renderHorizontalTabs = ({
     item,
@@ -172,6 +178,7 @@ const DrawerModalCab = ({ visible, setIsModalVisible }: IDrawerModal) => {
         title={item.name}
         divider={true}
         dividerColor={colors.c_111111}
+        badgeCount={item.name === 'Messages' ? totalChatUnread : undefined}
         onPress={() => {
           if (item.navigation) {
             setIsModalVisible(false);

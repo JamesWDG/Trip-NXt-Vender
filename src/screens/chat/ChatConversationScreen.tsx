@@ -33,6 +33,7 @@ import {
   useSendMessageMutation,
   useUploadChatImageMutation,
 } from '../../redux/services/chatService';
+import { sanitizeChatMessageContent } from '../../utils/sanitizeChatMessageContent';
 
 type LocalMessage = {
   id: number | string;
@@ -151,12 +152,14 @@ const ChatConversationScreen = () => {
     (message: any): LocalMessage => {
       const senderId = Number(message?.senderId ?? message?.sender?.id);
       const isSent = viewerId ? senderId === viewerId : false;
+      const raw = typeof message?.content === 'string' ? message.content : '';
+      const content = sanitizeChatMessageContent(raw);
       return {
         id: message?.id ?? String(Date.now()),
         chatId: Number(message?.chatId ?? message?.chat?.id ?? chatId ?? 0),
         senderId,
-        content: message?.content ?? '',
-        text: message?.content ?? '',
+        content,
+        text: content,
         messageType: message?.messageType || 'text',
         isSent,
         createdAt: message?.createdAt,
@@ -216,14 +219,14 @@ const ChatConversationScreen = () => {
       const msgChatId = Number(message?.chatId ?? message?.chat?.id);
       if (!msgChatId || msgChatId !== chatId) return;
       const senderFromMsg = Number(message?.senderId ?? message?.sender?.id);
-      const contentNorm = String(message?.content ?? '').trim();
+      const contentNorm = sanitizeChatMessageContent(String(message?.content ?? ''));
       setMessages(prev => {
         const mapped = mapServerMessage(message);
         const incomingType = message?.messageType || 'text';
         const withoutDupOptimistic = prev.filter(m => {
           if (!m.isOptimistic) return true;
           const sameSender = Number(m.senderId) === senderFromMsg;
-          const sameText = String(m.content ?? '').trim() === contentNorm;
+          const sameText = sanitizeChatMessageContent(String(m.content ?? '')) === contentNorm;
           const sameType = (m.messageType || 'text') === incomingType;
           return !(sameSender && sameText && sameType);
         });
