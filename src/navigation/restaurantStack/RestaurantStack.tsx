@@ -60,7 +60,7 @@ const RestaurantStack: FC = () => {
       {/* Other Screens */}
       <Stack.Screen name="Earning" component={Earning} />
       <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
-      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
+      {/* <Stack.Screen name="ChatConversation" component={ChatConversationScreen} /> */}
       <Stack.Screen name="Reviews" component={Reviews} />
       <Stack.Screen name="RestaurantProfile" component={RestaurantProfile} />
       <Stack.Screen name="RestaurantInfo" component={RestaurantInfo} />

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MessageCircle, Plus, Search, Users } from 'lucide-react-native';
+import { Plus, Search, Users } from 'lucide-react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import WrapperContainer from '../../components/wrapperContainer/WrapperContainer';
 import {
@@ -32,7 +32,7 @@ import {
 } from '../../redux/slices/chatUnreadSlice';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
-import moment from 'moment';
+import images from '../../config/images';
 
 function toIsoTime(value: unknown): string | undefined {
   if (value == null) return undefined;
@@ -67,17 +67,20 @@ function formatLastMessagePreview(
   return 'No messages yet';
 }
 
-function formatChatTime(iso: string | null | undefined): string {
-  if (!iso) return '';
-  const m = moment(iso);
-  if (!m.isValid()) return '';
-  const now = moment();
-  if (m.isSame(now, 'day')) return m.format('HH:mm');
-  if (m.isSame(now.clone().subtract(1, 'day'), 'day')) return 'Yesterday';
-  if (m.isSame(now, 'year')) return m
-  .format('MMM D');
-  return m.format('MMM D, YYYY');
-}
+const formatTime = (value?: string | null) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  const sameDay =
+    now.getDate() === date.getDate() &&
+    now.getMonth() === date.getMonth() &&
+    now.getFullYear() === date.getFullYear();
+  if (sameDay) {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+  return date.toLocaleDateString();
+};
 
 const ChatListScreen = () => {
   const navigation = useNavigation<any>();
@@ -116,19 +119,6 @@ const ChatListScreen = () => {
       void loadChats();
     }, [loadChats]),
   );
-
-  useEffect(() => {
-    const subscribe = navigation.addListener('focus', () => {
-      navigation.setOptions({
-        tabBarStyle: {
-          display: 'none',
-        },
-      })
-    });
-    return () => {
-      subscribe();
-    };
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -235,27 +225,27 @@ const ChatListScreen = () => {
     };
   }, [token, currentUserId, dispatch, loadChats]);
 
-  const displayName = useCallback(
+  const getOtherParticipant = useCallback(
     (chat: ChatSummary) => {
-      if (chat.isGroup && chat.groupName) return chat.groupName;
-      const other =
-        chat.otherUsers?.[0] ||
-        chat.users?.find((u: any) => Number(u.id) !== currentUserId);
-      return other?.name ?? 'Chat';
+      if (chat.otherUsers?.[0]) return chat.otherUsers[0];
+      const uid = currentUserId;
+      if (uid == null) return chat.users?.[0];
+      return chat.users?.find(u => Number(u.id) !== uid) ?? chat.users?.[0];
     },
     [currentUserId],
   );
 
-  const displayAvatar = useCallback(
-    (chat: ChatSummary) => {
-      if (chat.isGroup && chat.groupImage) return chat.groupImage;
-      const other =
-        chat.otherUsers?.[0] ||
-        chat.users?.find((u: any) => Number(u.id) !== currentUserId);
-      return other?.profilePicture ?? null;
-    },
-    [currentUserId],
-  );
+  const displayName = (chat: ChatSummary) => {
+    if (chat.isGroup && chat.groupName) return chat.groupName;
+    const other = getOtherParticipant(chat);
+    return other?.name ?? 'Chat';
+  };
+
+  const displayAvatar = (chat: ChatSummary) => {
+    if (chat.isGroup && chat.groupImage) return chat.groupImage;
+    const other = getOtherParticipant(chat);
+    return other?.profilePicture ?? null;
+  };
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -267,11 +257,12 @@ const ChatListScreen = () => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return chats;
     return chats.filter((chat) => {
-      const name = displayName(chat).toLowerCase();
-      const preview = formatLastMessagePreview(chat.lastMessage, chat.lastMessageAt).toLowerCase();
-      return name.includes(query) || preview.includes(query);
+      const otherUser = getOtherParticipant(chat);
+      const title = (chat.isGroup ? chat.groupName || '' : otherUser?.name || '').toLowerCase();
+      const subtitle = formatLastMessagePreview(chat.lastMessage, chat.lastMessageAt).toLowerCase();
+      return title.includes(query) || subtitle.includes(query);
     });
-  }, [chats, searchQuery, displayName]);
+  }, [chats, searchQuery, getOtherParticipant]);
 
   const renderItem = ({ item }: { item: ChatSummary }) => {
     const name = displayName(item);
@@ -284,7 +275,7 @@ const ChatListScreen = () => {
     const lastMsg = pendingOutgoing
       ? 'Waiting for them to accept your request'
       : formatLastMessagePreview(item.lastMessage, item.lastMessageAt);
-    const time = formatChatTime(item.lastMessageAt || item.lastMessage?.createdAt || null);
+    const time = formatTime(item.lastMessageAt || item.lastMessage?.createdAt || null);
     const unread = unreadByChatId[Number(item.id)] || 0;
     const hasUnread = unread > 0;
 
@@ -293,10 +284,14 @@ const ChatListScreen = () => {
         style={[styles.chatRow, hasUnread && styles.chatRowUnread]}
         onPress={() => {
           dispatch(clearChatUnread(Number(item.id)));
+          const otherUser = getOtherParticipant(item);
+          const title = item.isGroup ? item.groupName || 'Group Chat' : otherUser?.name || 'Chat';
           navigation.navigate('ChatConversation', {
             chatId: item.id,
-            chatData: JSON.stringify(item),
-            chatName: name,
+            chatData: item,
+            chatName: title,
+            name: title,
+            avatar: otherUser?.profilePicture ? { uri: otherUser.profilePicture } : images.avatar,
           });
         }}
         activeOpacity={0.72}
@@ -356,7 +351,7 @@ const ChatListScreen = () => {
   return (
     <WrapperContainer navigation={navigation} title="Messages">
       <View style={styles.flexOne}>
-        {isLoading ? (
+        {isLoading && chats.length === 0 ? (
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={colors.c_F47E20} />
             <Text style={styles.loadingHint}>Loading conversations…</Text>
@@ -393,32 +388,15 @@ const ChatListScreen = () => {
                     {chatRequests.map((req) => {
                       const cid = Number(req.id);
                       const reqName = req.requestInitiator?.name ?? 'Someone';
-                      const reqPic = req.requestInitiator?.profilePicture ?? null;
                       return (
                         <View key={cid} style={styles.requestCard}>
-                          <View style={styles.requestCardTop}>
-                            {reqPic ? (
-                              <Image source={{ uri: reqPic }} style={styles.requestAvatar} />
-                            ) : (
-                              <LinearGradient
-                                colors={[colors.c_0162C0, colors.c_007DFC]}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                style={styles.requestAvatarPlaceholder}
-                              >
-                                <Text style={styles.requestAvatarLetter}>
-                                  {reqName.charAt(0).toUpperCase()}
-                                </Text>
-                              </LinearGradient>
-                            )}
-                            <View style={styles.requestBody}>
-                              <Text style={styles.requestName} numberOfLines={1}>
-                                {reqName}
-                              </Text>
-                              <Text style={styles.requestSub} numberOfLines={2}>
-                                Wants to start a conversation with you
-                              </Text>
-                            </View>
+                          <View style={[styles.requestBody, styles.requestBodyInCard]}>
+                            <Text style={styles.requestName} numberOfLines={1}>
+                              {reqName}
+                            </Text>
+                            <Text style={styles.requestSub} numberOfLines={2}>
+                              Wants to start a chat with you
+                            </Text>
                           </View>
                           <View style={styles.requestBtns}>
                             <TouchableOpacity
@@ -444,14 +422,18 @@ const ChatListScreen = () => {
                                   const accepted = await acceptRequest({ chatId: cid }).unwrap();
                                   setChatRequests((prev) => prev.filter((r) => Number(r.id) !== cid));
                                   await loadChats();
-                                  const title =
-                                    accepted?.otherUsers?.[0]?.name ||
-                                    accepted?.users?.find((u) => Number(u.id) !== currentUserId)?.name ||
-                                    reqName;
+                                  const otherUser =
+                                    accepted?.otherUsers?.[0] ||
+                                    accepted?.users?.find((u) => Number(u.id) !== currentUserId);
+                                  const title = otherUser?.name || reqName;
                                   navigation.navigate('ChatConversation', {
                                     chatId: accepted?.id ?? cid,
-                                    chatData: JSON.stringify(accepted ?? req),
+                                    chatData: accepted ?? req,
                                     chatName: title,
+                                    name: title,
+                                    avatar: otherUser?.profilePicture
+                                      ? { uri: otherUser.profilePicture }
+                                      : images.avatar,
                                   });
                                 } catch (e) {
                                   console.log('accept chat request', e);
@@ -484,16 +466,11 @@ const ChatListScreen = () => {
               }
               ListEmptyComponent={
                 <View style={styles.empty}>
-                  <View style={styles.emptyIconWrap}>
-                    <MessageCircle size={40} color={colors.c_C4C4C4} strokeWidth={1.5} />
-                  </View>
-                  <Text style={styles.emptyTitle}>
-                    {searchQuery.trim() ? 'No matches' : 'No conversations yet'}
-                  </Text>
+                  <Text style={styles.emptyTitle}>No chats found</Text>
                   <Text style={styles.emptySubtitle}>
                     {searchQuery.trim()
-                      ? 'Try a different search term'
-                      : 'Tap + to message someone new'}
+                      ? 'Try another name or keyword.'
+                      : 'Start a chat to see conversations here.'}
                   </Text>
                 </View>
               }
@@ -627,6 +604,9 @@ const styles = StyleSheet.create({
   },
   requestBody: {
     flex: 1,
+  },
+  requestBodyInCard: {
+    marginBottom: 14,
   },
   requestName: {
     fontFamily: fonts.bold,
@@ -836,33 +816,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.c_F6F6F6,
   },
   empty: {
-    paddingVertical: 56,
-    paddingHorizontal: 28,
     alignItems: 'center',
-  },
-  emptyIconWrap: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.c_F3F3F3,
+    marginTop: 80,
+    paddingHorizontal: 30,
   },
   emptyTitle: {
-    fontSize: 18,
     fontFamily: fonts.bold,
+    fontSize: 16,
     color: colors.c_2B2B2B,
-    textAlign: 'center',
   },
   emptySubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    fontFamily: fonts.normal,
-    color: colors.c_666666,
+    marginTop: 6,
     textAlign: 'center',
+    fontFamily: fonts.normal,
+    fontSize: 13,
+    color: colors.c_666666,
     lineHeight: 21,
   },
 });

@@ -34,6 +34,12 @@ export const VendorApi = baseApi.injectEndpoints({
         method: 'GET',
       }),
     }),
+    getVendorStripeStatus: builder.query<any, void>({
+      query: () => ({
+        url: endpoint.GET_VENDOR_STRIPE_STATUS,
+        method: 'GET',
+      }),
+    }),
   }),
 });
 
@@ -43,5 +49,6 @@ export const {
   useRequestVendorWithdrawalMutation,
   useLazyGetStripeVendorStatusQuery,
   useCreateStripeVendorAccountMutation,
+  useLazyGetVendorStripeStatusQuery
 } = VendorApi;
 

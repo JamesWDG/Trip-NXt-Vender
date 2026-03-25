@@ -38,6 +38,7 @@ type endpointTypes = {
     GET_RESTAURANT_TOTAL_EARNINGS: string;
     GET_HOTEL_TOTAL_EARNINGS: string;
     GET_CAB_TOTAL_EARNINGS: string;
+    GET_VENDOR_STRIPE_STATUS: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -87,4 +88,5 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_RESTAURANT_TOTAL_EARNINGS: '/restaurant/get-total-earnings',
     GET_HOTEL_TOTAL_EARNINGS: '/hotel/get-total-earnings',
     GET_CAB_TOTAL_EARNINGS: '/cab/get-total-earnings',
+    GET_VENDOR_STRIPE_STATUS: '/subscription/vendor-stripe-connect-status',
 })

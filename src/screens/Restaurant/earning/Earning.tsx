@@ -1,4 +1,12 @@
-import { FlatList, Modal, StyleSheet, TouchableOpacity, View, Text, ActivityIndicator } from 'react-native';
+import {
+  FlatList,
+  Modal,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Text,
+  ActivityIndicator,
+} from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
@@ -11,7 +19,7 @@ import fonts from '../../../config/fonts';
 import colors from '../../../config/colors';
 import {
   useGetVendorEarningsSummaryQuery,
-  useLazyGetStripeVendorStatusQuery,
+  useLazyGetVendorStripeStatusQuery,
   useRequestVendorWithdrawalMutation,
 } from '../../../redux/services/vendorService';
 import { useLazyGetRestaurantTotalEarningsQuery } from '../../../redux/services/restaurantService';
@@ -19,71 +27,68 @@ import { formatTime12h } from '../../../utils/utility';
 import { useLazyGetHotelTotalEarningsQuery } from '../../../redux/services/hotelService';
 import { useLazyGetCabTotalEarningsQuery } from '../../../redux/services/cabService';
 import { RootState, useAppSelector } from '../../../redux/store';
+import { ShowToast } from '../../../config/constants';
 
 type TimeFilter = 'Restaurant' | 'Hotel' | 'Cab';
 const TABS: TimeFilter[] = ['Restaurant', 'Hotel', 'Cab'];
 
-const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'accomodation'}}>}) => {
+const Earning = ({
+  route,
+}: {
+  route: RouteProp<{ Earning: { type: 'restaurant' | 'accomodation' } }>;
+}) => {
   const navigation = useNavigation<NavigationPropType>();
   const [activeTab, setActiveTab] = useState<TimeFilter>('Restaurant');
-  const {type} = route.params;
+  const { type } = route.params;
   const [connectStripeVisible, setConnectStripeVisible] = useState(false);
   const [confirmPayoutVisible, setConfirmPayoutVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { data, isLoading } = useGetVendorEarningsSummaryQuery();
-  const [checkStripeStatus] = useLazyGetStripeVendorStatusQuery();
-  const [requestWithdrawal, { isLoading: isWithdrawing }] = useRequestVendorWithdrawalMutation();
-  const [getRestaurantTotalEarnings,{data:totalEarningsData,isLoading:isLoadingTotalEarnings}] = useLazyGetRestaurantTotalEarningsQuery();
-  const [getHotelTotalEarnings,{data:hotelTotalEarningsData,isLoading:isLoadingHotelTotalEarnings}] = useLazyGetHotelTotalEarningsQuery();
-  const [getCabTotalEarnings,{data:cabTotalEarningsData,isLoading:isLoadingCabTotalEarnings}] = useLazyGetCabTotalEarningsQuery();
-  const pendingBalance = data?.pendingBalance ?? 0;
-  const user = useAppSelector((state) => state.auth.user);
+  const [
+    checkStripeStatus,
+    { data: stripeStatusData, isLoading: isLoadingStripeStatus },
+  ] = useLazyGetVendorStripeStatusQuery();
+  const [requestWithdrawal, { isLoading: isWithdrawing }] =
+    useRequestVendorWithdrawalMutation();
+  const [
+    getRestaurantTotalEarnings,
+    { data: totalEarningsData, isLoading: isLoadingTotalEarnings },
+  ] = useLazyGetRestaurantTotalEarningsQuery();
+  const [
+    getHotelTotalEarnings,
+    { data: hotelTotalEarningsData, isLoading: isLoadingHotelTotalEarnings },
+  ] = useLazyGetHotelTotalEarningsQuery();
+  const [
+    getCabTotalEarnings,
+    { data: cabTotalEarningsData, isLoading: isLoadingCabTotalEarnings },
+  ] = useLazyGetCabTotalEarningsQuery();
+  const user = useAppSelector(state => state.auth.user);
 
   useEffect(() => {
-    if(user){
-      console.log('user',user);
+    if (user) {
+      console.log('user', user);
     }
-    console.log('user',user);
-  },[user]);
+    console.log('user', user);
+  }, [user]);
 
-  console.log('type',type)
+  const handleFetchScreenData = async () => {
+    try {
+      const res = await Promise.all([
+        getRestaurantTotalEarnings(undefined).unwrap(),
+        getHotelTotalEarnings(undefined).unwrap(),
+        getCabTotalEarnings(undefined).unwrap(),
+      ]);
+      console.log('screen data', res);
+    } catch (error) {
+      console.log('error fetching screen data', error);
+      ShowToast('error', 'Failed to fetch screen data');
+    }
+  };
 
   useEffect(() => {
-    // if(type === 'restaurant'){
-      fetchRestaurantTotalEarnings();
-    // } else {
-      fetchHotelTotalEarnings();
-    fetchCabTotalEarnings();
-    // }
-  },[type]);
-
-  const fetchRestaurantTotalEarnings = async () => {
-    try {
-      const res = await getRestaurantTotalEarnings(undefined).unwrap();
-      // console.log('total earnings data', res);
-    } catch (error) {
-      console.log('error fetching total earnings', error);
-    }
-  };
-
-  const fetchHotelTotalEarnings = async () => {
-    try {
-      const res = await getHotelTotalEarnings(undefined).unwrap();
-      console.log('hotel earnings data', res);
-    } catch (error) {
-      console.log('error fetching total earnings', error);
-    }
-  };
-
-  const fetchCabTotalEarnings = async () => {
-    try {
-      const res = await getCabTotalEarnings(undefined).unwrap();
-      console.log('cab earnings data', res);
-    } catch (error) {
-      console.log('error fetching total earnings', error);
-    }
-  };
+    handleFetchScreenData();
+  }, [type]);
 
   const handleRequestPayout = async () => {
     try {
@@ -91,11 +96,6 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
       await checkStripeStatus().unwrap();
     } catch (err: any) {
       setConnectStripeVisible(true);
-      return;
-    }
-
-    if (!pendingBalance || pendingBalance <= 0) {
-      setErrorMessage('You have no pending balance to withdraw.');
       return;
     }
 
@@ -108,13 +108,31 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
         <View style={styles.container}>
           {/* Earnings Summary Cards */}
           <View style={styles.summaryContainer}>
-            <EarningsSummaryCard value={activeTab === 'Restaurant' ? totalEarningsData?.data?.totalEarnings ?? 0 : activeTab === 'Hotel' ? hotelTotalEarningsData?.data?.totalEarnings ?? 0 : cabTotalEarningsData?.data?.totalEarnings ?? 0} label="Total Earnings" />
             <EarningsSummaryCard
-              value={pendingBalance}
+              value={
+                activeTab === 'Restaurant'
+                  ? totalEarningsData?.data?.totalEarnings ?? 0
+                  : activeTab === 'Hotel'
+                  ? hotelTotalEarningsData?.data?.totalEarnings ?? 0
+                  : cabTotalEarningsData?.data?.totalEarnings ?? 0
+              }
+              label="Total Earnings"
+            />
+            <EarningsSummaryCard
+              value={0}
               label="Pending Balance"
               isHighlighted={true}
             />
-            <EarningsSummaryCard value={activeTab === 'Restaurant' ? totalEarningsData?.data?.totalNet ?? 0 : activeTab === 'Hotel' ? hotelTotalEarningsData?.data?.totalNet ?? 0 : cabTotalEarningsData?.data?.totalNet ?? 0} label="Total Gross" />
+            <EarningsSummaryCard
+              value={
+                activeTab === 'Restaurant'
+                  ? totalEarningsData?.data?.totalNet ?? 0
+                  : activeTab === 'Hotel'
+                  ? hotelTotalEarningsData?.data?.totalNet ?? 0
+                  : cabTotalEarningsData?.data?.totalNet ?? 0
+              }
+              label="Total Gross"
+            />
           </View>
 
           {/* Payout button */}
@@ -131,47 +149,70 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
             style={styles.payoutButton}
             onPress={() => navigation.navigate('Payment')}
           >
-            <Text style={styles.payoutButtonText}>
-              {'Add Balance'}
-            </Text>
+            <Text style={styles.payoutButtonText}>{'Add Balance'}</Text>
           </TouchableOpacity>
           {/* Tab Bar */}
           <View style={[GeneralStyles.paddingHorizontal, styles.tabContainer]}>
             <AccomodationTabButtons selectedIndex={setActiveTab} data={TABS} />
           </View>
-          {(activeTab === 'Restaurant' ? isLoadingTotalEarnings : activeTab === 'Hotel' ? isLoadingHotelTotalEarnings : isLoadingCabTotalEarnings) ? (
+          {(
+            activeTab === 'Restaurant'
+              ? isLoadingTotalEarnings
+              : activeTab === 'Hotel'
+              ? isLoadingHotelTotalEarnings
+              : isLoadingCabTotalEarnings
+          ) ? (
             <View style={styles.loader}>
               <ActivityIndicator size="large" color="#0162C0" />
             </View>
           ) : (
-            <>    
-          {/* Orders List */}
-          <FlatList
-            data={activeTab === 'Restaurant' ? totalEarningsData?.data?.orders ?? [] : activeTab === 'Hotel' ? hotelTotalEarningsData?.data?.bookings ?? [] : cabTotalEarningsData?.data?.rides ?? []}
-            ListEmptyComponent={<View style={styles.empty}>
-              <Text style={styles.emptyText}>{activeTab === 'Restaurant' ? 'No orders found' : activeTab === 'Hotel' ? 'No bookings found' : 'No rides found'}</Text>
-            </View>}
-            renderItem={({ item }) => (
-              <OrderCard
-                orderId={String(item.id)}
-                status={item.status}
-                amount={item.totalAmount}
-                customerName={item?.user?.name ??  'N/A'}
-                paymentMethod={item.paymentMethod}
-                time={formatTime12h(item.createdAt)}
-                onViewDetails={() =>
-                  navigation.navigate('EarningOrderDetail', {
-                    type: activeTab === 'Restaurant' ? 'restaurant' : activeTab === 'Hotel' ? 'hotel' : 'cab',
-                    order: item,
-                  })
+            <>
+              {/* Orders List */}
+              <FlatList
+                data={
+                  activeTab === 'Restaurant'
+                    ? totalEarningsData?.data?.orders ?? []
+                    : activeTab === 'Hotel'
+                    ? hotelTotalEarningsData?.data?.bookings ?? []
+                    : cabTotalEarningsData?.data?.rides ?? []
                 }
+                ListEmptyComponent={
+                  <View style={styles.empty}>
+                    <Text style={styles.emptyText}>
+                      {activeTab === 'Restaurant'
+                        ? 'No orders found'
+                        : activeTab === 'Hotel'
+                        ? 'No bookings found'
+                        : 'No rides found'}
+                    </Text>
+                  </View>
+                }
+                renderItem={({ item }) => (
+                  <OrderCard
+                    orderId={String(item.id)}
+                    status={item.status}
+                    amount={item.totalAmount}
+                    customerName={item?.user?.name ?? 'N/A'}
+                    paymentMethod={item.paymentMethod}
+                    time={formatTime12h(item.createdAt)}
+                    onViewDetails={() =>
+                      navigation.navigate('EarningOrderDetail', {
+                        type:
+                          activeTab === 'Restaurant'
+                            ? 'restaurant'
+                            : activeTab === 'Hotel'
+                            ? 'hotel'
+                            : 'cab',
+                        order: item,
+                      })
+                    }
+                  />
+                )}
+                keyExtractor={item => String(item.id)}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={false}
               />
-            )}
-            keyExtractor={item => String(item.id)}
-            contentContainerStyle={styles.listContainer}
-            showsVerticalScrollIndicator={false}
-          />
-          </>
+            </>
           )}
         </View>
       </WrapperContainer>
@@ -187,7 +228,8 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Connect Stripe</Text>
             <Text style={styles.modalMessage}>
-              Please connect your Stripe vendor account before requesting payout.
+              Please connect your Stripe vendor account before requesting
+              payout.
             </Text>
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
@@ -221,7 +263,7 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Confirm payout</Text>
             <Text style={styles.modalMessage}>
-              Request payout of {pendingBalance.toFixed(2)}?
+              Request payout of 0.00?
             </Text>
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
@@ -236,12 +278,15 @@ const Earning = ({route}: {route: RouteProp<{Earning: {type: 'restaurant' | 'acc
                   try {
                     setConfirmPayoutVisible(false);
                     await requestWithdrawal({
-                      requestedAmount: pendingBalance,
+                      requestedAmount: 0.00,
                       currency: 'NGN',
                     }).unwrap();
                     setSuccessVisible(true);
                   } catch (e: any) {
-                    setErrorMessage(e?.data?.message || 'Failed to create withdrawal request.');
+                    setErrorMessage(
+                      e?.data?.message ||
+                        'Failed to create withdrawal request.',
+                    );
                   }
                 }}
               >
@@ -385,9 +430,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: '#666',
   },
-  loader:{
+  loader: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center'
-  }
+    justifyContent: 'center',
+  },
 });

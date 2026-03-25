@@ -57,7 +57,7 @@ const AccomodationStack: FC = () => {
       <Stack.Screen name="Notifications" component={Notification} />
       <Stack.Screen name="Earning" component={Earning} />
       <Stack.Screen name="EarningOrderDetail" component={EarningOrderDetail} />
-      <Stack.Screen name="ChatConversation" component={ChatConversationScreen} />
+      {/* <Stack.Screen name="ChatConversation" component={ChatConversationScreen} /> */}
     </Stack.Navigator>
   );
 };

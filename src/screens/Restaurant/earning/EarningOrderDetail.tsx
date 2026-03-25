@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import React, { useState } from 'react';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
@@ -8,7 +8,7 @@ import fonts from '../../../config/fonts';
 import GeneralStyles from '../../../utils/GeneralStyles';
 import { formatTime12h, formatDate } from '../../../utils/utility';
 import { useAppSelector } from '../../../redux/store';
-import { useCreateSingleChatMutation } from '../../../redux/services/chatService';
+import images from '../../../config/images';
 
 export type EarningDetailType = 'restaurant' | 'hotel';
 
@@ -71,25 +71,21 @@ const EarningOrderDetail = () => {
     route.params?.type === 'hotel' ? 'hotel' : 'restaurant';
   const data = route.params?.order ?? {};
   const region = useAppSelector((s) => s.region.selectedRegion);
-  const [createSingleChat, { isLoading: openingChat }] = useCreateSingleChatMutation();
   const customerUserId = customerUserIdFromParams(data, earningType);
   const chatTitle = customerChatTitle(data, earningType);
 
-  const onMessageCustomer = async () => {
+  const onMessageCustomer = () => {
     if (!customerUserId) return;
-    try {
-      const chat = await createSingleChat({ otherUserId: customerUserId, direct: true }).unwrap();
-      navigation.navigate('ChatConversation', {
-        chatId: chat.id,
-        chatData: JSON.stringify(chat),
-        chatName: chatTitle,
-      });
-    } catch (e: any) {
-      Alert.alert(
-        'Chat',
-        typeof e?.data?.message === 'string' ? e.data.message : 'Could not open conversation. Try again.',
-      );
-    }
+    const profilePic =
+      earningType === 'restaurant'
+        ? data.user?.profilePicture
+        : data.user?.profilePicture ?? null;
+    navigation.navigate('ChatConversation', {
+      receiverId: customerUserId,
+      name: chatTitle,
+      chatName: chatTitle,
+      avatar: profilePic ? { uri: String(profilePic) } : images.avatar,
+    });
   };
 
   const formatMoney = (n: number | string | undefined) => {
@@ -123,16 +119,11 @@ const EarningOrderDetail = () => {
     <TouchableOpacity
       style={styles.chatBtn}
       onPress={onMessageCustomer}
-      disabled={openingChat}
       activeOpacity={0.8}
     >
-      {openingChat ? (
-        <ActivityIndicator color={colors.white} />
-      ) : (
-        <Text style={styles.chatBtnText}>
-          {earningType === 'restaurant' ? 'Message customer' : 'Message guest'}
-        </Text>
-      )}
+      <Text style={styles.chatBtnText}>
+        {earningType === 'restaurant' ? 'Message customer' : 'Message guest'}
+      </Text>
     </TouchableOpacity>
   ) : null;
 

@@ -19,6 +19,9 @@ import { selectActiveStack } from '../../redux/slices/navigationSlice';
 import { useLazyGetUserQuery } from '../../redux/services/authService';
 import { setUserRole } from '../../redux/slices/authSlice';
 
+/** Profile stack: show orange tab bar only on this screen; hide on Messages / chat / new message */
+const PROFILE_TAB_BAR_ROUTES = ['Profile'];
+
 const TabBars = (props: BottomTabBarProps) => {
   const { bottom } = useSafeAreaInsets();
   const mainContainer = useMemo(() => mainContainerStyle(bottom), [bottom]);
@@ -52,7 +55,9 @@ const TabBars = (props: BottomTabBarProps) => {
   // Tab bar visible only on allowed screens per stack; hide on all other screens
   const shouldShowTabBar = useMemo(() => {
     if (activeStack === 'RestaurantStack') {
-      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'Profile') {
+        return PROFILE_TAB_BAR_ROUTES.includes(nestedRouteName ?? 'Profile');
+      }
       if (currentTabName === 'RestaurantStack') {
         const allowed = ['RestaurantHome', 'RestaurantInfo', 'Orders'];
         return allowed.includes(nestedRouteName ?? 'RestaurantHome');
@@ -60,7 +65,9 @@ const TabBars = (props: BottomTabBarProps) => {
       return false;
     }
     if (activeStack === 'Accomodation') {
-      if (currentTabName === 'Profile') return true;
+      if (currentTabName === 'Profile') {
+        return PROFILE_TAB_BAR_ROUTES.includes(nestedRouteName ?? 'Profile');
+      }
       if (currentTabName === 'MyHotels' || currentTabName === 'BookingLogs') return true;
       if (currentTabName === 'Accomodation') {
         return nestedRouteName === 'Home';
