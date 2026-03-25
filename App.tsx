@@ -15,6 +15,7 @@ import { Provider } from 'react-redux';
 import Navigation from './src/navigation';
 import { persistor, store } from './src/redux/store';
 import { NotificationSetup } from './src/components/NotificationSetup';
+import { ChatSocketBridge } from './src/components/ChatSocketBridge';
 import Toast from 'react-native-toast-message';
 import ToastConfig from './src/config/Toast';
 import { StripeProvider } from '@stripe/stripe-react-native';
@@ -29,6 +30,7 @@ const App = () => {
         <SafeAreaProvider>
           <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
           <NotificationSetup />
+          <ChatSocketBridge />
           <AppContent />
           <Toast config={ToastConfig} position="top" bottomOffset={40} />
         </SafeAreaProvider>

@@ -23,14 +23,11 @@ import {
 import type { ChatSummary } from '../../redux/services/chatService';
 import { useAppDispatch, useAppSelector } from '../../redux/store';
 import { socketClient } from '../../utils/socketClient';
-import {
-  clearChatUnread,
-  incrementChatUnread,
-  initializeChatUnread,
-} from '../../redux/slices/chatUnreadSlice';
+import { clearChatUnread, initializeChatUnread } from '../../redux/slices/chatUnreadSlice';
 import colors from '../../config/colors';
 import fonts from '../../config/fonts';
 import images from '../../config/images';
+import { sanitizeChatMessageContent } from '../../utils/sanitizeChatMessageContent';
 
 function toIsoTime(value: unknown): string | undefined {
   if (value == null) return undefined;
@@ -43,10 +40,11 @@ function toIsoTime(value: unknown): string | undefined {
 
 function normalizeLastMessagePayload(m: any) {
   if (m == null || typeof m !== 'object') return m;
+  const rawContent = typeof m.content === 'string' ? m.content : '';
   return {
     id: m.id,
     chatId: m.chatId,
-    content: typeof m.content === 'string' ? m.content : '',
+    content: sanitizeChatMessageContent(rawContent),
     messageType: m.messageType || 'text',
     senderId: m.senderId != null ? Number(m.senderId) : undefined,
     createdAt: toIsoTime(m.createdAt) ?? new Date().toISOString(),
@@ -169,7 +167,6 @@ const ChatListScreen = () => {
     const handleNewMessage = (message: any) => {
       const msgChatId = Number(message?.chatId ?? message?.chat?.id ?? message?.chat);
       if (!msgChatId) return;
-      const senderId = Number(message?.senderId ?? message?.sender?.id);
 
       setChats((prev) => {
         const existing = prev.findIndex((c) => Number(c.id) === msgChatId);
@@ -199,9 +196,7 @@ const ChatListScreen = () => {
         return clone;
       });
 
-      if (currentUserId && senderId && senderId !== currentUserId) {
-        dispatch(incrementChatUnread(msgChatId));
-      }
+      /* Unread from chat-updated (user room); new-message only reaches joined chat rooms. */
     };
 
     const setupSocket = async () => {
@@ -221,7 +216,7 @@ const ChatListScreen = () => {
       socketClient.offChatUpdated(handleChatUpdated);
       socketClient.offNewMessage(handleNewMessage);
     };
-  }, [token, currentUserId, dispatch, loadChats]);
+  }, [token, currentUserId, loadChats]);
 
   const getOtherParticipant = useCallback(
     (chat: ChatSummary) => {
