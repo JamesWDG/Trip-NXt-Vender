@@ -14,7 +14,7 @@ try {
 export function setBackgroundMessageHandler(): void {
   if (!messagingModule) return;
   messagingModule().setBackgroundMessageHandler(async (remoteMessage: any) => {
-    console.log('Background notification:', remoteMessage?.notification?.title, remoteMessage?.data);
+    console.log('Background notification:', remoteMessage);
   });
 }
 

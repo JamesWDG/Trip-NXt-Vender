@@ -37,7 +37,7 @@ const EarningsSummaryCard: React.FC<EarningsSummaryCardProps> = ({
         isHighlighted && styles.highlightedCard,
       ]}
     >
-      <Text style={[styles.value,{fontSize: region === 'NGN' ? 17.5 : 24}]}>{formatAmount(value)}</Text>
+      <Text style={[styles.value,{fontSize: region === 'NGN' ? 16 : 24}]}>{formatAmount(value)}</Text>
       <Text style={styles.label}>{label}</Text>
     </View>
   );

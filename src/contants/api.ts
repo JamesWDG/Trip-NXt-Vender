@@ -38,12 +38,15 @@ type endpointTypes = {
     GET_RESTAURANT_TOTAL_EARNINGS: string;
     GET_HOTEL_TOTAL_EARNINGS: string;
     GET_CAB_TOTAL_EARNINGS: string;
-    GET_VENDOR_STRIPE_STATUS: string;
+    GET_WALLET: string;
+    REQUEST_WALLET_PAYOUT: string;
+    CREATE_PAYMENT_INTENT: string;
+    CONFIRM_PAYMENT: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
-export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
-// export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1' //live
+// export const BASE_URL: string = 'https://api.trip-nxt.com/api/v1' //live
+export const BASE_URL: string = 'https://noreen-unpunishing-fredricka.ngrok-free.dev/api/v1' //live
 // export const BASE_URL: string = 'http://192.168.0.108:5003/api/v1' //localdr
 // export const BASE_URL: string = 'https://immaterial-overfrequently-audrie.ngrok-free.dev/api/v1' //ngrok 
 // export const BASE_URL: string = 'http://192.168.1.171:5003/api/v1' //ngrok 
@@ -88,5 +91,8 @@ export const endpoint: endpointTypes = Object.freeze({
     GET_RESTAURANT_TOTAL_EARNINGS: '/restaurant/get-total-earnings',
     GET_HOTEL_TOTAL_EARNINGS: '/hotel/get-total-earnings',
     GET_CAB_TOTAL_EARNINGS: '/cab/get-total-earnings',
-    GET_VENDOR_STRIPE_STATUS: '/subscription/vendor-stripe-connect-status',
+    GET_WALLET: '/wallet/',
+    REQUEST_WALLET_PAYOUT: '/wallet/payout-request',
+    CREATE_PAYMENT_INTENT: '/wallet/payment-intent',
+    CONFIRM_PAYMENT: '/wallet/confirm-payment',
 })

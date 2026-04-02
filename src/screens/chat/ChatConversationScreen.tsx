@@ -7,6 +7,7 @@ import {
   Keyboard,
   Modal,
   Platform,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -77,7 +78,10 @@ function parseRouteChatData(raw: unknown): ChatSummary | null {
 const ChatConversationScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute();
-  const { top, bottom } = useSafeAreaInsets();
+  const { top, bottom, right: insetRight } = useSafeAreaInsets();
+  /** Modal fullscreen views often need explicit insets; absolute children ignore parent padding. */
+  const imageViewerTopInset =
+    top > 0 ? top : Platform.OS === 'ios' ? 47 : StatusBar.currentHeight ?? 24;
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const p = (route.params ?? {}) as ChatConversationParams;
@@ -496,7 +500,7 @@ const ChatConversationScreen = () => {
         statusBarTranslucent
         onRequestClose={closeImagePreview}
       >
-        <View style={[styles.imageViewerRoot, { paddingTop: top }]}>
+        <View style={[styles.imageViewerRoot, { paddingTop: imageViewerTopInset }]}>
           <TouchableOpacity
             style={styles.imageViewerDismissArea}
             activeOpacity={1}
@@ -517,9 +521,15 @@ const ChatConversationScreen = () => {
             ) : null}
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.imageViewerClose}
+            style={[
+              styles.imageViewerClose,
+              {
+                top: imageViewerTopInset + 8,
+                right: Math.max(16, insetRight + 12),
+              },
+            ]}
             onPress={closeImagePreview}
-            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             accessibilityRole="button"
             accessibilityLabel="Close image"
           >
@@ -642,10 +652,11 @@ const styles = StyleSheet.create({
   },
   imageViewerClose: {
     position: 'absolute',
-    top: 12,
-    right: 16,
     zIndex: 2,
-    padding: 8,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imageViewerImageWrap: {
     flex: 1,

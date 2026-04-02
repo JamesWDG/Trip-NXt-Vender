@@ -23,6 +23,8 @@ import RiderDetails from '../../screens/Restaurant/riderDetails/RiderDetails';
 import FindYourRide from '../../screens/Restaurant/findYourRide/FindYourRide';
 import Map from '../../screens/Restaurant/Map/Map';
 import Payment from '../../screens/Accomodation/payment/Payment';
+import MyWallet from '../../screens/Accomodation/myWallet/MyWallet';
+import Congratulations from '../../screens/Accomodation/congratulations/Congratulations';
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +68,8 @@ const RestaurantStack: FC = () => {
       <Stack.Screen name="RestaurantInfo" component={RestaurantInfo} />
       <Stack.Screen name="ManagePlan" component={ManagePlan} />
       <Stack.Screen name="RideDetails" component={RideDetails} />
+      <Stack.Screen name="MyWallet" component={MyWallet} />
+      <Stack.Screen name="Congratulations" component={Congratulations} />
       <Stack.Screen name="Payment" component={Payment} />
     </Stack.Navigator>
   );

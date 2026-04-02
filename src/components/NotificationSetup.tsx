@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../redux/store';
 import {
-  setBackgroundMessageHandler,
   requestNotificationPermission,
   getFCMToken,
   registerTokenWithBackend,
@@ -10,19 +9,15 @@ import {
   onNotificationOpenedApp,
   getInitialNotification,
 } from '../services/notificationSetup';
+import { ensureFcmDefaultAndroidChannel } from '../services/androidFcmChannel';
 import { navigationRef } from '../config/constants';
-
-let backgroundHandlerSet = false;
 
 export function NotificationSetup() {
   const token = useSelector((s: RootState) => s.auth?.token);
   const lastRegisteredToken = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!backgroundHandlerSet) {
-      setBackgroundMessageHandler();
-      backgroundHandlerSet = true;
-    }
+    ensureFcmDefaultAndroidChannel().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -59,7 +54,7 @@ export function NotificationSetup() {
 
   useEffect(() => {
     const unsubForeground = onForegroundMessage((remoteMessage) => {
-      console.log('Foreground notification:', remoteMessage?.notification?.title, remoteMessage?.data);
+      console.log('Foreground notification:', remoteMessage?.notification);
       const data = remoteMessage?.data;
       if (data?.type === 'ride_request' && (data?.rideId != null)) {
         navigateToRideRequest(data.rideId);

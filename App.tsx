@@ -22,7 +22,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
-
+  
   return (
     <StripeProvider publishableKey='pk_test_51StyYHCKxuTZDLl10iiJm4FWIaAsnaMjxxl4d75AdNhQWhL6KyQJ70QvKG2s79ACsI4lx6Et4oe2rxH0cd9Sc90n00HwGOeOiB'>
     <Provider store={store}>

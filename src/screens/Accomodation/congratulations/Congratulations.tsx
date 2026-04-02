@@ -1,13 +1,12 @@
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import React, { useEffect, useRef } from 'react';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import images from '../../../config/images';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import GradientButton from '../../../components/gradientButton/GradientButton';
-import { height, width } from '../../../config/constants';
+import { width } from '../../../config/constants';
 import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
 
 const Congratulations = () => {
@@ -82,8 +81,8 @@ const Congratulations = () => {
   };
 
   const handleGoBackToHome = () => {
-    // Navigate to AccomodationStack which contains Home
-    navigation.navigate('Home');
+    // Works from both Accomodation (root: Home) and Restaurant (root: RestaurantHome) stacks
+    navigation.popToTop();
   };
 
   return (
@@ -99,7 +98,7 @@ const Congratulations = () => {
 
         <Text style={styles.congratulationsText}>Congratulations</Text>
         <Text style={styles.successMessage}>
-          Your Funds Have Been Withdrawn Successfully!!
+          Your Funds Have Been Added Successfully!!
         </Text>
 
         <View style={styles.buttonContainer}>

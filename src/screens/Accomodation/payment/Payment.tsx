@@ -1,110 +1,188 @@
 import {
-  Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
+import React, { FC, useCallback, useState } from 'react';
+import { CardField, useStripe } from '@stripe/stripe-react-native';
 import WrapperContainer from '../../../components/wrapperContainer/WrapperContainer';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { NavigationPropType } from '../../../navigation/authStack/AuthStack';
 import colors from '../../../config/colors';
 import fonts from '../../../config/fonts';
-import GradientButtonForAccomodation from '../../../components/gradientButtonForAccomodation/GradientButtonForAccomodation';
-import CreditCard from '../../../components/creditCard/CreditCard';
-import { width } from '../../../config/constants';
+import { useAppSelector } from '../../../redux/store';
+import GeneralStyles from '../../../utils/GeneralStyles';
+import { ShowToast } from '../../../config/constants';
 import {
-  ChevronRightIcon,
-  CameraIcon,
-  MoveRight,
-  ArrowRight,
-} from 'lucide-react-native';
-import images from '../../../config/images';
+  useConfirmWalletPaymentMutation,
+  useCreatePaymentIntentMutation,
+} from '../../../redux/services/walletService';
 
-const Payment = () => {
+type PaymentRoute = RouteProp<{ Payment: { balance?: number } }, 'Payment'>;
+
+const Payment: FC<{ route: PaymentRoute }> = ({ route }) => {
   const navigation = useNavigation<NavigationPropType>();
+  const region = useAppSelector(state => state.region.selectedRegion);
+  const { confirmPayment } = useStripe();
+  const [createPaymentIntent, { isLoading: isCreatingPaymentIntent }] =
+    useCreatePaymentIntentMutation();
+  const [confirmWalletPayment, { isLoading: isConfirmingPayment }] =
+    useConfirmWalletPaymentMutation();
+  const walletBalance = Number(route.params?.balance ?? 0);
+  const [amount, setAmount] = useState<number>(0);
+  const [cardComplete, setCardComplete] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handlePaymentWithdrawal = () => {
-    // Handle payment withdrawal
-    console.log('Payment withdrawal');
-  };
+  const currencySymbol = region === 'NGN' ? '₦' : '$';
 
-  const handleAddNewCard = () => {
-    // Navigate to add card screen
-    
-  };
+  const handleCardChange = useCallback((details: { complete?: boolean }) => {
+    setCardComplete(!!details?.complete);
+  }, []);
 
-  const handleScanCreditCard = () => {
-    // Handle scan credit card
-    console.log('Scan credit card');
-  };
-
-  // Sample card data
-  const cards = [
-    {
-      id: 1,
-      cardNumber: '37598785321001',
-      cardHolderName: 'KENNETH LEE',
-      expiryDate: '09/25',
-      cardType: 'amex' as const,
-    },
-    {
-      id: 2,
-      cardNumber: '37598765432001',
-      cardHolderName: 'LINDA BERG',
-      expiryDate: '09/25',
-      cardType: 'generic' as const,
-    },
-  ];
-
-  const onAddNewCard = () => {
-    navigation.navigate('MyWallet');
+  const handleAddBalance = async () => {
+    if (Number.isNaN(amount) || amount <= 0) {
+      ShowToast('error', 'Enter a valid amount greater than zero.');
+      return;
+    }
+    if (!cardComplete) {
+      ShowToast('error', 'Enter complete card details.');
+      return;
+    }
+    console.log('amount: ', amount);
+    setSubmitting(true);
+    try {
+      const response = await createPaymentIntent({ amount }).unwrap();
+      console.log('response: ', response);
+      const { paymentIntent, error } = await confirmPayment(
+        response.data.client_secret,
+        {
+          paymentMethodType: 'Card',
+        },
+      );
+      console.log('paymentIntent: ', paymentIntent);
+      if (error) {
+        ShowToast('error', error.message);
+        return;
+      }
+      const confirmResponse = await confirmWalletPayment({
+        paymentIntentId: response.data.id,
+      }).unwrap();
+      console.log('confirmResponse: ', confirmResponse);
+      if (confirmResponse.success) {
+        ShowToast('success', 'Balance added successfully.');
+        navigation.navigate('Congratulations');
+      } else {
+        ShowToast('error', confirmResponse.message);
+      }
+    } catch (error) {
+      console.log('error: ', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <WrapperContainer title="Payment Methode" navigation={navigation}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+    <WrapperContainer title="Add balance" navigation={navigation}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        {/* Total Balance Section */}
-        <View style={styles.balanceContainer}>
-          <Text style={styles.balanceLabel}>Total Balance</Text>
-          <Text style={styles.balanceAmount}>$2,000.00</Text>
-        </View>
-
-        {/* Credit Cards Display */}
-        <View style={styles.cardsContainer}>
-          {/* American Express Card - Using Image */}
-          <Image
-            source={images.american_express}
-            style={[styles.cardImage]}
-            resizeMode="contain"
-          />
-        </View>
-
-        {/* Payment Withdrawal Button */}
-        <TouchableOpacity style={styles.buttonContainer} onPress={onAddNewCard}>
-          <Text style={styles.addCardText}>Add new card</Text>
-          <View style={styles.addCardIcon}>
-            <ArrowRight color={colors.white} size={20} />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Balance summary */}
+          <View style={[styles.summaryCard, GeneralStyles.shadow]}>
+            <Text style={styles.summaryLabel}>Wallet balance</Text>
+            <Text style={styles.summaryAmount}>
+              {region === 'NGN'
+                ? '₦' +
+                  walletBalance.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
+                : `$${walletBalance.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`}
+            </Text>
           </View>
-        </TouchableOpacity>
 
-        {/* Add New Card Section */}
-        <View style={styles.addCardContainer}>
+          {/* Amount */}
+          <View style={[styles.sectionCard, GeneralStyles.shadow]}>
+            <Text style={styles.sectionTitle}>Amount to add</Text>
+            <View style={styles.hintBanner}>
+              <View style={styles.hintAccentBar} />
+              <Text style={styles.sectionHint}>
+                Enter how much you want to add to your wallet.
+              </Text>
+            </View>
+            <View style={styles.amountRow}>
+              <View style={styles.currencyChip}>
+                <Text style={styles.currencyChipText}>{currencySymbol}</Text>
+              </View>
+              <TextInput
+                style={styles.amountInput}
+                value={amount.toString()}
+                onChangeText={text => setAmount(Number(text))}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={colors.c_999999}
+              />
+            </View>
+          </View>
+
+          {/* Stripe card */}
+          <View style={[styles.sectionCard, GeneralStyles.shadow]}>
+            <Text style={styles.sectionTitle}>Card details</Text>
+            <View style={styles.cardFieldWrap}>
+              <CardField
+                postalCodeEnabled={false}
+                countryCode={region === 'NGN' ? 'NG' : 'US'}
+                placeholders={{
+                  number: '4242 4242 4242 4242',
+                }}
+                cardStyle={{
+                  backgroundColor: colors.c_F6F6F6,
+                  borderWidth: 1,
+                  borderColor: colors.c_DDDDDD,
+                  borderRadius: 12,
+                  textColor: colors.c_2B2B2B,
+                  placeholderColor: colors.c_999999,
+                  fontSize: 16,
+                }}
+                style={styles.cardField}
+                onCardChange={handleCardChange}
+              />
+            </View>
+          </View>
+
           <TouchableOpacity
-            style={styles.scanCardButton}
-            onPress={handleScanCreditCard}
+            style={[
+              styles.primaryButton,
+              (!cardComplete || submitting) && styles.primaryButtonDisabled,
+            ]}
+            onPress={handleAddBalance}
+            disabled={!cardComplete || submitting}
+            activeOpacity={0.85}
           >
-            <CameraIcon color={colors.c_666666} size={18} />
-            <Text style={styles.scanCardText}>Scan Credit Card</Text>
+            {submitting ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.primaryButtonText}>Add balance</Text>
+            )}
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </WrapperContainer>
   );
 };
@@ -112,86 +190,144 @@ const Payment = () => {
 export default Payment;
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 16,
     paddingBottom: 40,
   },
-  balanceContainer: {
-    marginBottom: 30,
+  summaryCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.c_F3F3F3,
     alignItems: 'center',
   },
-  balanceLabel: {
-    fontSize: 12,
-    fontFamily: fonts.normal,
+  summaryLabel: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
     color: colors.c_EE4026,
-    marginBottom: 8,
+    marginBottom: 6,
   },
-  balanceAmount: {
-    fontSize: 32,
+  summaryAmount: {
+    fontSize: 28,
     fontFamily: fonts.bold,
     color: colors.c_2B2B2B,
   },
-  cardsContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-    height: 300,
-    justifyContent: 'flex-start',
-    paddingTop: 20,
-  },
-  buttonContainer: {
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  withdrawalButton: {
-    borderRadius: 12,
-  },
-  cardStyle: {
-    position: 'absolute',
-  },
-  cardImage: {
-    width: width * 1,
-    height: 300,
+  sectionCard: {
+    backgroundColor: colors.white,
     borderRadius: 16,
-    position: 'absolute',
-  },
-  addCardContainer: {
-    alignSelf: 'center',
-  },
-  addCardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    padding: 18,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.c_F3F3F3,
   },
-  addCardText: {
-    fontSize: 16,
-    fontFamily: fonts.medium,
-    color: colors.c_0162C0,
+  sectionTitle: {
+    fontSize: 17,
+    fontFamily: fonts.bold,
+    color: colors.c_2B2B2B,
+    marginBottom: 10,
   },
-  addCardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 100,
-    padding: 10,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scanCardButton: {
+  hintBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(35, 109, 181, 0.07)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(35, 109, 181, 0.18)',
+    paddingVertical: 12,
+    paddingRight: 14,
+    paddingLeft: 0,
+    marginBottom: 14,
+    overflow: 'hidden',
   },
-  scanCardText: {
+  hintAccentBar: {
+    width: 4,
+    backgroundColor: colors.primary,
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+    marginRight: 12,
+  },
+  sectionHint: {
+    flex: 1,
     fontSize: 14,
     fontFamily: fonts.normal,
-    color: colors.c_666666,
+    color: colors.c_505050,
+    lineHeight: 21,
+    paddingTop: 1,
+  },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.c_F6F6F6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    paddingHorizontal: 4,
+    minHeight: 52,
+  },
+  currencyChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginLeft: 4,
+    backgroundColor: colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+  },
+  currencyChipText: {
+    fontSize: 16,
+    fontFamily: fonts.bold,
+    color: colors.primary,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: colors.c_2B2B2B,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  maxLink: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+  },
+  maxLinkText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.primary,
+  },
+  cardFieldWrap: {
+    marginTop: 4,
+  },
+  cardField: {
+    width: '100%',
+    height: Platform.select({ ios: 50, android: 56 }) ?? 50,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+    minHeight: 54,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.55,
+  },
+  primaryButtonText: {
+    color: colors.white,
+    fontSize: 17,
+    fontFamily: fonts.semibold,
   },
 });

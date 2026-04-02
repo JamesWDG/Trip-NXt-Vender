@@ -272,11 +272,10 @@ const ChatListScreen = () => {
       : formatLastMessagePreview(item.lastMessage, item.lastMessageAt);
     const time = formatTime(item.lastMessageAt || item.lastMessage?.createdAt || null);
     const unread = unreadByChatId[Number(item.id)] || 0;
-    const hasUnread = unread > 0;
 
     return (
       <TouchableOpacity
-        style={[styles.chatRow, hasUnread && styles.chatRowUnread]}
+        style={styles.chatRow}
         onPress={() => {
           dispatch(clearChatUnread(Number(item.id)));
           const otherUser = getOtherParticipant(item);
@@ -291,29 +290,24 @@ const ChatListScreen = () => {
         }}
         activeOpacity={0.72}
       >
-        <View style={[styles.avatarRing, hasUnread && styles.avatarRingUnread]}>
-          <View style={styles.avatarWrap}>
-            {avatar ? (
-              <Image source={{ uri: avatar }} style={styles.avatar} />
-            ) : (
-              <LinearGradient
-                colors={[colors.c_F47E20, colors.c_EE4026]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.avatarPlaceholder}
-              >
-                <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
-              </LinearGradient>
-            )}
-          </View>
+        <View style={styles.avatarWrap}>
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+          ) : (
+            <LinearGradient
+              colors={[colors.c_F47E20, colors.c_EE4026]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.avatarPlaceholder}
+            >
+              <Text style={styles.avatarText}>{name.charAt(0).toUpperCase()}</Text>
+            </LinearGradient>
+          )}
         </View>
         <View style={styles.content}>
           <View style={styles.row}>
             <View style={styles.nameRow}>
-              <Text
-                style={[styles.name, hasUnread && styles.nameUnread]}
-                numberOfLines={1}
-              >
+              <Text style={styles.name} numberOfLines={1}>
                 {name}
               </Text>
               {item.isGroup ? (
@@ -323,14 +317,9 @@ const ChatListScreen = () => {
                 </View>
               ) : null}
             </View>
-            {time ? (
-              <Text style={[styles.time, hasUnread && styles.timeUnread]}>{time}</Text>
-            ) : null}
+            {time ? <Text style={styles.time}>{time}</Text> : null}
           </View>
-          <Text
-            style={[styles.preview, hasUnread && styles.previewUnread]}
-            numberOfLines={2}
-          >
+          <Text style={styles.preview} numberOfLines={2}>
             {lastMsg}
           </Text>
         </View>
@@ -514,7 +503,7 @@ const styles = StyleSheet.create({
   },
   listSurface: {
     flex: 1,
-    backgroundColor: colors.c_F6F6F6,
+    backgroundColor: colors.white,
   },
   fabTouchable: {
     position: 'absolute',
@@ -680,31 +669,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 14,
-    paddingHorizontal: 14,
-    marginBottom: 10,
+    paddingHorizontal: 0,
     backgroundColor: colors.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.c_F3F3F3,
-    ...cardShadow,
-  },
-  chatRowUnread: {
-    borderColor: 'rgba(244, 126, 32, 0.35)',
-    backgroundColor: 'rgba(244, 126, 32, 0.04)',
-  },
-  avatarRing: {
-    padding: 2,
-    borderRadius: 30,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  avatarRingUnread: {
-    borderColor: 'rgba(244, 126, 32, 0.45)',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.c_F3F3F3,
   },
   avatarWrap: {
     borderRadius: 24,
     overflow: 'hidden',
+    marginRight: 12,
   },
   avatar: {
     width: 48,
@@ -747,10 +720,6 @@ const styles = StyleSheet.create({
     color: colors.c_2B2B2B,
     flexShrink: 1,
   },
-  nameUnread: {
-    fontFamily: fonts.bold,
-    color: colors.c_111111,
-  },
   groupPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -773,19 +742,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginTop: 2,
   },
-  timeUnread: {
-    color: colors.c_F47E20,
-    fontFamily: fonts.medium,
-  },
   preview: {
     fontSize: 14,
     fontFamily: fonts.normal,
     color: colors.c_666666,
     lineHeight: 20,
-  },
-  previewUnread: {
-    color: colors.c_2B2B2B,
-    fontFamily: fonts.medium,
   },
   badge: {
     minWidth: 22,
@@ -808,7 +769,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.c_F6F6F6,
+    backgroundColor: colors.white,
   },
   empty: {
     alignItems: 'center',

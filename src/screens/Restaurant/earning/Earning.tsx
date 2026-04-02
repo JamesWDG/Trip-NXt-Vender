@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   View,
   Text,
+  TextInput,
   ActivityIndicator,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
@@ -19,15 +20,18 @@ import fonts from '../../../config/fonts';
 import colors from '../../../config/colors';
 import {
   useGetVendorEarningsSummaryQuery,
-  useLazyGetVendorStripeStatusQuery,
-  useRequestVendorWithdrawalMutation,
+  useLazyGetStripeVendorStatusQuery,
 } from '../../../redux/services/vendorService';
 import { useLazyGetRestaurantTotalEarningsQuery } from '../../../redux/services/restaurantService';
 import { formatTime12h } from '../../../utils/utility';
 import { useLazyGetHotelTotalEarningsQuery } from '../../../redux/services/hotelService';
 import { useLazyGetCabTotalEarningsQuery } from '../../../redux/services/cabService';
-import { RootState, useAppSelector } from '../../../redux/store';
+import { useAppSelector } from '../../../redux/store';
 import { ShowToast } from '../../../config/constants';
+import {
+  useLazyGetWalletQuery,
+  useRequestWalletPayoutMutation,
+} from '../../../redux/services/walletService';
 
 type TimeFilter = 'Restaurant' | 'Hotel' | 'Cab';
 const TABS: TimeFilter[] = ['Restaurant', 'Hotel', 'Cab'];
@@ -44,13 +48,16 @@ const Earning = ({
   const [confirmPayoutVisible, setConfirmPayoutVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [payoutAmountInput, setPayoutAmountInput] = useState('');
   const { data, isLoading } = useGetVendorEarningsSummaryQuery();
   const [
-    checkStripeStatus,
-    { data: stripeStatusData, isLoading: isLoadingStripeStatus },
-  ] = useLazyGetVendorStripeStatusQuery();
-  const [requestWithdrawal, { isLoading: isWithdrawing }] =
-    useRequestVendorWithdrawalMutation();
+    getWallet,
+    { data: walletData, isFetching: isFetchingWallet },
+  ] = useLazyGetWalletQuery();
+  const [checkStripeStatus, { isLoading: isLoadingStripeStatus }] =
+    useLazyGetStripeVendorStatusQuery();
+  const [requestWalletPayout, { isLoading: isRequestingPayout }] =
+    useRequestWalletPayoutMutation();
   const [
     getRestaurantTotalEarnings,
     { data: totalEarningsData, isLoading: isLoadingTotalEarnings },
@@ -64,6 +71,20 @@ const Earning = ({
     { data: cabTotalEarningsData, isLoading: isLoadingCabTotalEarnings },
   ] = useLazyGetCabTotalEarningsQuery();
   const user = useAppSelector(state => state.auth.user);
+  const region = useAppSelector(state => state.region.selectedRegion);
+
+  const pendingBalance = Number(walletData?.data?.pendingBalance ?? 0);
+  const canRequestPayout =
+    walletData != null && !isFetchingWallet && pendingBalance > 0;
+
+  const formatPayoutAmount = (amt: number) => {
+    const n = Math.max(0, amt);
+    const formatted = n.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    return region === 'NGN' ? `₦${formatted}` : `$${formatted}`;
+  };
 
   useEffect(() => {
     if (user) {
@@ -78,6 +99,7 @@ const Earning = ({
         getRestaurantTotalEarnings(undefined).unwrap(),
         getHotelTotalEarnings(undefined).unwrap(),
         getCabTotalEarnings(undefined).unwrap(),
+        getWallet(undefined).unwrap(),
       ]);
       console.log('screen data', res);
     } catch (error) {
@@ -91,15 +113,30 @@ const Earning = ({
   }, [type]);
 
   const handleRequestPayout = async () => {
+    if (!canRequestPayout) {
+      ShowToast(
+        'error',
+        pendingBalance <= 0
+          ? 'No pending balance available to withdraw.'
+          : 'Wallet is still loading. Try again in a moment.',
+      );
+      return;
+    }
     try {
-      // Ensure Stripe vendor account is connected + completed
       await checkStripeStatus().unwrap();
-    } catch (err: any) {
+    } catch {
       setConnectStripeVisible(true);
       return;
     }
-
+    setPayoutAmountInput(
+      pendingBalance > 0 ? String(pendingBalance) : '',
+    );
     setConfirmPayoutVisible(true);
+  };
+
+  const parseWithdrawalAmount = (raw: string): number => {
+    const normalized = raw.trim().replace(/,/g, '');
+    return Number(normalized);
   };
 
   return (
@@ -109,45 +146,43 @@ const Earning = ({
           {/* Earnings Summary Cards */}
           <View style={styles.summaryContainer}>
             <EarningsSummaryCard
-              value={
-                activeTab === 'Restaurant'
-                  ? totalEarningsData?.data?.totalEarnings ?? 0
-                  : activeTab === 'Hotel'
-                  ? hotelTotalEarningsData?.data?.totalEarnings ?? 0
-                  : cabTotalEarningsData?.data?.totalEarnings ?? 0
-              }
+              value={walletData?.data?.totalEarnings ?? 0}
               label="Total Earnings"
             />
             <EarningsSummaryCard
-              value={0}
+              value={walletData?.data?.pendingBalance ?? 0}
               label="Pending Balance"
               isHighlighted={true}
             />
             <EarningsSummaryCard
-              value={
-                activeTab === 'Restaurant'
-                  ? totalEarningsData?.data?.totalNet ?? 0
-                  : activeTab === 'Hotel'
-                  ? hotelTotalEarningsData?.data?.totalNet ?? 0
-                  : cabTotalEarningsData?.data?.totalNet ?? 0
-              }
-              label="Total Gross"
+              value={walletData?.data?.totalPayouts ?? 0}
+              label="Total Payout"
             />
           </View>
 
           {/* Payout button */}
           <TouchableOpacity
-            style={styles.payoutButton}
-            disabled={isLoading || isWithdrawing}
+            style={[
+              styles.payoutButton,
+              (!canRequestPayout || isLoadingStripeStatus) && styles.payoutButtonDisabled,
+            ]}
+            disabled={
+              !canRequestPayout ||
+              isLoading ||
+              isRequestingPayout ||
+              isLoadingStripeStatus
+            }
             onPress={handleRequestPayout}
           >
             <Text style={styles.payoutButtonText}>
-              {isWithdrawing ? 'Requesting…' : 'Request Payout'}
+              {isRequestingPayout || isLoadingStripeStatus
+                ? 'Requesting…'
+                : 'Request Payout'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.payoutButton}
-            onPress={() => navigation.navigate('Payment')}
+            onPress={() => navigation.navigate('Payment',{balance: walletData?.data?.pendingBalance ?? 0})}
           >
             <Text style={styles.payoutButtonText}>{'Add Balance'}</Text>
           </TouchableOpacity>
@@ -261,10 +296,34 @@ const Earning = ({
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Confirm payout</Text>
+            <Text style={styles.modalTitle}>Request wallet payout</Text>
             <Text style={styles.modalMessage}>
-              Request payout of 0.00?
+              {`Available pending balance: ${formatPayoutAmount(pendingBalance)}. Enter how much to withdraw. The request stays pending until an admin processes it.`}
             </Text>
+            <Text style={styles.modalFieldLabel}>Withdrawal amount</Text>
+            <View style={styles.modalAmountRow}>
+              <Text style={styles.modalCurrencyPrefix}>
+                {region === 'NGN' ? '₦' : '$'}
+              </Text>
+              <TextInput
+                style={styles.modalAmountInput}
+                value={payoutAmountInput}
+                onChangeText={setPayoutAmountInput}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={colors.c_666666}
+              />
+            </View>
+            <TouchableOpacity
+              style={styles.modalMaxButton}
+              onPress={() =>
+                setPayoutAmountInput(
+                  pendingBalance > 0 ? String(pendingBalance) : '',
+                )
+              }
+            >
+              <Text style={styles.modalMaxButtonText}>Use max</Text>
+            </TouchableOpacity>
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.modalSecondaryButton]}
@@ -275,17 +334,32 @@ const Earning = ({
               <TouchableOpacity
                 style={styles.modalButton}
                 onPress={async () => {
+                  const amount = parseWithdrawalAmount(payoutAmountInput);
+                  if (Number.isNaN(amount) || amount <= 0) {
+                    ShowToast('error', 'Enter a valid withdrawal amount greater than zero.');
+                    return;
+                  }
+                  if (amount > pendingBalance) {
+                    ShowToast(
+                      'error',
+                      `Amount cannot exceed available pending balance (${formatPayoutAmount(pendingBalance)}).`,
+                    );
+                    return;
+                  }
                   try {
                     setConfirmPayoutVisible(false);
-                    await requestWithdrawal({
-                      requestedAmount: 0.00,
-                      currency: 'NGN',
+                    await requestWalletPayout({
+                      requestedAmount: amount,
+                      currency: region === 'NGN' ? 'NGN' : 'USD',
                     }).unwrap();
                     setSuccessVisible(true);
                   } catch (e: any) {
-                    setErrorMessage(
+                    const msg =
                       e?.data?.message ||
-                        'Failed to create withdrawal request.',
+                      e?.error ||
+                      'Could not submit wallet payout request.';
+                    setErrorMessage(
+                      typeof msg === 'string' ? msg : 'Could not submit wallet payout request.',
                     );
                   }
                 }}
@@ -310,10 +384,10 @@ const Earning = ({
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>
-              {errorMessage ? 'Error' : 'Success'}
+              {errorMessage ? 'Payout not submitted' : 'Success'}
             </Text>
             <Text style={styles.modalMessage}>
-              {errorMessage || 'Withdrawal request submitted.'}
+              {errorMessage || 'Wallet payout request submitted. It will remain pending until processed.'}
             </Text>
             <View style={styles.modalButtonRowSingle}>
               <TouchableOpacity
@@ -366,6 +440,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontSize: 16,
   },
+  payoutButtonDisabled: {
+    opacity: 0.55,
+  },
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -388,7 +465,47 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fonts.normal,
     color: colors.c_666666,
+    marginBottom: 12,
+  },
+  modalFieldLabel: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+    marginBottom: 6,
+  },
+  modalAmountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.c_DDDDDD,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    backgroundColor: colors.white,
+  },
+  modalCurrencyPrefix: {
+    fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+    marginRight: 4,
+  },
+  modalAmountInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.c_2B2B2B,
+    paddingVertical: 10,
+    minHeight: 44,
+  },
+  modalMaxButton: {
+    alignSelf: 'flex-start',
     marginBottom: 16,
+    paddingVertical: 4,
+  },
+  modalMaxButtonText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.primary,
   },
   modalButtonRow: {
     flexDirection: 'row',
