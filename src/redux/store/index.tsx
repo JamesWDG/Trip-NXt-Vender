@@ -5,6 +5,7 @@ import { authApi } from '../services/authService';
 import authReducer from '../slices/authSlice';
 import navigationReducer from '../slices/navigationSlice';
 import { baseApi } from '../services/api';
+import '../services/discountService';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import registrationReducer from '../slices/registrationSlice';
 import regionReducer from '../slices/regionSlice';

@@ -25,6 +25,7 @@ import Map from '../../screens/Restaurant/Map/Map';
 import Payment from '../../screens/Accomodation/payment/Payment';
 import MyWallet from '../../screens/Accomodation/myWallet/MyWallet';
 import Congratulations from '../../screens/Accomodation/congratulations/Congratulations';
+import FoodPromoAdmin from '../../screens/Restaurant/foodPromoAdmin/FoodPromoAdmin';
 
 const Stack = createNativeStackNavigator();
 
@@ -71,6 +72,7 @@ const RestaurantStack: FC = () => {
       <Stack.Screen name="MyWallet" component={MyWallet} />
       <Stack.Screen name="Congratulations" component={Congratulations} />
       <Stack.Screen name="Payment" component={Payment} />
+      <Stack.Screen name="FoodPromoAdmin" component={FoodPromoAdmin} />
     </Stack.Navigator>
   );
 };

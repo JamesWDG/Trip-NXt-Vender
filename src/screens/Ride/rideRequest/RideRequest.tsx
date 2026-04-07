@@ -148,11 +148,19 @@ function mapRideToCard(
   ngnRate: number,
 ): any {
   const fare = ride.negotiatedFare ?? ride.offeredFare;
+  const disc =
+    ride.discountAmount != null && Number(ride.discountAmount) > 0
+      ? Number(ride.discountAmount)
+      : 0;
   return {
     id: String(ride.id),
     user: ride.user?.name ?? 'User',
     rating: '4.5',
     price: formatPriceByRegion(fare, region, ngnRate),
+    promoNote:
+      disc > 0
+        ? `Customer promo −${formatPriceByRegion(disc, region, ngnRate)} (you earn on fare shown)`
+        : null,
     distance: '',
     pickup: {
       latitude: ride.pickup.lat,
@@ -620,7 +628,7 @@ const RideRequest = () => {
 
   const renderRideItem = ({ item }: { item: any }) => (
     <View style={styles.rideCard}>
-      <View style={styles.rideHeader}>
+        <View style={styles.rideHeader}>
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
             <Image
@@ -629,9 +637,12 @@ const RideRequest = () => {
               resizeMode="contain"
             />
           </View>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.userName}>{item.user}</Text>
             <Text style={styles.rating}>★ {item.rating}</Text>
+            {item.promoNote ? (
+              <Text style={styles.promoNote}>{item.promoNote}</Text>
+            ) : null}
           </View>
         </View>
         <Text style={styles.price}>{item.price}</Text>
@@ -1180,6 +1191,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.medium,
     color: colors.c_999999,
+  },
+  promoNote: {
+    fontSize: 11,
+    fontFamily: fonts.normal,
+    color: colors.c_0162C0,
+    marginTop: 4,
+    maxWidth: 200,
   },
   price: {
     fontSize: 18,

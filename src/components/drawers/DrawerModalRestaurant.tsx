@@ -23,6 +23,14 @@ import { NavigationPropType } from '../../navigation/authStack/AuthStack';
 import { setLogout } from '../../redux/slices/authSlice';
 import { useAppDispatch, useAppSelector } from '../../redux/store';
 
+const ADMIN_PROMO_LINK = {
+  id: 99,
+  name: 'Food promos (admin)',
+  image: images.card,
+  navigation: (navigation: NavigationPropType) =>
+    navigation.navigate('RestaurantStack', { screen: 'FoodPromoAdmin' }),
+};
+
 const upperTabData = [
   {
     id: 1,
@@ -173,6 +181,11 @@ const DrawerModalRestaurant = ({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationPropType>();
   const dispatch = useAppDispatch();
+  const user = useAppSelector(s => s.auth.user);
+  const isAdmin = Array.isArray(user?.role) && user.role.includes('admin');
+  const importantLinksWithAdmin = isAdmin
+    ? [...importantLinksData, ADMIN_PROMO_LINK]
+    : importantLinksData;
   const totalChatUnread = useAppSelector(s =>
     Object.values(s.chatUnread?.unreadByChatId ?? {}).reduce(
       (sum, n) => sum + (Number(n) || 0),
@@ -196,7 +209,7 @@ const DrawerModalRestaurant = ({
   const renderVerticalTabs = ({
     item,
   }: {
-    item: (typeof importantLinksData)[0] | (typeof generalData)[0];
+    item: (typeof importantLinksData)[0] | (typeof generalData)[0] | typeof ADMIN_PROMO_LINK;
   }) => {
     return (
       <IconWithTitleAndDivider
@@ -260,7 +273,7 @@ const DrawerModalRestaurant = ({
             <View style={styles.linksContainer}>
               <FlatList
                 scrollEnabled={false}
-                data={importantLinksData}
+                data={importantLinksWithAdmin}
                 renderItem={renderVerticalTabs}
                 keyExtractor={item => item.id.toString()}
               />

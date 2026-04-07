@@ -42,6 +42,8 @@ type endpointTypes = {
     REQUEST_WALLET_PAYOUT: string;
     CREATE_PAYMENT_INTENT: string;
     CONFIRM_PAYMENT: string;
+    GET_FOOD_PROMOS: string;
+    CREATE_FOOD_PROMO: string;
 }
 
 export const GOOGLE_API_KEY: string = 'AIzaSyD28UEoebX1hKscL3odt2TiTRVfe5SSpwE';
@@ -95,4 +97,6 @@ export const endpoint: endpointTypes = Object.freeze({
     REQUEST_WALLET_PAYOUT: '/wallet/payout-request',
     CREATE_PAYMENT_INTENT: '/wallet/payment-intent',
     CONFIRM_PAYMENT: '/wallet/confirm-payment',
+    GET_FOOD_PROMOS: '/discount/food-promos',
+    CREATE_FOOD_PROMO: '/discount/food-promos',
 })

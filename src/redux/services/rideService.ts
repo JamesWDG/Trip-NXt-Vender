@@ -8,6 +8,8 @@ export interface RidePayload {
   dropoff: { lat: number; lng: number; address?: string };
   offeredFare: number;
   negotiatedFare: number | null;
+  discountId: number | null;
+  discountAmount: number | null;
   status: string;
   expiresAt: string | null;
   createdAt: string;
