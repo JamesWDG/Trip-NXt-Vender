@@ -29,7 +29,6 @@ export const baseQueryWithReauth = async (args: any, api: any, extraOptions: any
   let result = await baseQuery(args, api, extraOptions);
   if (result.error && result.error.status === 401) {
     await api.dispatch(setLogout());
-
   }
   console.log('result ===>', result);
   return result;
